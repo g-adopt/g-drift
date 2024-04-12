@@ -40,53 +40,110 @@ class Table:
 
 
 class ThermodynamicModel(object):
-    def __init__(self, temps, depths, model: str, composition: str):
+    def __init__(self, model: str, composition: str, temps=None, depths=None):
         if model not in MODELS_AVAIL:
             raise ValueError(
                 f"{model} not available."
                 " Use `print_available_models` to see all available models")
 
+        # load the hdf5 table
         loaded_model = load_dataset(
             dataset_name(model, composition),
             table_names=["Depths", "Temperatures",
                          "bulk_mod", "shear_mod", "density"]
         )
-        # setting up a dictionary that includes all the models
+        # a dictionary that includes all the models
         self._tables = {}
+
+        # the three tables that are needed
         for key in ["bulk_mod", "shear_mod", "density"]:
-            self._tables[key] = interpolate_table(
-                temps,
-                depths,
-                Table(
+            # in case we need to interpolate
+            if any([temps, depths]):
+                self._tables[key] = interpolate_table(
+                    loaded_model["Temperatures"] if temps is None else temps,
+                    loaded_model["Depths"] if depths is None else depths,
+                    Table(
+                        x=loaded_model.get("Temperatures"),
+                        y=loaded_model.get("Depths"),
+                        vals=loaded_model.get(key),
+                        name=key)
+                )
+            else:
+                self._tables[key] = Table(
                     x=loaded_model.get("Temperatures"),
                     y=loaded_model.get("Depths"),
                     vals=loaded_model.get(key),
-                    name=key)
-            )
+                    name=key
+                )
+
+    def compute_swave_speed(self):
+        """Computes s wave speed for a given thermodynamic model
+        For details see `compute_swave_speed`
+        """
+        compute_swave_speed(
+            self._tables["shear_mod"],
+            self._tables["density"]
+        )
+
+    def compute_pwave_speed(self):
+        """Computes p wave speed for a given thermodynamic model
+        For details see `compute_pwave_speed`
+        """
+        compute_pwave_speed(
+            self._tables["bulk_mod"],
+            self._tables["shear_mod"],
+            self._tables["density"]
+        )
 
 
 def interpolate_table(ox, oy, table_in):
+    """
+    Interpolates values from a given mineralogy table (`table_in`) to new grid points
+    defined by `ox` and `oy`. The interpolation uses the nearest two neighboring points
+    from the original table for each of the new grid points.
+
+    The function normalizes the coordinates of both the input and output tables,
+    constructs a KD-tree for efficient nearest-neighbor searches, and then performs
+    weighted averaging based on the inverse of the distances to the nearest neighbors.
+
+    Args:
+        ox (np.ndarray): 1D array of x-coordinates where the output values are required.
+        oy (np.ndarray): 1D array of y-coordinates corresponding to the x-coordinates.
+        table_in (Table): An instance of a Table class, expected to have methods
+            `get_x()`, `get_y()`, and `get_vals()` that return the grid coordinates and
+            values of the table, respectively, and a `get_name()` method to return the
+            name of the table.
+
+    Returns:
+        Table: A new instance of the Table class, containing the interpolated values
+            at the grid points specified by `ox` and `oy`. This table retains the name
+            of the input table.
+    """
+    # returns the minimum and maximum of an array
     def min_max(v):
         return numpy.min(v), numpy.max(v)
 
+    # build a mesh
     x_x, y_x = numpy.meshgrid(table_in.get_x(), table_in.get_y())
 
+    # normalise x and y axes (temperature and pressure)
     minx, maxx = min_max(x_x)
     miny, maxy = min_max(y_x)
-
     x_x = (x_x - minx)/(maxx - minx)
     y_x = (y_x - miny)/(maxy - miny)
 
+    # build a tree
     tree = cKDTree(numpy.column_stack((x_x.flatten(), y_x.flatten())))
 
+    # prepare to query for the new coordinates
     ox_x, oy_x = numpy.meshgrid(ox, oy)
-
     ox_x = (ox_x - minx)/(maxx - minx)
     oy_x = (oy_x - miny)/(maxy - miny)
 
     dists, inds = tree.query(numpy.column_stack(
         (ox_x.flatten(), oy_x.flatten())), k=2)
 
+    # Do the interpolation and return a new Table
     ovals = numpy.einsum(
         "i, i",
         numpy.einsum("ij->i", 1/dists),
