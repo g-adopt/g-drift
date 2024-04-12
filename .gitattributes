@@ -1,0 +1,2 @@
+gdrift/data/SLB_16_basalt.hdf5 filter=lfs diff=lfs merge=lfs -text
+gdrift/data/SLB_16_pyrolite.hdf5 filter=lfs diff=lfs merge=lfs -text
