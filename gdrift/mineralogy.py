@@ -50,13 +50,13 @@ class ThermodynamicModel(object):
         loaded_model = load_dataset(
             dataset_name(model, composition),
             table_names=["Depths", "Temperatures",
-                         "bulk_mod", "shear_mod", "density"]
+                         "bulk_mod", "shear_mod", "rho"]
         )
         # a dictionary that includes all the models
         self._tables = {}
 
         # the three tables that are needed
-        for key in ["bulk_mod", "shear_mod", "density"]:
+        for key in ["bulk_mod", "shear_mod", "rho"]:
             # in case we need to interpolate
             if any([temps, depths]):
                 self._tables[key] = interpolate_table(
@@ -76,23 +76,35 @@ class ThermodynamicModel(object):
                     name=key
                 )
 
+    def vs_to_temperature(self, vs, depth):
+        pass
+
+    def vp_to_temperature(self, vp, depth):
+        pass
+
+    def temperature_to_vs(self, temperature, depth):
+        pass
+
+    def temperature_to_vp(self, temperature, depth):
+        pass
+
     def compute_swave_speed(self):
         """Computes s wave speed for a given thermodynamic model
         For details see `compute_swave_speed`
         """
-        compute_swave_speed(
-            self._tables["shear_mod"],
-            self._tables["density"]
+        return compute_swave_speed(
+            self._tables["shear_mod"].get_vals(),
+            self._tables["rho"].get_vals()
         )
 
     def compute_pwave_speed(self):
         """Computes p wave speed for a given thermodynamic model
         For details see `compute_pwave_speed`
         """
-        compute_pwave_speed(
-            self._tables["bulk_mod"],
-            self._tables["shear_mod"],
-            self._tables["density"]
+        return compute_pwave_speed(
+            self._tables["bulk_mod"].get_vals(),
+            self._tables["shear_mod"].get_vals(),
+            self._tables["rho"].get_vals()
         )
 
 
@@ -184,13 +196,13 @@ def compute_pwave_speed(bulk_modulus, shear_modulus, density):
 
     Args:
         bulk_modulus (float or np.ndarray): The bulk modulus of the material, representing its resistance
-            to uniform compression. Typically measured in pascals (Pa).
+            to uniform compression. Unit: [].
         shear_modulus (float or np.ndarray): The shear modulus of the material, indicating its resistance
-            to shear deformation. It is also typically measured in pascals (Pa).
-        density (float or np.ndarray): The density of the material, measured in kilograms per cubic meter (kg/m^3).
+            to shear deformation. Unit: [].
+        density (float or np.ndarray): The density of the material, measured in kilograms per cubic meter (g/cm^3).
 
     Returns:
-        float or np.ndarray: The speed of P-waves in the material, calculated in meters per second (m/s).
+        float or np.ndarray: The speed of P-waves in the material, calculated in meters per second (km/s).
         If the inputs are arrays, the return will be an array of the same size.
 
     Notes:
