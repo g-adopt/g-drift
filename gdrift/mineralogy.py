@@ -1,9 +1,14 @@
 import numpy
 from .io import load_dataset
-from scipy.spatial import cKDTree
+from scipy.interpolate import RectBivariateSpline
+from scipy.optimize import minimize_scalar
 
 MODELS_AVAIL = ['SLB_16']
 COMPOSITIONS_AVAIL = ['pyrolite', 'basalt']
+
+
+def LinearRectBivariateSpline(x, y, z):
+    return RectBivariateSpline(x, y, z, kx=1, ky=1)
 
 
 def dataset_name(model: str, composition: str):
@@ -76,41 +81,135 @@ class ThermodynamicModel(object):
                     name=key
                 )
 
-    def vs_to_temperature(self, vs, depth):
-        pass
+    def get_temperatures(self):
+        return self._tables["shear_mod"].get_x()
+
+    def get_depths(self):
+        return self._tables["shear_mod"].get_y()
+
+    def vs_to_temperature(self, vs, depth, bounds):
+        vs_table = self.compute_swave_speed()
+        bi_spline = LinearRectBivariateSpline(
+            vs_table.get_x,
+            vs_table.get_y,
+            vs_table.get_vals)
+        # TODO: pass in the bounds
+        return numpy.array([self._find_temperature(v, d, bi_spline) for v, d in zip(vs, depth)])
 
     def vp_to_temperature(self, vp, depth):
-        pass
+        vp_table = self.compute_pwave_speed()
+        bi_spline = LinearRectBivariateSpline(
+            vp_table.get_x,
+            vp_table.get_y,
+            vp_table.get_vals)
+        # TODO: pass in the bounds
+        return numpy.array([self._find_temperature(v, d, bi_spline) for v, d in zip(vp, depth)])
 
     def temperature_to_vs(self, temperature, depth):
-        pass
+        """ convert temperature to s wave speed
+
+        Args:
+            temperature (float or np.ndarray): temperature in K
+            depth (float or np.ndarray): depths in km
+
+        Returns:
+            float or np.ndarray: s wave speeds
+        """
+        vs = self.compute_swave_speed()
+        return LinearRectBivariateSpline(
+            vs.get_x,
+            vs.get_y,
+            vs.get_vals).ev(temperature, depth)
 
     def temperature_to_vp(self, temperature, depth):
-        pass
+        """ convert temperature to p wave speed
+
+        Args:
+            temperature (float or np.ndarray): temperature in K
+            depth (float or np.ndarray): depths in km
+
+        Returns:
+            float or np.ndarray: p wave speeds
+        """
+        vp = self.compute_pwave_speed()
+        return LinearRectBivariateSpline(
+            vp.get_x,
+            vp.get_y,
+            vp.get_vals).ev(temperature, depth)
+
+    def temperature_to_rho(self, temperature, depth):
+        """ convert temperature to density
+
+        Args:
+            temperature (float or np.ndarray): temperature in K
+            depth (float or np.ndarray): depths in km
+
+        Returns:
+            float or np.ndarray: density
+        """
+        return LinearRectBivariateSpline(
+            self._tables["rho"].get_x,
+            self._tables["rho"].get_y,
+            self._tables["rho"].get_vals).ev(temperature, depth)
 
     def compute_swave_speed(self):
         """Computes s wave speed for a given thermodynamic model
         For details see `compute_swave_speed`
+
+        Returns:
+            Table for v_s
         """
-        return compute_swave_speed(
-            self._tables["shear_mod"].get_vals(),
-            self._tables["rho"].get_vals()
+        return type(self._tables["shear_mod"])(
+            x=self._tables["shear_mod"].get_x(),
+            y=self._tables["shear_mod"].get_y(),
+            vals=compute_swave_speed(
+                self._tables["shear_mod"].get_vals(),
+                self._tables["rho"].get_vals(),
+            ),
+            name="v_s",
         )
 
     def compute_pwave_speed(self):
         """Computes p wave speed for a given thermodynamic model
         For details see `compute_pwave_speed`
+
+        Returns:
+            Table for v_p
         """
-        return compute_pwave_speed(
-            self._tables["bulk_mod"].get_vals(),
-            self._tables["shear_mod"].get_vals(),
-            self._tables["rho"].get_vals()
-        )
+        return type(self._tables["shear_mod"])(
+            x=self._tables["shear_mod"].get_x(),
+            y=self._tables["shear_mod"].get_y(),
+            vals=compute_pwave_speed(
+                self._tables["bulk_mod"].get_vals(),
+                self._tables["shear_mod"].get_vals(),
+                self._tables["rho"].get_vals()),
+            name="v_p")
+
+    # Function to find the temperature for a given depth and a value of a table
+    def _find_temperature(self, val, depth, interpolator, bounds=None):
+        """finds temperature by finding the intersection with zeros
+
+        Args:
+            val (float): target value (could be vs, vp, rho etc)
+            depth (float): depth in km
+            interpolator (scipy.interpolate.RectBivariateSpline): gives an interpolation for value
+            bounds ((float, float)), optional): minimum and maximum bounds for temperature. Defaults to None.
+
+        Returns:
+            temperature
+        """
+        # Minimize the difference between interpolated Vs and target Vs
+        def objective(temp):
+            return (interpolator(temp, depth) - val)**2
+        result = minimize_scalar(
+            objective,
+            bounds=bounds,
+            method='bounded')
+        return result.x if result.success else numpy.NaN
 
 
 def interpolate_table(ox, oy, table_in):
-    """
-    Interpolates values from a given mineralogy table (`table_in`) to new grid points
+    """Interpolates values from a given mineralogy table (`table_in`) to new grid points
     defined by `ox` and `oy`. The interpolation uses the nearest two neighboring points
     from the original table for each of the new grid points.
 
@@ -131,38 +230,15 @@ def interpolate_table(ox, oy, table_in):
             at the grid points specified by `ox` and `oy`. This table retains the name
             of the input table.
     """
-    # returns the minimum and maximum of an array
-    def min_max(v):
-        return numpy.min(v), numpy.max(v)
-
-    # build a mesh
-    x_x, y_x = numpy.meshgrid(table_in.get_x(), table_in.get_y())
-
-    # normalise x and y axes (temperature and pressure)
-    minx, maxx = min_max(x_x)
-    miny, maxy = min_max(y_x)
-    x_x = (x_x - minx)/(maxx - minx)
-    y_x = (y_x - miny)/(maxy - miny)
-
-    # build a tree
-    tree = cKDTree(numpy.column_stack((x_x.flatten(), y_x.flatten())))
 
     # prepare to query for the new coordinates
     ox_x, oy_x = numpy.meshgrid(ox, oy)
-    ox_x = (ox_x - minx)/(maxx - minx)
-    oy_x = (oy_x - miny)/(maxy - miny)
 
-    dists, inds = tree.query(numpy.column_stack(
-        (ox_x.flatten(), oy_x.flatten())), k=2)
-
-    # Do the interpolation and return a new Table
-    ovals = numpy.einsum(
-        "i, i",
-        numpy.einsum("ij->i", 1/dists),
-        numpy.einsum("ij, ij -> i",
-                     1/dists,
-                     table_in.get_vals().flatten()[inds])
-    )
+    ovals = LinearRectBivariateSpline(
+        table_in.get_x,
+        table_in.get_y,
+        table_in.get_vals).ev(ox_x.flatten(), oy_x.flatten())
+    ovals = ovals.reshape(ox_x.shape())
     return type(table_in)(ox, oy, ovals, name=table_in.get_name())
 
 

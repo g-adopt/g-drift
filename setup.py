@@ -1,4 +1,34 @@
 from setuptools import setup, find_packages
+from setuptools.command.install import install
+import urllib.request
+import os
+
+
+class CustomInstall(install):
+    def run(self):
+        # Run the standard install process
+        install.run(self)
+
+        # Directory inside the package where files should be downloaded
+        package_directory = self.install_lib  # Path to where the package is installed
+        target_dir = os.path.join(package_directory, 'data')
+
+        # Create the directory if it doesn't exist
+        os.makedirs(target_dir, exist_ok=True)
+
+        # URLs of the files you want to download
+        file_urls = [
+            "https://zenodo.org/records/10971820/files/SLB_16_basalt.hdf5",
+            "https://zenodo.org/records/10971820/files/SLB_16_pyrolite.hdf5",
+        ]
+
+        # Download and save the files
+        for url in file_urls:
+            filename = url.split('/')[-1]
+            file_path = os.path.join(target_dir, filename)
+            urllib.request.urlretrieve(url, file_path)
+            print(f"Downloaded {filename} to {file_path}")
+
 
 setup(
     name='gdrift',
@@ -10,11 +40,16 @@ setup(
     author='Sia Ghelichkhan',
     author_email='siavash.ghelichkhan@anu.edu.au',
     url='https://github.com/sghelichkhani/g-drift',
-    install_requires=[],
+    install_requires=[
+        'numpy',
+        'scipy'
+    ],
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
+    cmdclass={
+        'install': CustomInstall,
+    },
 )
-
