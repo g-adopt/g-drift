@@ -43,6 +43,7 @@ setup(
     install_requires=[
         'numpy',
         'scipy'
+        'h5py',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

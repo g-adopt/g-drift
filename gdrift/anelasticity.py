@@ -28,15 +28,15 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
     A specific implementation of an anelasticity model following the approach by Cammarano et al.
     """
 
-    def __init__(self, B, g, a, omega=1):
+    def __init__(self, B, g, a, omega=lambda x: 1.0):
         """
         Initialize the model with the given parameters.
 
         Args:
-            B (float): Scaling factor for the Q model.
-            g (float): Activation energy parameter.
-            a (float): Frequency dependency parameter.
-            omega (float): Seismic frequency (default is 1).
+            B (function): Scaling factor for the Q model.
+            g (function): Activation energy parameter.
+            a (function): Frequency dependency parameter.
+            omega (function): Seismic frequency (default is 1).
         """
         self.B = B
         self.g = g
@@ -54,8 +54,8 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
         Returns:
             numpy.ndarray: A matrix of computed Q values.
         """
-        Q_values = self.B * (self.omega**self.a) * numpy.exp((self.a * self.g * 1600) /
-                                                          temperatures)  # 1600 is a placeholder for a reference temperature
+        Q_values = self.B(depths) * (self.omega(depths)**self.a) * numpy.exp((self.a(depths) * self.g(depths) * self.solidus) /
+                                                                             temperatures)
         return Q_values
 
 
@@ -81,8 +81,10 @@ def apply_anelastic_correction(thermo_model, anelastic_model):
                 swave_speed_table.get_temperature()
             )
 
-            F = calculate_F(anelastic_model.alpha)  # Calculate the F factor based on alpha
-            corrected_vals = swave_speed_table.get_vals() * (1 - (F / (numpy.pi * anelastic_model.alpha)) * 1/Q_matrix )
+            # Calculate the F factor based on alpha
+            F = calculate_F(anelastic_model.alpha)
+            corrected_vals = swave_speed_table.get_vals(
+            ) * (1 - (F / (numpy.pi * anelastic_model.alpha)) * 1/Q_matrix)
 
             # Return a new table with modified values but same x and y
             return type(swave_speed_table)(
