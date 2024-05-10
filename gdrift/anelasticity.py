@@ -36,6 +36,7 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
             B (function): Scaling factor for the Q model.
             g (function): Activation energy parameter.
             a (function): Frequency dependency parameter.
+            solidus (function): Solidus temperature for mantle.
             omega (function): Seismic frequency (default is 1).
         """
         self.B = B
@@ -54,7 +55,8 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
         Returns:
             numpy.ndarray: A matrix of computed Q values.
         """
-        Q_values = self.B(depths) * (self.omega(depths)**self.a) * numpy.exp((self.a(depths) * self.g(depths) * self.solidus) /
+        depths_x, temperatures_x = numpy.meshgrid(depths, temperatures)
+        Q_values = self.B(depths_x) * (self.omega(depths_x)**self.a(depths_x)) * numpy.exp((self.a(depths_x) * self.g(depths_x) * self.solidus(depths_x)) /
                                                                              temperatures)
         return Q_values
 

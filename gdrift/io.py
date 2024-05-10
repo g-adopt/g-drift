@@ -17,7 +17,7 @@ def path_to_dataset(h5finame: str):
     return DATA_PATH / h5finame
 
 
-def load_dataset(dataset_name: str, table_names: list(str) = []):
+def load_dataset(dataset_name: str, table_names=[]):
     """_summary_
 
     Args:

@@ -1,33 +1,21 @@
 import numpy
+from .constants import R_earth
+from .utility import compute_gravity, compute_pressure, compute_mass
 from .io import load_dataset
 import scipy
 from abc import ABC, abstractmethod
 
+_PREM_FILENAME = "1d_prem"
+_SOLIDUS_GHELICHKHAN = "1d_solidus_Ghelichkhan_et_al_2021_GJI"
 
-class RadialProfile(ABC):
+
+class ProfileAbstract(ABC):
     """
     Abstract class representing a radial profile of a quantity within the Earth.
 
     This class requires subclasses to implement methods for calculating the quantity
     at a given depth and for returning the maximum depth applicable for the profile.
-
-    Args:
-        depth(numpy.ndarray): The depth in kilometers from the surface of the Earth.
-        value(numpy.ndarray): The quantity associated with the specified depth.
     """
-
-    def __init__(self, depth: numpy.ndarray, value: numpy.ndarray, name: str = None):
-        """
-      Initialize the RadialProfile with a depth and a corresponding quantity.
-
-       Args:
-            depth(float): The depth in kilometers from the surface of the Earth.
-            value(float): The quantity associated with the specified depth.
-            name(str): The name associated with the value
-        """
-        self.depth = depth
-        self.value = value
-        self.name = name
 
     @abstractmethod
     def at_depth(self, depth: float | numpy.ndarray):
@@ -40,6 +28,8 @@ class RadialProfile(ABC):
         Returns:
             float or numpy.ndarray of the quantity
         """
+        # Ensure the depth is within valid range
+        self._check_depth_validity(depth)
         pass
 
     @abstractmethod
@@ -51,6 +41,20 @@ class RadialProfile(ABC):
             tuple includiong minimum and maximum depths in kilometers.
         """
         pass
+
+    def _validate_depth(self, depth):
+        """
+        Check if the provided depth is within the valid range.
+
+        Args:
+            depth: The depth to check.
+
+        Raises:
+            ValueError: If the depth is outside the valid range.
+        """
+        min_depth, max_depth = self.min_max_depth()
+        if numpy.any((depth < min_depth) | (depth > max_depth)):
+            raise ValueError(f"Depth {depth} is out of the valid range ({min_depth}, {max_depth})")
 
 
 class RadialEarthModel:
@@ -64,7 +68,7 @@ class RadialEarthModel:
 
     def __init__(self, profiles):
         """
-        Initialize the RadialEarthModel with a dictionary of RadialProfile instances.
+        Initialize the RadialEarthModel with a dictionary of radial profiles instances.
 
         Args:
             profiles (dict of RadialProfile): Profiles for different properties, keyed by property name.
@@ -92,14 +96,18 @@ class RadialEarthModel:
                 "Property not found in model: {}".format(property_name))
 
 
-class PreRefEarthProf(RadialProfile):
+class RadialProfileSpline(ProfileAbstract):
     def __init__(self, depth: numpy.ndarray, value: numpy.ndarray, name: str = None):
         """Profiles designed for Prem
         """
-        super().__init__(depth, value, name)
+        self.depth = depth
+        self.value = value
+        self.name = name
         self._spline = None
 
     def at_depth(self, depth: float | numpy.ndarray):
+        self._validate_depth(depth)  # Validate depth before processing
+
         if self._spline is None:
             self._spline = scipy.interpolate.interp1d(
                 self.depth, self.value, kind='linear')
@@ -111,71 +119,54 @@ class PreRefEarthProf(RadialProfile):
 
 class PreRefEarthModel(RadialEarthModel):
     def __init__(self):
-        fi_name = "1d_prem"
+        fi_name = _PREM_FILENAME
         profs = load_dataset(fi_name)
         prem_profiles = {}
         for name, value in profs.items():
             if name == "depth":
                 continue
-            prem_profiles[name] = PreRefEarthProf(
+            prem_profiles[name] = RadialProfileSpline(
                 depth=profs.get("depth"), value=value)
         super().__init__(prem_profiles)
 
 
-def compute_mass(radius, density):
-    """
-    Compute the mass enclosed within each radius using the cumulative trapezoidal rule.
+class SolidusProfileFromFile(RadialProfileSpline):
+    def __init__(name, model_name: str):
+        fi_name = model_name
+        profiles = load_dataset(fi_name)
+        profile_name = "solidus temperature"
+        super().__init__(
+            depth=profiles.get("depth"),
+            value=profiles.get(profile_name),
+            name=profile_name)
 
-    Args:
-        radius (numpy.ndarray): Array of radii from the center of the Earth or other celestial body.
-        density (numpy.ndarray): Array of densities corresponding to each radius.
+class HirschmannSolidus(ProfileAbstract):
+    nd_radial = 1000
+    def __init__(self):
+        # TODO: Add support for user defined reference earth model, not just PREM
+        self._is_depth_converter_setup = False
 
-    Returns:
-        numpy.ndarray: Array of cumulative mass enclosed up to each radius.
-    """
-    mass_enclosed = numpy.zeros_like(radius)
-    for i in range(1, len(radius)):
-        shell_volume = 4/3 * numpy.pi * (radius[i]**3 - radius[i-1]**3)
-        average_density = (density[i] + density[i-1]) / 2
-        mass_enclosed[i] = mass_enclosed[i-1] + shell_volume * average_density
-    return mass_enclosed
+    def at_depth(self, depth: float | numpy.ndarray):
+        self._validate_depth(depth)  # Validate depth before processing
+        if not self._is_depth_converter_setup:
+            self._setup_depth_converter()
+        return self._polynomial(self._depth_to_pressure(depth))
 
+    def _setup_depth_converter(self):
+        prem = PreRefEarthModel()
+        radius = numpy.linspace(0., R_earth, HirschmannSolidus.nd_radial)
+        dpths = R_earth - radius
+        mass = compute_mass(radius, prem.at_depth("density", dpths))
+        gravity = compute_gravity(radius, mass)
+        pressure = compute_pressure(radius, prem.at_depth("density", dpths), gravity)
+        self._depth_to_pressure = scipy.interpolate.interp1d(dpths, pressure, kind="linear")
 
-def compute_gravity(radius, mass_enclosed):
-    """
-    Compute gravitational acceleration at each radius based on the enclosed mass.
+    def _polynomial(self, pressure):
+        a = -5.904
+        b = 139.44
+        c = 1108.08
+        # compute solidus in Kelving
+        return a*(pressure/1e9)**2 + b*(pressure/1e9) + c + 273.0
 
-    Args:
-        radius (numpy.ndarray): Array of radii from the center.
-        mass_enclosed (numpy.ndarray): Array of cumulative mass enclosed up to each radius.
-
-    Returns:
-        numpy.ndarray: Array of gravitational acceleration at each radius.
-    """
-    gravity = numpy.zeros_like(radius)
-    with numpy.errstate(divide='ignore', invalid='ignore'):
-        gravity = scipy.constants.G * mass_enclosed / radius**2
-        # approximate central gravity as slightly above it to avoid NaN
-        gravity[0] = gravity[1]
-    return gravity
-
-
-def compute_pressure(radius, density, gravity):
-    """
-    Calculate the hydrostatic pressure at each radius based on the density and gravitational acceleration.
-
-    Args:
-        radius (numpy.ndarray): Array of radii from the center to the surface.
-        density (numpy.ndarray): Array of densities at each radius.
-        gravity (numpy.ndarray): Array of gravitational accelerations at each radius.
-
-    Returns:
-        numpy.ndarray: Array of pressures calculated from the surface inward to each radius.
-    """
-    pressure = numpy.zeros_like(radius)
-    for i in range(len(radius)-2, -1, -1):
-        dr = radius[i+1] - radius[i]
-        avg_density = (density[i] + density[i+1]) / 2
-        avg_gravity = (gravity[i] + gravity[i+1]) / 2
-        pressure[i] = pressure[i+1] + avg_density * avg_gravity * dr
-    return pressure
+    def min_max_depth(self):
+        return (0., 2890.e3)
