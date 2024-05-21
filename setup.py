@@ -42,7 +42,7 @@ setup(
     url='https://github.com/sghelichkhani/g-drift',
     install_requires=[
         'numpy',
-        'scipy'
+        'scipy',
         'h5py',
     ],
     classifiers=[
