@@ -17,7 +17,7 @@ def path_to_dataset(h5finame: str):
     return DATA_PATH / h5finame
 
 
-def load_dataset(dataset_name: str, table_names=[]):
+def load_dataset(dataset_name: str, table_names=[], return_metadata=False):
     """_summary_
 
     Args:
@@ -28,13 +28,20 @@ def load_dataset(dataset_name: str, table_names=[]):
         dict: dictionary with all the datasets
     """
     dataset = {}
+    metadata = {}
     # for cKDTree routines
     with h5py.File(path_to_dataset(dataset_name + '.h5'), 'r') as fi:
         keys_to_get = table_names if table_names else fi.keys()
         for key in keys_to_get:
             dataset[key] = numpy.array(fi.get(key))
 
-    return dataset
+        for meta_key in fi.attrs.keys():
+            metadata[meta_key] = fi.attrs[meta_key]
+
+    if return_metadata:
+        return dataset, metadata
+    else:
+        return dataset
 
 
 def create_dataset_file(file_name: str, data_info: dict, metadata: dict):
