@@ -17,6 +17,7 @@ setup(
         'scipy',
         'h5py',
         'tqdm',
+        'pooch',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
