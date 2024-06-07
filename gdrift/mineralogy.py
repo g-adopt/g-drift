@@ -24,10 +24,6 @@ def dataset_name(model: str, composition: str):
     return f"{model}_{composition}"
 
 
-def print_available_models():
-    print(f"All available models {MODELS_AVAIL}")
-
-
 class Table:
     """Base class for a table
 

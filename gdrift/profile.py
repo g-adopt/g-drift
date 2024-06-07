@@ -1,3 +1,5 @@
+from typing import Dict, Optional
+from numbers import Number
 import numpy
 from .constants import R_earth, celcius2kelvin
 from .utility import compute_gravity, compute_pressure, compute_mass
@@ -6,7 +8,6 @@ import scipy
 from abc import ABC, abstractmethod
 
 _PREM_FILENAME = "1d_prem"
-_SOLIDUS_GHELICHKHAN = "1d_solidus_Ghelichkhan_et_al_2021_GJI"
 
 
 class ProfileAbstract(ABC):
@@ -60,26 +61,30 @@ class ProfileAbstract(ABC):
 
 class RadialEarthModel:
     """
+    Class representing reference Earth Models such as PREM or AK135
     Composite object containing multiple radial profiles representing different Earth properties,
-    such as shear wave velocity (Vs), primary wave velocity (Vp), and density.
+    such as shear wave velocity (Vs), primary wave velocity (Vp), and density. T
 
     Attributes:
         depth_profiles (dict): A dictionary of RadialProfile instances.
     """
 
-    def __init__(self, profiles):
+    def __init__(self, profiles: Dict[str, ProfileAbstract]):
         """
         Initialize the RadialEarthModel with a dictionary of radial profiles instances.
 
         Args:
             profiles (dict of RadialProfile): Profiles for different properties, keyed by property name.
         """
+        if not all(isinstance(profile, ProfileAbstract) for profile in profiles.values()):
+            raise ValueError(
+                "All profiles must be instances of ProfileAbstract or its subclasses.")
         self._profiles = profiles
 
     def get_profile_names(self):
         return list(self._profiles.keys())
 
-    def at_depth(self, property_name, depth):
+    def at_depth(self, property_name: str, depth: Number | numpy.ndarray):
         """
         Get the value of a property at a given depth.
 
@@ -97,8 +102,8 @@ class RadialEarthModel:
 
 
 class RadialProfileSpline(ProfileAbstract):
-    def __init__(self, depth: numpy.ndarray, value: numpy.ndarray, name: str = ""):
-        """Initialize a radial profile spline.
+    def __init__(self, depth: numpy.ndarray, value: numpy.ndarray, name: Optional[str] = ""):
+        """Initialize a radial profile, by establishing a spline for each profile.
 
         Args:
             depth (numpy.ndarray): Array of depths.
@@ -110,7 +115,15 @@ class RadialProfileSpline(ProfileAbstract):
         self.name = name
         self._is_spline_made = False
 
-    def at_depth(self, depth: float | numpy.ndarray):
+    def at_depth(self, depth: Number | numpy.ndarray):
+        """quiry a profile at certain depth[s]
+
+        Args:
+            depth (Number | numpy.ndarray): depth(s) of enquiry
+
+        Returns:
+            Number | numpy.ndarray: Value[s] of the profiles at those depths.
+        """
         self._validate_depth(depth)  # Validate depth before processing
 
         if not self._is_spline_made:
@@ -121,11 +134,22 @@ class RadialProfileSpline(ProfileAbstract):
         return self._spline(depth)
 
     def min_max_depth(self):
+        """ returns minimum and maximum values of the profile
+            to avoid extrapolation
+
+        Returns:
+            tuple(min, max): minimum and maximum values of the profile
+        """
         return (self.depth.min(), self.depth.max())
 
 
-class PreRefEarthModel(RadialEarthModel):
+class PreliminaryRefEarthModel(RadialEarthModel):
     def __init__(self):
+        """ Preliminary Reference Earth Model (PREM)
+        Dziewonski, Adam M., and Don L. Anderson. "Preliminary reference Earth model." Physics of the earth and planetary interiors 25.4 (1981): 297-356.
+
+        The object is of type(RadialEarthModel), and can be queried at certain depths for available profiles.
+        """
         fi_name = _PREM_FILENAME
         profs = load_dataset(fi_name)
         prem_profiles = {}
@@ -138,9 +162,33 @@ class PreRefEarthModel(RadialEarthModel):
 
 
 class SolidusProfileFromFile(RadialProfileSpline):
+    """
+    A class for loading radial profiles of the solidus temperature from a dataset.
+
+    This class extends `RadialProfileSpline` to specifically handle loading,
+    and utilising available profiles related to the solidus temperature in the mantle.
+
+    Attributes:
+        profile_name (str): Static attribute to hold the name of the profile
+                            specifically for solidus temperature.
+        model_name (str): The name of the model/dataset from which profiles are loaded.
+        description (str, optional): A brief description of the profile's purpose or characteristics.
+    """
     profile_name = "solidus temperature"
 
     def __init__(self, model_name: str, description=None):
+        """
+        Initialises the SolidusProfileFromFile instance by loading the solidus temperature
+        profile from the specified dataset.
+
+        Args:
+            model_name (str): The name of the dataset from which to load the solidus temperature profile.
+            description (str, optional): A description of the profile, which may include its use or
+                                         any other relevant information.
+
+        Raises:
+            KeyError: If the necessary data fields are missing in the dataset.
+        """
         self.model_name = model_name
         self.description = description
 
@@ -165,7 +213,7 @@ class HirschmannSolidus(ProfileAbstract):
         return self._polynomial(self._depth_to_pressure(depth))
 
     def _setup_depth_converter(self):
-        prem = PreRefEarthModel()
+        prem = PreliminaryRefEarthModel()
         radius = numpy.linspace(0., R_earth, HirschmannSolidus.nd_radial)
         depths = R_earth - radius
         mass = compute_mass(radius, prem.at_depth("density", depths))
