@@ -116,7 +116,7 @@ class ThermodynamicModel(object):
         return LinearRectBivariateSpline(
             vs.get_x(),
             vs.get_y(),
-            vs.get_vals).ev(depth, temperature)
+            vs.get_vals()).ev(depth, temperature)
 
     def temperature_to_vp(self, temperature, depth):
         vp = self.compute_pwave_speed()
