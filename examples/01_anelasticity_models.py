@@ -3,6 +3,12 @@ import numpy as np
 import gdrift
 from gdrift.profile import RadialProfileSpline
 
+# In this tutorial we show how with the given functionalities
+# we can apply anelastic correction to an existing thermodynamic table
+
+
+# For our anelastic model in this example we use the study by Cammerano et al.
+
 
 def build_solidus():
     # Defining the solidus curve for manlte
@@ -41,7 +47,7 @@ def build_anelasticity_model(solidus):
 
 
 # Load PREM
-prem = gdrift.PreRefEarthModel()
+prem = gdrift.PreliminaryRefEarthModel()
 
 # Thermodynamic model
 slb_pyrolite = gdrift.ThermodynamicModel("SLB_16", "pyrolite")
@@ -59,19 +65,58 @@ cntr_lines = np.linspace(4000, 7000, 20)
 
 plt.close("all")
 fig, axes = plt.subplots(ncols=2)
-# axes[0]
+axes[0].set_position([0.1, 0.1, 0.35, 0.8])
+axes[1].set_position([0.5, 0.1, 0.35, 0.8])
+# Getting the coordinates
 depths_x, temperatures_x = np.meshgrid(
     slb_pyrolite.get_depths(), slb_pyrolite.get_temperatures(), indexing="ij")
+img = []
 
-for id, table in enumerate([pyrolite_anelastic_speed, pyrolite_elastic_speed]):
-    axes[id].contourf(temperatures_x, depths_x,
-                      table.get_vals(), cntr_lines, cmap=cm.get_cmap(""))
+for id, table in enumerate([pyrolite_elastic_speed, pyrolite_anelastic_speed]):
+    img.append(axes[id].contourf(
+        temperatures_x,
+        depths_x,
+        table.get_vals(),
+        cntr_lines,
+        cmap=plt.colormaps["autumn"].resampled(20),
+        extend="both"))
+    axes[id].invert_yaxis()
+    axes[id].set_xlabel("Temperature [K]")
+    axes[id].set_ylabel("Depth [m]")
+    axes[id].grid()
 
-fig.show()
+axes[1].set_ylabel("")
+axes[1].set_yticklabels("")
+
+axes[0].text(0.5, 1.05, s="Elastic", transform=axes[0].transAxes,
+             ha="center", va="center",
+             bbox=dict(facecolor=(1.0, 1.0, 0.7)))
+axes[1].text(0.5, 1.05, s="With Anelastic Correction",
+             ha="center", va="center",
+             transform=axes[1].transAxes, bbox=dict(facecolor=(1.0, 1.0, 0.7)))
+fig.colorbar(img[-1], ax=axes[0], cax=fig.add_axes([0.88,
+             0.1, 0.02, 0.8]), orientation="vertical", label="Shear-Wave Speed [m/s]")
 
 plt.close(2)
 fig_2 = plt.figure(num=2)
 ax_2 = fig_2.add_subplot(111)
-ax_2.plot(pyrolite_anelastic_speed.get_y(), pyrolite_anelastic_speed.get_vals()[100, :])
-ax_2.plot(pyrolite_anelastic_speed.get_y(), pyrolite_elastic_speed.get_vals()[100, :])
-fig_2.show()
+index = 100
+ax_2.plot(pyrolite_anelastic_speed.get_y(),
+          pyrolite_anelastic_speed.get_vals()[index, :], color="blue", label="With Anelastic Correction")
+ax_2.plot(pyrolite_anelastic_speed.get_y(),
+          pyrolite_elastic_speed.get_vals()[index, :], color="red", label="Elastic Model")
+ax_2.vlines(
+    [solidus_ghelichkhan.at_depth(pyrolite_anelastic_speed.get_x()[index])],
+    ymin=pyrolite_anelastic_speed.get_vals()[index, :].min(),
+    ymax=pyrolite_anelastic_speed.get_vals()[index, :].max(),
+    color="grey", label="Solidus", alpha=0.5)
+
+ax_2.set_xlabel("Temperature[K]")
+ax_2.set_ylabel("Seismic-Wave Speed [m/s]")
+ax_2.text(
+    0.5, 1.05, s=f"At depth {pyrolite_anelastic_speed.get_x()[index]/1e3:.1f} [m]",
+    ha="center", va="center",
+    transform=ax_2.transAxes, bbox=dict(facecolor=(1.0, 1.0, 0.7)))
+ax_2.legend()
+ax_2.grid()
+plt.show()
