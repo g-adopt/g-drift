@@ -27,6 +27,7 @@ def path_to_dataset(h5finame: str):
 def download_dataset(h5finame: str):
     """Downloads the dataset using pooch if it exists in the available datasets list."""
     url = BASE_URL + h5finame
+
     # Use Pooch to fetch the file with a progress bar
     try:
         print(url)
@@ -62,7 +63,7 @@ def load_dataset(dataset_name: str, table_names=[], return_metadata=False):
     dataset_path = path_to_dataset(dataset_name + '.h5')
 
     if not dataset_path.exists():
-        if str(dataset_name) in AVAILABLE_DATASETS:
+        if str(dataset_name) in [key.name for key in AVAILABLE_DATASETS]:
             downloaded_dataset_path = download_dataset(dataset_name + ".h5")
             if downloaded_dataset_path != path_to_dataset(dataset_name + ".h5"):
                 raise ValueError((
@@ -75,12 +76,12 @@ def load_dataset(dataset_name: str, table_names=[], return_metadata=False):
 
     # for cKDTree routines
     with h5py.File(path_to_dataset(dataset_name + '.h5'), 'r') as fi:
-        keys_to_get=table_names if table_names else fi.keys()
+        keys_to_get = table_names if table_names else fi.keys()
         for key in keys_to_get:
-            dataset[key]=numpy.array(fi.get(key))
+            dataset[key] = numpy.array(fi.get(key))
 
         for meta_key in fi.attrs.keys():
-            metadata[meta_key]=fi.attrs[meta_key]
+            metadata[meta_key] = fi.attrs[meta_key]
 
     if return_metadata:
         return dataset, metadata
@@ -109,4 +110,4 @@ def create_dataset_file(file_name: str, data_info: dict, metadata: dict):
 
         # Add metadata
         for key, value in metadata.items():
-            file.attrs[key]=value
+            file.attrs[key] = value

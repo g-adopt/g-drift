@@ -52,5 +52,8 @@ ax.text(0.5, 1.05, s="Table versus conversions test",
         ha="center", va="center",
         transform=ax.transAxes, bbox=dict(facecolor=(1.0, 1.0, 0.7)))
 
-fig.colorbar(img, ax=ax, cax=fig.add_axes([0.84,
+fig.colorbar(img, ax=ax, cax=fig.add_axes([0.8,
              0.1, 0.02, 0.8]), orientation="vertical", label="Shear-Wave Speed [m/s]")
+
+
+plt.show()
