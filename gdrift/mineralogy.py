@@ -123,7 +123,7 @@ class ThermodynamicModel(object):
         return LinearRectBivariateSpline(
             vp.get_x(),
             vp.get_y(),
-            vp.get_vals).ev(depth, temperature)
+            vp.get_vals()).ev(depth, temperature)
 
     def temperature_to_rho(self, temperature, depth):
         return LinearRectBivariateSpline(
