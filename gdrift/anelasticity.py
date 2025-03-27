@@ -58,15 +58,15 @@ class BaseAnelasticityModel(ABC):
         # Combining the two
         my_depths = []
         my_solidus = []
-        for solidus_model in [hirsch_solidus, andrault_solidus.get_profile("solidus temperature")]:
-            d_min, d_max = solidus_model.min_max_depth()
+        for solidus_model in [hirsch_solidus, andrault_solidus]:
+            d_min, d_max = solidus_model.min_max_depth("solidus temperature")
             dpths = numpy.arange(d_min, d_max, 10e3)
             my_depths.extend(dpths)
-            my_solidus.extend(solidus_model.at_depth(dpths))
+            my_solidus.extend(solidus_model.at_depth("solidus temperature", dpths))
 
         # Avoding unnecessary extrapolation by setting the solidus temperature at maximum depth
         my_depths.extend([3000e3])
-        my_solidus.extend([solidus_model.at_depth(dpths[-1])])
+        my_solidus.extend([solidus_model.at_depth("solidus temperature", dpths[-1])])
 
         # building the solidus profile that was originally used by Ghelichkhan et al. (2021)
         ghelichkhan_et_al = SplineProfile(
