@@ -1,4 +1,4 @@
-from .anelasticity import CammaranoAnelasticityModel, apply_anelastic_correction
+from .anelasticity import CammaranoAnelasticityModel, GoesAnelasticityModel, apply_anelastic_correction
 from .constants import R_earth, R_cmb
 from .datasetnames import print_datasets_markdown
 from .earthmodel3d import EarthModel3D
