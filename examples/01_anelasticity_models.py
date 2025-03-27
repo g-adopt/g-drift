@@ -40,12 +40,97 @@ import gdrift
 # - Andrault et al. (2011, EPSL)
 # - Hirschmann (2000, G3)
 
+
+def build_solidus():
+    # Defining the solidus curve for manlte
+    # First load the solidus curve of Andrault et al 2011 EPSL
+    andrault_solidus = gdrift.RadialEarthModelFromFile(
+        model_name="1d_solidus_Andrault_et_al_2011_EPSL",
+        description="Andrault et al. 2011, EPSL")
+
+    # Next load the solidus curve of Hirschmann 2000
+    hirsch_solidus = gdrift.HirschmannSolidus()
+
+    # Combining the two
+    my_depths = []
+    my_solidus = []
+
+    for solidus_model in [hirsch_solidus, andrault_solidus]:
+        # Getting minimum maximum of the profiles to re-discretise the profile
+        d_min, d_max = solidus_model.min_max_depth("solidus temperature")
+        dpths = np.arange(d_min, d_max, 10e3)
+
+        # Add the values for our solidus curve
+        my_depths.extend(dpths)
+        my_solidus.extend(solidus_model.at_depth("solidus temperature", dpths))
+
+    # Since we might have values outside the range of the solidus curve, we are better off with extrapolating
+    ghelichkhan_et_al = SplineProfile(
+        depth=np.asarray(my_depths),
+        value=np.asarray(my_solidus),
+        extrapolate=True,
+        name="Ghelichkhan et al 2021")
+
+    return ghelichkhan_et_al
+
+
+# Now the anelasticiy model by Cammarano et al can be constructed.
+# Here we use B g a for making Q_\mu, and we provide a rough Q_\kappa
+# From Goes et al, set to a constant value of 1000 in the upper and 10000 in the lower mantle.
+
+def build_anelasticity_model(solidus, q_profile: str = "Q1"):
+
+    cammarano_parameters = {
+        "Q1": {
+            "B": [0.5, 10],
+            "g": [20, 10]
+        },
+        "Q2": {
+            "B": [0.8, 15],
+            "g": [20, 10]
+        },
+        "Q3": {
+            "B": [1.1, 20],
+            "g": [20, 10]
+        },
+        "Q4": {
+            "B": [0.035, 2.25],
+            "g": [30, 15]
+        },
+        "Q5": {
+            "B": [0.056, 3.6],
+            "g": [30, 15]
+        },
+        "Q6": {
+            "B": [0.077, 4.95],
+            "g": [30, 15]
+        }
+    }
+
+    def B(x):
+        return np.where(x < 660e3, cammarano_parameters[q_profile]["B"][0], cammarano_parameters[q_profile]["B"][1])
+
+    def g(x):
+        return np.where(x < 660e3, cammarano_parameters[q_profile]["g"][0], cammarano_parameters[q_profile]["g"][1])
+
+    def a(x):
+        return 0.2
+
+    def omega(x):
+        return 1.
+
+    def Q_kappa(x):
+        return np.where(x < 660e3, 1e3, 1e4)
+
+    return gdrift.CammaranoAnelasticityModel(B=B, g=g, a=a, solidus=solidus, Q_bulk=Q_kappa, omega=omega)
+
+
 # Load PREM
 prem = gdrift.PreliminaryRefEarthModel()
 
 # Thermodynamic model
 slb_pyrolite = gdrift.ThermodynamicModel(
-    "SLB_16", "pyrolite", temps=np.linspace(300, 4000), depths=np.linspace(0, 2890e3))
+    "SLB_16", "pyrolite")
 pyrolite_elastic_s_speed = slb_pyrolite.compute_swave_speed()
 pyrolite_elastic_p_speed = slb_pyrolite.compute_pwave_speed()
 
