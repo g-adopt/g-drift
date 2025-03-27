@@ -56,11 +56,14 @@ def build_solidus():
     my_depths = []
     my_solidus = []
 
-    for solidus_model in [hirsch_solidus, andrault_solidus.get_profile('solidus temperature')]:
-        d_min, d_max = solidus_model.min_max_depth()
+    for solidus_model in [hirsch_solidus, andrault_solidus]:
+        # Getting minimum maximum of the profiles to re-discretise the profile
+        d_min, d_max = solidus_model.min_max_depth("solidus temperature")
         dpths = np.arange(d_min, d_max, 10e3)
+
+        # Add the values for our solidus curve
         my_depths.extend(dpths)
-        my_solidus.extend(solidus_model.at_depth(dpths))
+        my_solidus.extend(solidus_model.at_depth("solidus temperature", dpths))
 
     # Since we might have values outside the range of the solidus curve, we are better off with extrapolating
     ghelichkhan_et_al = SplineProfile(
@@ -128,7 +131,7 @@ prem = gdrift.PreliminaryRefEarthModel()
 
 # Thermodynamic model
 slb_pyrolite = gdrift.ThermodynamicModel(
-    "SLB_16", "pyrolite", temps=np.linspace(300, 4000), depths=np.linspace(0, 2890e3))
+    "SLB_16", "pyrolite")
 pyrolite_elastic_s_speed = slb_pyrolite.compute_swave_speed()
 pyrolite_elastic_p_speed = slb_pyrolite.compute_pwave_speed()
 

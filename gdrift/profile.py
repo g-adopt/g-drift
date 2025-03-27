@@ -264,9 +264,9 @@ class PreliminaryRefEarthModel(RadialEarthModelFromFile):
         super().__init__(PreliminaryRefEarthModel.PREM_FILENAME, "Preliminary Reference Earth Model")
 
 
-class HirschmannSolidus(AbstractProfile):
+class HirschmannSolidusProfile(AbstractProfile):
     """
-    HirschmannSolidus is the solidus model based on the work of Hirschmann (2000).
+    HirschmannSolidusProfile is the solidus model based on the work of Hirschmann (2000).
 
     Attributes:
         nd_radial (int): Number of radial points for interpolation.
@@ -282,11 +282,11 @@ class HirschmannSolidus(AbstractProfile):
     """
     _nd_radial = 1000
     _maximum_pressure = 10e9
-    _name = "Hirschmann 2000"
+    _name = "solidus temperature"
 
     def __init__(self):
         self._is_depth_converter_setup = False
-        self.name = HirschmannSolidus._name
+        self.name = HirschmannSolidusProfile._name
 
     def at_depth(self, depth: float | numpy.ndarray):
         # Setup the depth converter if not already done
@@ -302,7 +302,7 @@ class HirschmannSolidus(AbstractProfile):
         # We use PREM to compute mass, gravity, and pressure profiles
         prem = PreliminaryRefEarthModel()
         # Compute mass, gravity, and pressure
-        radius = numpy.linspace(0., R_earth, HirschmannSolidus._nd_radial)
+        radius = numpy.linspace(0., R_earth, HirschmannSolidusProfile._nd_radial)
         # Compute depths
         depths = R_earth - radius
         # Compute mass, gravity, and pressure
@@ -335,9 +335,7 @@ class HirschmannSolidus(AbstractProfile):
             self._setup_depth_converter()
 
         def pressure_difference(depth):
-            return (self._depth_to_pressure(depth) - HirschmannSolidus._maximum_pressure)
-            return (self._depth_to_pressure(depth) - HirschmannSolidus._maximum_pressure)
-
+            return (self._depth_to_pressure(depth) - HirschmannSolidusProfile._maximum_pressure)
         max_depth = scipy.optimize.root_scalar(
             pressure_difference, method="bisect", bracket=[0, 2000e3]).root
         return (0., max_depth)
@@ -356,3 +354,19 @@ class HirschmannSolidus(AbstractProfile):
         if numpy.any((depth < min_depth) | (depth > max_depth)):
             raise ValueError(
                 f"Depth {depth} is out of the valid range ({min_depth}, {max_depth})")
+
+
+class HirschmannSolidus(RadialEarthModel):
+    """
+    A class representing the solidus model based on the work of Hirschmann (2000).
+
+    Attributes:
+        solidus_profile (HirschmannSolidusProfile): The solidus profile based on Hirschmann (2000).
+    """
+
+    def __init__(self):
+        # Initialize the solidus profile
+        self.solidus_profile = HirschmannSolidusProfile()
+
+        # Initialize the RadialEarthModel
+        super().__init__(self.solidus_profile)

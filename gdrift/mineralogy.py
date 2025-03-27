@@ -89,7 +89,7 @@ class ThermodynamicModel(object):
         # the three tables that are needed
         for key in ["bulk_mod", "shear_mod", "rho"]:
             # in case we need to interpolate
-            if any([temps is None, depths is None]):
+            if temps is not None or depths is not None:
                 self._tables[key] = interpolate_table(
                     loaded_model["Depths"] if depths is None else depths,
                     loaded_model["Temperatures"] if temps is None else temps,

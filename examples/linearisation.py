@@ -36,7 +36,8 @@ temperature_spline = gdrift.SplineProfile(
 # version of the model, ensuring the properties align with the temperature
 # profile.
 # -----------------------------------------------------------------------------
-regular_slb_pyrolite = gdrift.regularise_thermodynamic_table(slb_pyrolite, temperature_spline)
+regular_slb_pyrolite = gdrift.regularise_thermodynamic_table(
+    slb_pyrolite, temperature_spline, regular_range={"v_s": (-1.5, 0.0), "v_p": (-np.inf, 0.0), "rho": (-np.inf, 0.0)})
 
 # -----------------------------------------------------------------------------
 # 4. Extracting Data
