@@ -23,7 +23,7 @@ import numpy as np
 
 def __main__():
     # Set up geometry:
-    rmin, rmax, ref_level, nlayers = 1.208, 2.208, 5, 16
+    rmin, rmax, ref_level, nlayers = 1.208, 2.208, 3, 4
 
     # Construct a CubedSphere mesh and then extrude into a sphere - note that unlike cylindrical case, popping is done internally here:
     mesh2d = CubedSphereMesh(rmin, refinement_level=ref_level, degree=2)
@@ -71,7 +71,7 @@ def __main__():
     temperature = Function(Q, name="temperature")
     t_ave = Function(Q, name="average_temperature")
 
-    anelastic_slb_pyrolite = buil_thermodynamic_model()
+    anelastic_slb_pyrolite = build_thermodynamic_model()
 
     # Convert the shear wave speed to temperature
     temperature.dat.data_with_halos[:] = anelastic_slb_pyrolite.vs_to_temperature(
@@ -135,7 +135,7 @@ def build_anelasticity_model(solidus):
     return gdrift.CammaranoAnelasticityModel(B, g, a, solidus, omega)
 
 
-def buil_thermodynamic_model():
+def build_thermodynamic_model():
     # Thermodynamic model
     slb_pyrolite = gdrift.ThermodynamicModel("SLB_16", "pyrolite")
 
@@ -164,14 +164,13 @@ def buil_thermodynamic_model():
     # seismic speed at depths such as 660 km non-unique.
     regular_slb_pyrolite = gdrift.regularise_thermodynamic_table(
         slb_pyrolite, terra_temperature_spline,
-        regular_range={"v_s": (-1.0, 0.0), "v_p": (-np.inf, 0.0), "rho": (-np.inf, 0.0)})
+        regular_range={"v_s": (-1.5, 0.0), "v_p": (-np.inf, 0.0), "rho": (-np.inf, 0.0)})
 
     # # building solidus model
-    # solidus_ghelichkhan = build_solidus()
-    # anelasticity = build_anelasticity_model(solidus_ghelichkhan)
-    # anelastic_slb_pyrolite = gdrift.apply_anelastic_correction(
-    #     slb_pyrolite, anelasticity)
-    anelastic_slb_pyrolite = regular_slb_pyrolite
+    solidus_ghelichkhan = build_solidus()
+    anelasticity = build_anelasticity_model(solidus_ghelichkhan)
+    anelastic_slb_pyrolite = gdrift.apply_anelastic_correction(
+        regular_slb_pyrolite, anelasticity)
 
     return anelastic_slb_pyrolite
 
