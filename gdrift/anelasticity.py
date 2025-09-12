@@ -319,7 +319,7 @@ class GoesAnelasticityModel(BaseAnelasticityModel):
 
 
 def apply_anelastic_correction(thermo_model: Type[ThermodynamicModel], anelastic_model: Type[AnelasticityModel]):
-    """
+    r"""
     Apply anelastic corrections to seismic velocity data using the provided "anelastic_model"
     within the low attenuation limit. The corrections are based on the equation
     $1 - \frac{V(anelastic)}{V(elastic)} = \frac{1}{2} \cot(\frac{\alpha \pi}{2}) Q^{-1},$
