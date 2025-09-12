@@ -10,6 +10,7 @@ from .seismic import SeismicModel, AVAILABLE_SEISMIC_MODELS
 
 __all__ = [
     "CammaranoAnelasticityModel",
+    "GoesAnelasticityModel",
     "apply_anelastic_correction",
     "R_earth",
     "R_cmb",
