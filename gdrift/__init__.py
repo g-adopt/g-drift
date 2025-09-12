@@ -7,6 +7,7 @@ from .mineralogy import ThermodynamicModel, compute_pwave_speed, compute_swave_s
 from .profile import PreliminaryRefEarthModel, RadialEarthModelFromFile, HirschmannSolidus, SplineProfile
 from .utility import compute_gravity, compute_mass, compute_pressure, geodetic_to_cartesian, cartesian_to_geodetic, dimensionalise_coords, nondimensionalise_coords, fibonacci_sphere
 from .seismic import SeismicModel, AVAILABLE_SEISMIC_MODELS
+from .gplates import CoastlineVTKFile
 
 __all__ = [
     "CammaranoAnelasticityModel",
@@ -35,4 +36,5 @@ __all__ = [
     "fibonacci_sphere",
     "SeismicModel",
     "AVAILABLE_SEISMIC_MODELS",
+    "CoastlineVTKFile",
 ]
