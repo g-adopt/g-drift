@@ -4,7 +4,7 @@ import numpy as np
 from .constants import R_cmb, R_earth
 from .io import load_dataset
 from scipy.spatial import cKDTree
-from .utility import enlist, interpolate_to_points, create_labeled_array
+from .utility import enlist, interpolate_to_points, create_labeled_array, create_data_dict
 
 
 class AbstractEarthModel(ABC):
