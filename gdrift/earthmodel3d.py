@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Union
 import numpy as np
-from .constants import R_cmb, R_earth
-from .io import load_dataset
 from scipy.spatial import cKDTree
-from .utility import enlist, interpolate_to_points, create_labeled_array, create_data_dict
+from .utility import enlist, interpolate_to_points, create_labeled_array
 
 
 class AbstractEarthModel(ABC):
@@ -130,19 +128,34 @@ class EarthModel3D(AbstractEarthModel):
         if any(distances > self.default_max_distance):
             raise ValueError("The closest point seems to be beyond the maximum meaningful distance for the Earth model")
 
-    def at(self, label: Union[str, List[str]], coordinates: np.array):
+    def at(self, label: Union[str, List[str]], coordinates: np.array, kernel='idw', **kernel_params):
         """
-        Get the value of a quantity at the specified coordinates.
+        Get the value of a quantity at specified coordinates using various interpolation kernels.
 
         Parameters:
-        x, y, z (float): The coordinates where the value is requested.
-        quantity (str): The name of the quantity to retrieve.
+        -----------
+        label : str or list
+            Field label(s) to interpolate
+        coordinates : np.ndarray
+            Query coordinates (N x 3 array)
+        kernel : str, optional
+            Interpolation kernel. Options:
+            - 'idw': Inverse distance weighting (default, original behavior)
+            - 'gaussian': Gaussian kernel with adaptive or fixed bandwidth
+            - 'idw_power': IDW with adjustable power parameter
+            - 'exponential': Exponential decay kernel
+            - 'wendland': Wendland compactly supported kernel
+        **kernel_params : dict
+            Kernel-specific parameters:
+            - For 'gaussian': sigma (bandwidth, auto-computed if not provided)
+            - For 'idw_power': power (default 2.0)
+            - For 'exponential': decay_length (default 50000m)
+            - For 'wendland': support_radius (default 100000m)
 
         Returns:
-        float: The value of the quantity at the specified coordinates.
-
-        Raises:
-        ValueError: If the quantity is not available or the coordinates are out of bounds.
+        --------
+        np.ndarray
+            Interpolated values at query coordinates
         """
         # checking if the quantity is available
         self.check_quantity(label)
@@ -157,120 +170,106 @@ class EarthModel3D(AbstractEarthModel):
         # Finding the nearest points and the indices
         distances, indices = self.tree.query(coordinates, k=self.nearest_neighbours)
 
-        # Interpolating the values to the points
-        res_dictionary = interpolate_to_points(
-            create_labeled_array(self.available_fields, enlist(label)),
-            distances,
-            indices)
+        # Use kernel-based interpolation
+        if kernel == 'idw' and len(kernel_params) == 0:
+            # Backward compatibility: use original method for default IDW
+            res_dictionary = interpolate_to_points(
+                create_labeled_array(self.available_fields, enlist(label)),
+                distances,
+                indices)
+        else:
+            # Use new kernel-based interpolation
+            res_dictionary = self._interpolate_with_kernels(
+                label, coordinates, distances, indices, kernel, **kernel_params)
 
         return np.squeeze(res_dictionary)
 
+    def _interpolate_with_kernels(self, label, coordinates, distances, indices, kernel='idw', **kernel_params):
+        """
+        Internal method to handle kernel-based interpolation.
+        """
+        # Calculate weights using the chosen kernel
+        weights = self._calculate_kernel_weights(distances, kernel, **kernel_params)
 
-class SeismicEarthModel(EarthModel3D):
-    # Hard coding a minium distance, below which we do not interpolate
-    minimum_distance = 1e-3
-    # Hard coding a longest distance beyond which we don't have access to data
-    maximum_distance = 200e3
+        # Get the labeled data
+        labeled_data = create_labeled_array(self.available_fields, enlist(label))
 
-    def __init__(self, model_name, labels=[]):
-        super().__init__()
-        self.model_name = model_name
-        self._load_fields(labels=labels)
-        self.tree_is_created = False
+        # Handle very close points (avoid division by zero)
+        min_distance = getattr(self, 'minimum_distance', 1e-3)
+        replace_flg = distances[:, 0] < min_distance
 
-    def check_extent(self, x, y, z, tolerance=1e-3):
-        radius = np.sqrt(x**2 + y**2 + z**2)
-
-        return (all(radius >= REVEALSeismicModel3D.rmin - tolerance) and all(radius <= REVEALSeismicModel3D.rmax + tolerance))
-
-    def _interpolate_to_points(self, label, coordinates, k=20):
-        # Making sure we have a list of items
-        label = enlist(label)
-
-        # Making sure
-        if label not in self.available_fields.keys():
-            raise ValueError(f"{label} does not exist for model {self.model_name}")
-
-        # generate the KDTree only if it has not been created already.
-        if not self.tree_is_created:
-            self.tree = cKDTree(self.coordinates)
-            self.tree_is_created = True
-
-        # finding the nearest k points
-        dists, inds = self.tree.query(coordinates, k=k)
-
-        safe_dists = np.where(dists < REVEALSeismicModel3D.minimum_distance,
-                              dists, REVEALSeismicModel3D.minimum_distance)
-        replace_flg = dists[:, 0] < REVEALSeismicModel3D.minimum_distance
-
-        if len(self.available_fields[label].shape) > 1:
-            ret = np.einsum("i, ik -> ik", np.sum(1 / safe_dists, axis=1), np.einsum(
-                "ij, ijk -> ik", 1 / safe_dists, self.available_fields[label][inds]))
-            ret[replace_flg, :] = self.available_fields[label][inds[replace_flg, 0], :]
+        if len(labeled_data.shape) > 1:
+            # Multi-dimensional field
+            weighted_sum = np.einsum("ij, ijk -> ik", weights, labeled_data[indices])
+            weight_sum = np.sum(weights, axis=1)[:, np.newaxis]
+            result = weighted_sum / weight_sum
+            result[replace_flg, :] = labeled_data[indices[replace_flg, 0], :]
         else:
-            ret = np.einsum("ij, ij->i", 1 / safe_dists,
-                            self.available_fields[label][inds]) / np.sum(1 / safe_dists, axis=1)
-            ret[replace_flg] = self.available_fields[label][inds[replace_flg, 0]]
-        return ret
+            # 1D field
+            weighted_sum = np.einsum("ij, ij -> i", weights, labeled_data[indices])
+            weight_sum = np.sum(weights, axis=1)
+            result = weighted_sum / weight_sum
+            result[replace_flg] = labeled_data[indices[replace_flg, 0]]
 
-    def _load_fields(self, labels=[]):
-        data = load_dataset(self.model_name)
-        if len(labels) > 0:
-            for label in labels:
-                if label not in data.keys():
-                    raise ValueError(
-                        f"{label} not present in tomography model: {self.model_name}")
+        return result
 
-        if "coordinates" not in labels:
-            labels += ["coordinates"]
+    def _calculate_kernel_weights(self, dists, kernel='idw', **kernel_params):
+        """
+        Calculate interpolation weights using various kernels.
 
-        for key in data.keys() if len(labels) == 1 else labels:
-            self.add_quantity(key, data[key])
-        pass
+        Parameters:
+        -----------
+        dists : np.ndarray
+            Distances to nearest neighbors
+        kernel : str
+            Kernel type
+        **kernel_params : dict
+            Kernel-specific parameters
 
+        Returns:
+        --------
+        np.ndarray
+            Weights for interpolation
+        """
+        min_distance = getattr(self, 'minimum_distance', 1e-3)
 
-class REVEALSeismicModel3D(EarthModel3D):
-    fi_name = "REVEAL"
-    rmin = R_cmb
-    rmax = R_earth
-    minimum_distance = 1e-3
+        if kernel == 'idw':
+            # Original inverse distance weighting
+            safe_dists = np.where(dists < min_distance, min_distance, dists)
+            weights = 1 / safe_dists
 
-    def __init__(self, labels=[]):
-        super().__init__()
-        self._load_fields(labels=labels)
-        self.tree_is_created = False
+        elif kernel == 'gaussian':
+            # Gaussian kernel: exp(-0.5 * (r/σ)²)
+            sigma = kernel_params.get('sigma', None)
+            if sigma is None:
+                # Adaptive bandwidth: use median distance to k neighbors
+                sigma = np.median(dists, axis=1, keepdims=True)
+                sigma = np.where(sigma < 1000, 1000, sigma)  # minimum 1km bandwidth
+            weights = np.exp(-0.5 * (dists / sigma) ** 2)
 
-    def check_extent(self, x, y, z, tolerance=1e-3):
-        radius = np.sqrt(x**2 + y**2 + z**2)
+        elif kernel == 'idw_power':
+            # IDW with adjustable power: 1/r^p
+            power = kernel_params.get('power', 2.0)
+            safe_dists = np.where(dists < min_distance, min_distance, dists)
+            weights = 1 / (safe_dists ** power)
 
-        return all(radius >= REVEALSeismicModel3D.rmin - tolerance) and all(radius <= REVEALSeismicModel3D.rmax + tolerance)
+        elif kernel == 'exponential':
+            # Exponential decay: exp(-r/λ)
+            decay_length = kernel_params.get('decay_length', 50000)  # 50km default
+            weights = np.exp(-dists / decay_length)
 
-    def _interpolate_to_points(self, label, coordinates, k=8):
-        if not self.tree_is_created:
-            self.tree = cKDTree(self.coordinates)
+        elif kernel == 'wendland':
+            # Wendland C2 compactly supported kernel
+            support_radius = kernel_params.get('support_radius', 100000)  # 100km default
+            q = dists / support_radius
+            weights = np.zeros_like(q)
+            mask = q <= 1.0
+            weights[mask] = (1 - q[mask]) ** 4 * (4 * q[mask] + 1)
 
-        dists, inds = self.tree.query(coordinates, k=k)
-        safe_dists = np.where(dists < REVEALSeismicModel3D.minimum_distance, dists, REVEALSeismicModel3D.minimum_distance)
-        replace_flg = dists[:, 0] < REVEALSeismicModel3D.minimum_distance
-
-        if len(self.available_fields[label].shape) > 1:
-            ret = np.einsum("i, ik -> ik", np.sum(1 / safe_dists, axis=1), np.einsum("ij, ijk -> ik", 1 / safe_dists, self.available_fields[label][inds]))
-            ret[replace_flg, :] = self.available_fields[label][inds[replace_flg, 0], :]
         else:
-            ret = np.einsum("ij, ij->i", 1 / safe_dists, self.available_fields[label][inds]) / np.sum(1 / safe_dists, axis=1)
-            ret[replace_flg] = self.available_fields[label][inds[replace_flg, 0]]
-        return ret
+            raise ValueError(f"Unknown kernel: {kernel}. Choose from: 'idw', 'gaussian', 'idw_power', 'exponential', 'wendland'")
 
-    def _load_fields(self, labels=[]):
-        reveal_data = load_dataset(REVEALSeismicModel3D.fi_name)
+        # Ensure weights are positive and handle edge cases
+        weights = np.maximum(weights, 1e-12)  # Avoid exactly zero weights
 
-        if len(labels) > 0:
-            for label in labels:
-                if label not in reveal_data.keys():
-                    raise ValueError(f"{label} not present in REVEAL")
-
-        if "coordinates" not in labels:
-            labels += ["coordinates"]
-
-        for key in reveal_data.keys() if len(labels) == 1 else labels:
-            self.add_quantity(key, reveal_data[key])
+        return weights
