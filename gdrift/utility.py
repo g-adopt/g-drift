@@ -92,13 +92,12 @@ def geodetic_to_cartesian(lat, lon, depth, earth_radius=R_earth):
     lon_rad = numpy.radians(lon)
 
     r = earth_radius - depth
-
     # Compute Cartesian coordinates
     x = r * numpy.cos(lat_rad) * numpy.cos(lon_rad)
     y = r * numpy.cos(lat_rad) * numpy.sin(lon_rad)
     z = r * numpy.sin(lat_rad)
 
-    return x, y, z
+    return numpy.column_stack((x, y, z))
 
 
 def cartesian_to_geodetic(x, y, z, earth_radius=R_earth):

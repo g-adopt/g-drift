@@ -31,31 +31,76 @@ AVAILABLE_SEISMIC_MODELS = [
 
 
 class SeismicModel(EarthModel3D):
-    def __init__(self, model_name, nearest_neighbours: int = 8, default_max_distance: float = 200e3):
+    # Hard coding minimum distance, below which we do not interpolate
+    minimum_distance = 1e-3
+    # Hard coding maximum distance beyond which we don't have access to data
+    maximum_distance = 200e3
+
+    def __init__(self, model_name, nearest_neighbours: int = 8, default_max_distance: float = 200e3, labels=[]):
         """SeismicModel is a class for handling 3D seismic models.
 
         This class inherits from EarthModel3D and is used to load and manage seismic models.
         It allows for the initialization of a seismic model with a specified name, number of nearest neighbours,
         and a default maximum distance. The model data is loaded from a dataset file, and quantities and coordinates
         are set accordingly.
-                max_distance (float, optional): The default maximum distance for the model in meters. Defaults to 200e3.
+
+        Parameters:
+        -----------
+        model_name : str
+            Name of the seismic model to load
+        nearest_neighbours : int, optional
+            Number of nearest neighbours to consider for interpolation. Defaults to 8.
+        default_max_distance : float, optional
+            The default maximum distance for the model in meters. Defaults to 200e3.
+        labels : list, optional
+            Specific labels to load from the dataset. If empty, loads all available fields.
+
         Attributes:
             model_name (str): The name of the seismic model.
             nearest_neighbours (int): The number of nearest neighbours to consider.
             default_max_distance (float): The default maximum distance for the model in meters.
-
-        Methods:
-            _load_available_models(): Loads and returns available seismic models from the data directory.
         """
         if model_name not in AVAILABLE_SEISMIC_MODELS:
             raise ValueError(f"Model '{model_name}' not found in available models. Choose from: {', '.join(AVAILABLE_SEISMIC_MODELS)}")
 
-        raw_model = load_dataset(f"3d_seismic_{model_name}")
+        self.model_name = model_name
 
         super().__init__(nearest_neighbours=nearest_neighbours, default_max_distance=default_max_distance)
 
-        for quantity_name in raw_model.keys():
-            if quantity_name != "coordinates":
-                self.add_quantity(quantity_name, raw_model[quantity_name])
-            else:
-                self.set_coordinates(raw_model[quantity_name])
+        # Load the model data
+        self._load_fields(labels=labels)
+
+    def _load_fields(self, labels=[]):
+        """
+        Load fields from the seismic model dataset.
+
+        Parameters:
+        -----------
+        labels : list
+            Specific labels to load. If empty, loads all available fields.
+        """
+        raw_model = load_dataset(f"3d_seismic_{self.model_name}")
+
+        if len(labels) > 0:
+            for label in labels:
+                if label not in raw_model.keys():
+                    raise ValueError(f"{label} not present in tomography model: {self.model_name}")
+
+        if "coordinates" not in labels and len(labels) > 0:
+            labels += ["coordinates"]
+
+        # Load specified fields or all fields
+        if len(labels) > 0:
+            # Load only specified labels plus coordinates
+            for key in labels:
+                if key == "coordinates":
+                    self.set_coordinates(raw_model[key])
+                else:
+                    self.add_quantity(key, raw_model[key])
+        else:
+            # Load all fields
+            for key in raw_model.keys():
+                if key == "coordinates":
+                    self.set_coordinates(raw_model[key])
+                else:
+                    self.add_quantity(key, raw_model[key])

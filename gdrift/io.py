@@ -2,7 +2,8 @@ import numpy
 import h5py
 import pooch
 from pathlib import Path
-from .datasetnames import AVAILABLE_DATASETS
+import hashlib
+from .datasetnames import AVAILABLE_DATASETS, get_dataset_hash
 
 
 DATA_PATH = Path(__file__).resolve().parent / "data"
@@ -25,20 +26,33 @@ def path_to_dataset(h5finame: str):
 
 
 def download_dataset(h5finame: str):
-    """Downloads the dataset using pooch if it exists in the available datasets list."""
+    """Downloads the dataset using pooch with hash verification if available."""
     url = BASE_URL + h5finame
 
-    # Use Pooch to fetch the file with a progress bar
+    # Get the dataset name (remove .h5 extension)
+    dataset_name = h5finame.replace('.h5', '')
+
+    # Get hash from dataset registry
+    known_hash = get_dataset_hash(dataset_name)
+
+    # Use Pooch to fetch the file with a progress bar and hash verification
     try:
-        print(url)
+        print(f"Downloading {h5finame} from {url}")
+        if known_hash:
+            print(f"Using hash verification: {known_hash}")
         file_path = pooch.retrieve(
             url=url,
-            known_hash=None,  # You can provide the known hash if available
+            known_hash=known_hash,  # Hash verification for integrity
             path=DATA_PATH,
             fname=h5finame,
             progressbar=True
         )
         print(f"Downloaded {h5finame} successfully to {file_path}.")
+
+        if known_hash:
+            print("✓ Hash verification passed - file integrity confirmed.")
+        else:
+            print("⚠ No hash available for verification - consider adding hash to dataset registry.")
     except Exception as e:
         raise FileNotFoundError(
             f"Dataset {h5finame} not found on the server or could not be downloaded. Error: {e}")
@@ -111,3 +125,11 @@ def create_dataset_file(file_name: str, data_info: dict, metadata: dict):
         # Add metadata
         for key, value in metadata.items():
             file.attrs[key] = value
+
+
+def file_hash(path, algo="sha256"):
+    h = hashlib.new(algo)
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return f"{algo}:{h.hexdigest()}"
