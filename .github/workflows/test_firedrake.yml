@@ -1,0 +1,77 @@
+name: Test with Firedrake
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: firedrake-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit tests and examples
+    runs-on: ubuntu-latest
+    container:
+      image: firedrakeproject/firedrake-vanilla-default:dev-main
+
+    env:
+      OMP_NUM_THREADS: 1
+      MPLBACKEND: Agg
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y python3-venv
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+
+      - uses: actions/checkout@v4
+
+      - name: Set up virtual environment
+        run: |
+          python3 -m venv --system-site-packages .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+
+      - name: Install gadopt
+        run: |
+          . .venv/bin/activate
+          pip install git+https://github.com/g-adopt/g-adopt.git
+
+      - name: Install gdrift
+        run: |
+          . .venv/bin/activate
+          pip install -e .
+          pip install matplotlib pytest
+
+      - name: Run unit tests
+        run: |
+          . .venv/bin/activate
+          python -m pytest tests/ -v --maxfail=5 --tb=short
+
+      - name: "Example 00: solidus temperature"
+        run: |
+          . .venv/bin/activate
+          python examples/00_load_solidus_temperature.py
+
+      - name: "Example 01: anelasticity models"
+        run: |
+          . .venv/bin/activate
+          python examples/01_anelasticity_models.py
+
+      - name: "Example 02: temperature to Vs conversion"
+        run: |
+          . .venv/bin/activate
+          python examples/02_converting_temperature_to_vs.py
+
+      - name: "Example 04: seismic tomography model"
+        run: |
+          . .venv/bin/activate
+          python examples/04_test_tomography_model.py
+
+      - name: "Example 05: geodynamic adiabat"
+        run: |
+          . .venv/bin/activate
+          python examples/05_geodynamic_adiabat.py

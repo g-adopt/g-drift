@@ -77,17 +77,20 @@ class ThermodynamicModel(object):
         #     raise ValueError(
         #         f"{model} not available. Use `print_available_models` to see all available models")
 
-        # load the hdf5 table
+        # load the hdf5 table (load all available keys)
         loaded_model = load_dataset(
-            dataset_name(model, composition),
-            table_names=["Depths", "Temperatures",
-                         "bulk_mod", "shear_mod", "rho"]
+            dataset_name(model, composition)
         )
         # a dictionary that includes all the models
         self._tables = {}
 
-        # the three tables that are needed
-        for key in ["bulk_mod", "shear_mod", "rho"]:
+        # Determine which keys are actual data tables (skip coordinate arrays)
+        skip_keys = {"Depths", "Temperatures", "Pressures"}
+        table_keys = set(["bulk_mod", "shear_mod", "rho"]) | (set(loaded_model.keys()) - skip_keys)
+
+        for key in table_keys:
+            if key not in loaded_model:
+                continue
             # in case we need to interpolate
             if temps is not None or depths is not None:
                 self._tables[key] = interpolate_table(
@@ -149,25 +152,57 @@ class ThermodynamicModel(object):
         """
         return self._v_to_temperature(vp, depth, self.compute_pwave_speed(), bounds)
 
-    def temperature_to_vs(self, temperature, depth):
-        vs = self.compute_swave_speed()
+    def available_tables(self):
+        """Return a list of available table names in this model."""
+        return list(self._tables.keys())
+
+    def _get_table(self, property_name):
+        """Retrieve a table by property name, computing vs/vp on the fly if needed.
+
+        Args:
+            property_name (str): Name of the property (e.g. 'rho', 'alpha', 'Cp',
+                'vs' or 'v_s', 'vp' or 'v_p', or any key loaded from the HDF5 file).
+
+        Returns:
+            Table: The requested table.
+        """
+        if property_name in ("vs", "v_s"):
+            return self.compute_swave_speed()
+        elif property_name in ("vp", "v_p"):
+            return self.compute_pwave_speed()
+        elif property_name in self._tables:
+            return self._tables[property_name]
+        else:
+            raise KeyError(
+                f"Property '{property_name}' not found. "
+                f"Available tables: {self.available_tables()}, plus 'vs'/'vp' (computed)."
+            )
+
+    def temperature_to_property(self, property_name, temperature, depth):
+        """Convert temperature and depth to a material property value.
+
+        Args:
+            property_name (str): Name of the property (e.g. 'rho', 'alpha', 'Cp', 'vs', 'vp').
+            temperature: Temperature value(s).
+            depth: Depth value(s).
+
+        Returns:
+            Interpolated property value(s) at the given temperature and depth.
+        """
+        table = self._get_table(property_name)
         return LinearRectBivariateSpline(
-            vs.get_x(),
-            vs.get_y(),
-            vs.get_vals()).ev(depth, temperature)
+            table.get_x(),
+            table.get_y(),
+            table.get_vals()).ev(depth, temperature)
+
+    def temperature_to_vs(self, temperature, depth):
+        return self.temperature_to_property("vs", temperature, depth)
 
     def temperature_to_vp(self, temperature, depth):
-        vp = self.compute_pwave_speed()
-        return LinearRectBivariateSpline(
-            vp.get_x(),
-            vp.get_y(),
-            vp.get_vals()).ev(depth, temperature)
+        return self.temperature_to_property("vp", temperature, depth)
 
     def temperature_to_rho(self, temperature, depth):
-        return LinearRectBivariateSpline(
-            self._tables["rho"].get_x(),
-            self._tables["rho"].get_y(),
-            self._tables["rho"].get_vals()).ev(depth, temperature)
+        return self.temperature_to_property("rho", temperature, depth)
 
     def compute_swave_speed(self):
         return type(self._tables["shear_mod"])(

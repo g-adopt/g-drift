@@ -7,6 +7,7 @@ class DatasetType(Enum):
     """Enumeration of available dataset types."""
     SOLIDUS_PROFILE = "1d Solidus Profile"
     EARTH_MODEL = "1d Reference Earth Models"
+    GEODYNAMIC_PROFILE = "1d Geodynamic Profile"
     THERMODYNAMIC_MODEL = "Thermodynamic Model of Mantle Rocks"
     TOMOGRAPHY_MODEL = "Seismic Tomography Model"
 
@@ -259,7 +260,23 @@ _datasets_list = [
         utility=UtilityClass.THERMODYNAMIC,
         year=2016,
         description="Stixrude-Lithgow-Bertelloni 2016 thermodynamic model for pyrolite"
-    )
+    ),
+    Dataset(
+        name="SLB_21_pyroliteCFMAS",
+        dataset_type=DatasetType.THERMODYNAMIC_MODEL,
+        source="Stixrude, L., & Lithgow-Bertelloni, C. (2021). Thermal expansivity, heat capacity and bulk modulus of the mantle. Geophysical Journal International, 228(2), 1119-1149.",
+        utility=UtilityClass.THERMODYNAMIC,
+        year=2021,
+        description="Stixrude-Lithgow-Bertelloni 2021 thermodynamic model for pyrolite (CFMAS composition)"
+    ),
+    Dataset(
+        name="1d_geodynamic_SLB21_pyroliteCFMAS",
+        dataset_type=DatasetType.GEODYNAMIC_PROFILE,
+        source="Ghelichkhan, S., et al. Geodynamic adiabatic profiles computed from SLB 2021 pyrolite (CFMAS).",
+        utility=UtilityClass.RADIAL_EARTH_MODEL,
+        year=2021,
+        description="1D geodynamic adiabatic profiles computed from the SLB 2021 pyrolite CFMAS thermodynamic model"
+    ),
 ]
 
 # Create the registry and list for backward compatibility
