@@ -44,7 +44,7 @@ jobs:
         run: |
           . .venv/bin/activate
           pip install -e .
-          pip install matplotlib pytest
+          pip install matplotlib pytest boto3
 
       - name: Run unit tests
         run: |

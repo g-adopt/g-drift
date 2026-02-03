@@ -1,32 +1,10 @@
 from .earthmodel3d import EarthModel3D
 from .io import load_dataset
+from .datasetnames import DATASET_REGISTRY, DatasetType
 
 AVAILABLE_SEISMIC_MODELS = [
-    "MITP08",
-    "GyPSuM",
-    "SPani",
-    "SAW642ANb",
-    "SAW642AN",
-    "SEMum",
-    "S40RTS",
-    "OJP",
-    "HMSL-P06",
-    "SAW24B16",
-    "TX2000",
-    "SGLOBE-rani",
-    "SEMUCB-WM1",
-    "GAP",
-    "S362ANI+M",
-    "S20RTS",
-    "TX2011",
-    "SEISGLOB2",
-    "SP12RTS",
-    "TX2019slab",
-    "S362ANI",
-    "REVEAL",
-    "HMSL-S06",
-    "S362WMANI",
-    "LLNL-G3Dv3",
+    ds.name.replace("3d_seismic_", "")
+    for ds in DATASET_REGISTRY.filter_by_type(DatasetType.TOMOGRAPHY_MODEL)
 ]
 
 

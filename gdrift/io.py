@@ -1,95 +1,169 @@
+import os
+import warnings
 import numpy
 import h5py
-import pooch
 from pathlib import Path
 import hashlib
-from .datasetnames import AVAILABLE_DATASETS, get_dataset_hash
+from .datasetnames import DATASET_REGISTRY, get_dataset_hash, get_manifest_config
 
 
 DATA_PATH = Path(__file__).resolve().parent / "data"
-BASE_URL = "https://data.gadopt.org/g-drift/"
+
+
+def _get_s3_config():
+    """Get S3 configuration, allowing env var overrides."""
+    config = get_manifest_config()
+    return {
+        "endpoint_url": os.environ.get("GDRIFT_S3_ENDPOINT", config["endpoint_url"]),
+        "bucket": os.environ.get("GDRIFT_S3_BUCKET", config["bucket"]),
+        "prefix": os.environ.get("GDRIFT_S3_PREFIX", config["prefix"]),
+        "cdn_url": config["cdn_url"],
+    }
 
 
 def path_to_dataset(h5finame: str):
-    """_summary_
+    """Return the local path for a dataset file.
 
     Args:
         h5finame (str): filename
 
     Returns:
-        str: path to the file
+        Path: path to the file
     """
-    # Making sure the data directory is generated
     DATA_PATH.mkdir(parents=True, exist_ok=True)
-
     return DATA_PATH / h5finame
 
 
-def download_dataset(h5finame: str):
-    """Downloads the dataset using pooch with hash verification if available."""
-    url = BASE_URL + h5finame
+def _download_via_boto3(s3_config, h5finame, destination):
+    """Download a file from S3-compatible storage using boto3."""
+    import boto3
+    from botocore import UNSIGNED
+    from botocore.config import Config
 
-    # Get the dataset name (remove .h5 extension)
-    dataset_name = h5finame.replace('.h5', '')
+    client = boto3.client(
+        "s3",
+        endpoint_url=s3_config["endpoint_url"],
+        config=Config(signature_version=UNSIGNED),
+    )
+    s3_key = s3_config["prefix"] + h5finame
 
-    # Get hash from dataset registry
-    known_hash = get_dataset_hash(dataset_name)
-
-    # Use Pooch to fetch the file with a progress bar and hash verification
+    # Get file size for progress bar
     try:
-        print(f"Downloading {h5finame} from {url}")
-        if known_hash:
-            print(f"Using hash verification: {known_hash}")
-        file_path = pooch.retrieve(
-            url=url,
-            known_hash=known_hash,  # Hash verification for integrity
-            path=DATA_PATH,
-            fname=h5finame,
-            progressbar=True
-        )
-        print(f"Downloaded {h5finame} successfully to {file_path}.")
+        from tqdm import tqdm
+        head = client.head_object(Bucket=s3_config["bucket"], Key=s3_key)
+        total = head["ContentLength"]
+        with tqdm(total=total, unit="B", unit_scale=True, desc=h5finame) as pbar:
+            client.download_file(
+                s3_config["bucket"],
+                s3_key,
+                str(destination),
+                Callback=lambda bytes_transferred: pbar.update(bytes_transferred),
+            )
+    except ImportError:
+        client.download_file(s3_config["bucket"], s3_key, str(destination))
 
-        if known_hash:
-            print("✓ Hash verification passed - file integrity confirmed.")
-        else:
-            print("⚠ No hash available for verification - consider adding hash to dataset registry.")
+
+def _download_via_https(cdn_url, h5finame, destination):
+    """Fallback download using urllib when boto3 is not available."""
+    import urllib.request
+    url = cdn_url + h5finame
+
+    try:
+        from tqdm import tqdm
+        response = urllib.request.urlopen(url)
+        total = int(response.headers.get("Content-Length", 0))
+        with open(destination, "wb") as f, tqdm(total=total, unit="B", unit_scale=True, desc=h5finame) as pbar:
+            while True:
+                chunk = response.read(8192)
+                if not chunk:
+                    break
+                f.write(chunk)
+                pbar.update(len(chunk))
+    except ImportError:
+        urllib.request.urlretrieve(url, destination)
+
+
+def download_dataset(h5finame: str):
+    """Download a dataset from S3-compatible storage (boto3) or via HTTPS fallback."""
+    destination = path_to_dataset(h5finame)
+    s3_config = _get_s3_config()
+
+    try:
+        _download_via_boto3(s3_config, h5finame, destination)
+    except ImportError:
+        cdn_url = s3_config["cdn_url"]
+        if not cdn_url:
+            raise RuntimeError(
+                "boto3 is not installed and no CDN URL is configured. "
+                "Install boto3 (`pip install boto3`) or set a CDN URL in datasets.json."
+            )
+        _download_via_https(cdn_url, h5finame, destination)
     except Exception as e:
         raise FileNotFoundError(
-            f"Dataset {h5finame} not found on the server or could not be downloaded. Error: {e}")
+            f"Dataset {h5finame} could not be downloaded. Error: {e}"
+        )
 
-    return Path(file_path)
+    return destination
+
+
+def _verify_hash(filepath, expected_hash):
+    """Verify a file's SHA256 hash against the expected value.
+
+    Returns True if hashes match, False otherwise.
+    """
+    if expected_hash is None:
+        return True
+    actual = file_hash(filepath)
+    return actual == expected_hash
+
+
+def _verify_and_maybe_redownload(dataset_name, filepath):
+    """Verify hash of a local file; re-download if mismatch."""
+    expected = get_dataset_hash(dataset_name)
+    if expected is None:
+        return
+
+    if not _verify_hash(filepath, expected):
+        warnings.warn(
+            f"Hash mismatch for {dataset_name}. Expected {expected}, "
+            f"got {file_hash(filepath)}. Re-downloading.",
+            stacklevel=3,
+        )
+        download_dataset(filepath.name)
+        if not _verify_hash(filepath, expected):
+            raise RuntimeError(
+                f"Hash verification failed for {dataset_name} even after re-download."
+            )
 
 
 def load_dataset(dataset_name: str, table_names=[], return_metadata=False):
-    """_summary_
+    """Load a dataset from local cache, downloading if necessary.
 
     Args:
-        dataset_name (str): Filename
-        table_names (list, optional): _description_. Defaults to [].
+        dataset_name (str): Dataset name (without .h5 extension)
+        table_names (list, optional): Specific tables to load. Defaults to [].
+        return_metadata (bool, optional): Whether to return file-level metadata.
 
     Returns:
-        dict: dictionary with all the datasets
+        dict: dictionary with all the datasets (and optionally metadata tuple)
     """
+    if dataset_name not in DATASET_REGISTRY:
+        raise ValueError(
+            f"Unknown dataset '{dataset_name}'. "
+            f"Use DATASET_REGISTRY.get_dataset_names() to see available datasets."
+        )
+
     dataset = {}
     metadata = {}
 
-    # Full path to the dataset
-    dataset_path = path_to_dataset(dataset_name + '.h5')
+    dataset_path = path_to_dataset(dataset_name + ".h5")
 
     if not dataset_path.exists():
-        if str(dataset_name) in [key.name for key in AVAILABLE_DATASETS]:
-            downloaded_dataset_path = download_dataset(dataset_name + ".h5")
-            if downloaded_dataset_path != path_to_dataset(dataset_name + ".h5"):
-                raise ValueError((
-                    f"Expected to have the file as {dataset_path}, "
-                    f"but is on {downloaded_dataset_path}")
-                )
-        else:
-            raise FileNotFoundError(
-                f"Dataset {dataset_name} is neither on disk or on our server!")
+        download_dataset(dataset_name + ".h5")
 
-    # for cKDTree routines
-    with h5py.File(path_to_dataset(dataset_name + '.h5'), 'r') as fi:
+    _verify_and_maybe_redownload(dataset_name, dataset_path)
+
+    with h5py.File(dataset_path, "r") as fi:
         keys_to_get = table_names if table_names else fi.keys()
         for key in keys_to_get:
             dataset[key] = numpy.array(fi.get(key))
@@ -113,16 +187,10 @@ def create_dataset_file(file_name: str, data_info: dict, metadata: dict):
         metadata (dict): A dictionary containing metadata about the data source.
 
     """
-    # Create a new HDF5 file
-    with h5py.File(DATA_PATH / file_name, 'w') as file:
-        # Create a group for profiles
-
-        # Add data profiles to the group
+    with h5py.File(DATA_PATH / file_name, "w") as file:
         for profile_name, data in data_info.items():
-            # Each dataset is named after the profile name and contains the corresponding data
             file.create_dataset(profile_name, data=data)
 
-        # Add metadata
         for key, value in metadata.items():
             file.attrs[key] = value
 

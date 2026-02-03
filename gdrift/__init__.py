@@ -1,6 +1,6 @@
 from .anelasticity import CammaranoAnelasticityModel, GoesAnelasticityModel, apply_anelastic_correction
 from .constants import R_earth, R_cmb
-from .datasetnames import print_datasets_markdown
+from .datasetnames import print_datasets_markdown, DATASET_REGISTRY
 from .earthmodel3d import EarthModel3D
 from .io import load_dataset, create_dataset_file
 from .mineralogy import ThermodynamicModel, compute_pwave_speed, compute_swave_speed, regularise_thermodynamic_table
@@ -37,5 +37,6 @@ __all__ = [
     "fibonacci_sphere",
     "SeismicModel",
     "AVAILABLE_SEISMIC_MODELS",
+    "DATASET_REGISTRY",
     "CoastlineVTKFile",
 ]

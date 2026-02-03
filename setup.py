@@ -12,12 +12,13 @@ setup(
     author='Sia Ghelichkhan',
     author_email='siavash.ghelichkhan@anu.edu.au',
     url='https://github.com/sghelichkhani/g-drift',
+    package_data={'gdrift': ['datasets.json']},
     install_requires=[
         'numpy',
         'scipy',
         'h5py',
         'tqdm',
-        'pooch',
+        'boto3',
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
