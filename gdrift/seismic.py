@@ -1,3 +1,63 @@
+"""Three-dimensional seismic tomography models with spatial interpolation.
+
+This module provides access to 25 global seismic tomography models covering
+both shear wave (Vs) and compressional wave (Vp) velocity perturbations
+throughout the mantle. Models are loaded from HDF5 datasets stored on remote
+S3-compatible storage and interpolated using KD-tree nearest-neighbor search
+with configurable kernels.
+
+Seismic tomography models represent the 3D distribution of velocity anomalies
+(dVs, dVp) relative to a 1D reference model. These perturbations are interpreted
+as thermal and compositional heterogeneity in mantle convection studies.
+
+Available Models
+----------------
+The module dynamically constructs `AVAILABLE_SEISMIC_MODELS` from the dataset
+registry. As of the current manifest, 25 models are available including:
+- S40RTS (Ritsema et al., 2011) - widely used Vs model
+- GLAD-M25 (Lei et al., 2020) - joint Vs/Vp model
+- SEMUCB-WM1 (French & Romanowicz, 2014) - full mantle Vs
+- SAW642AN (Panning et al., 2010) - azimuthally anisotropic
+- Multiple regional and global P-wave models
+
+Key Classes
+-----------
+SeismicModel : Load and query 3D seismic tomography models
+
+Key Functions
+-------------
+AVAILABLE_SEISMIC_MODELS : List of available model names (derived from registry)
+
+Examples
+--------
+>>> import gdrift
+>>> # List available models
+>>> print(gdrift.AVAILABLE_SEISMIC_MODELS[:5])
+['s40rts', 'glad_m25', 'semucb_wm1', 'saw642an', ...]
+>>>
+>>> # Load S40RTS model
+>>> s40rts = gdrift.SeismicModel("s40rts", nearest_neighbours=8)
+>>> # Query dVs at specific location (lat, lon, depth)
+>>> dvs = s40rts.at(lat=45.0, lon=10.0, depth=1000e3, quantity="dvs")
+>>>
+>>> # Use different interpolation kernel
+>>> dvs_gauss = s40rts.at(lat=45.0, lon=10.0, depth=1000e3,
+...                       quantity="dvs", kernel="gaussian")
+
+Notes
+-----
+- Model names should be provided WITHOUT the "3d_seismic_" prefix
+  (e.g., use "s40rts", not "3d_seismic_s40rts")
+- Coordinates: lat/lon in degrees, depth in meters from surface
+- Interpolation is limited to `maximum_distance` (200 km) from data points
+- Below `minimum_distance` (1 m), returns exact values without interpolation
+
+See Also
+--------
+gdrift.EarthModel3D : Base class with interpolation infrastructure
+gdrift.load_dataset : Download and cache HDF5 datasets
+"""
+
 from .earthmodel3d import EarthModel3D
 from .io import load_dataset
 from .datasetnames import DATASET_REGISTRY, DatasetType

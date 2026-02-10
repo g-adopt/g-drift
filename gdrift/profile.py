@@ -1,3 +1,69 @@
+"""One-dimensional radial Earth profiles with spline interpolation.
+
+This module provides abstractions for working with 1D profiles of physical
+quantities (density, temperature, velocity, etc.) as a function of depth
+within the Earth. It supports cubic spline interpolation, composite radial
+models with multiple property profiles, and specialized solidus temperature
+profiles based on experimental petrology.
+
+The primary use cases are:
+- Loading reference Earth models like PREM
+- Querying radial profiles at arbitrary depths
+- Computing derived quantities (gravity, pressure, mass)
+- Applying solidus temperature constraints in thermodynamic calculations
+
+Class Hierarchy
+---------------
+AbstractProfile (ABC)
+  ├── SplineProfile : Cubic spline interpolation of (depth, value) pairs
+  └── HirschmannSolidusProfile : Depth → pressure → solidus temperature
+
+RadialEarthModel : Container for multiple named profiles
+  ├── RadialEarthModelFromFile : Load profiles from HDF5 datasets
+  │     └── PreliminaryRefEarthModel : PREM model singleton
+  └── HirschmannSolidus : Mantle solidus from experimental petrology
+
+Key Classes
+-----------
+SplineProfile : 1D spline interpolation with optional extrapolation
+RadialEarthModel : Multi-profile container with gravity/pressure computation
+RadialEarthModelFromFile : Load HDF5 datasets as radial models
+PreliminaryRefEarthModel : PREM reference model
+HirschmannSolidusProfile : Experimental solidus from Hirschmann (2000)
+HirschmannSolidus : Radial model wrapper for solidus profile
+
+Examples
+--------
+>>> import gdrift
+>>> # Load PREM and query density at 670 km depth
+>>> prem = gdrift.PreliminaryRefEarthModel()
+>>> rho = prem.get_profile("density")
+>>> density_at_670 = rho.at_depth(670e3)  # meters
+>>>
+>>> # Create custom spline profile
+>>> import numpy as np
+>>> depths = np.linspace(0, 2890e3, 100)
+>>> values = 5000 + depths / 1e6  # simple gradient
+>>> profile = gdrift.SplineProfile(depths, values, name="custom_rho")
+>>> value_at_500km = profile.at_depth(500e3)
+>>>
+>>> # Load solidus temperature profile
+>>> andrault = gdrift.RadialEarthModelFromFile("1d_solidus_Andrault_et_al_2011_EPSL")
+>>> solidus = andrault.get_profile("solidus temperature")
+>>> T_solidus_410km = solidus.at_depth(410e3)
+
+Notes
+-----
+All depth coordinates are in meters from the surface (depth increases downward).
+Spline extrapolation is disabled by default to prevent unphysical values outside
+the data range. Use `extrapolate=True` in SplineProfile for linear extrapolation.
+
+See Also
+--------
+gdrift.constants : R_earth, R_cmb constants
+gdrift.utility : compute_gravity, compute_pressure, compute_mass
+"""
+
 from typing import Optional, List, Union
 from numbers import Number
 from abc import ABC, abstractmethod
@@ -21,14 +87,24 @@ class AbstractProfile(ABC):
 
     @abstractmethod
     def at_depth(self, depth: Number) -> Number:
-        """
-        Retrieve the quantity (e.g., temperature, pressure, density) at a specified depth.
+        """Retrieve the quantity at a specified depth or depths.
 
-        Args:
-            depth (float or numpy.ndarray): The depth~(SI unit) from the surface of the Earth.
+        Parameters
+        ----------
+        depth : float or ndarray
+            Depth(s) in meters from the surface of the Earth. Can be a
+            scalar or array.
 
-        Returns:
-            float or numpy.ndarray: The quantity at the specified depth.
+        Returns
+        -------
+        float or ndarray
+            The quantity value(s) at the specified depth(s). Shape matches
+            the input depth array.
+
+        Notes
+        -----
+        Subclasses must implement this method to define how the profile
+        is evaluated at arbitrary depths (e.g., via interpolation).
         """
         pass
 
@@ -45,14 +121,35 @@ class SplineProfile(AbstractProfile):
     """
 
     def __init__(self, depth: Number, value: Number, name: Optional[str] = "Profile", spline_type: str = "linear", extrapolate: bool = False):
-        """
-        Initialise a radial profile by establishing a spline.
+        """Initialize a radial profile with spline interpolation.
 
-            depth (Number): Array of depths.
-            value (Number): Array of corresponding values.
-            name (Optional[str], optional): Name of the profile. Defaults to an empty string.
-            spline_type (str, optional): Type of spline to use. Defaults to "linear".
-            extrapolate (bool, optional): Whether to allow extrapolation. Defaults to False.
+        Creates a 1D profile by interpolating between (depth, value) pairs
+        using scipy.interpolate.interp1d. The spline is constructed lazily
+        on first query for efficiency.
+
+        Parameters
+        ----------
+        depth : array_like
+            Array of depth values in meters from the surface. Must be
+            monotonically increasing or decreasing.
+        value : array_like
+            Array of property values corresponding to each depth. Must
+            have the same length as depth.
+        name : str, optional
+            Name of the profile (e.g., "density", "vs", "temperature").
+            Default is "Profile".
+        spline_type : str, optional
+            Interpolation method passed to scipy.interpolate.interp1d.
+            Options: "linear", "cubic", "quadratic", etc. Default is "linear".
+        extrapolate : bool, optional
+            Whether to allow extrapolation outside the depth range. If False,
+            queries outside the range raise ValueError. If True, uses linear
+            extrapolation. Default is False.
+
+        Notes
+        -----
+        The spline is not created until the first call to `at_depth()` to
+        avoid unnecessary computation during initialization.
         """
         # All profiles should come with a name
         super().__init__(name)
@@ -66,18 +163,33 @@ class SplineProfile(AbstractProfile):
         self.extrapolate = extrapolate
 
     def at_depth(self, depth: Number) -> Number:
-        """
-        Query the profile value at a specified depth or depths.
+        """Query the profile value at a specified depth or depths.
 
-            depth (Number): A single depth value or an array of depth values
-                            at which to query the profile.
+        Evaluates the spline at the requested depth(s). Constructs the
+        spline on first call if not already created.
 
-            Number or numpy.ndarray: The profile value(s) at the specified depth(s).
-                                     Returns a single value if a single depth is provided,
-                                     or an array of values if an array of depths is provided.
+        Parameters
+        ----------
+        depth : float or ndarray
+            Depth(s) in meters from the surface at which to query the
+            profile. Can be a scalar or array.
 
-        Raises:
-            ValueError: If the provided depth is out of the valid range.
+        Returns
+        -------
+        float or ndarray
+            Profile value(s) at the specified depth(s). Shape matches the
+            input depth array.
+
+        Raises
+        ------
+        ValueError
+            If extrapolate=False and the provided depth is outside the
+            valid range [min_depth, max_depth].
+
+        Notes
+        -----
+        The spline is created lazily on the first call to this method using
+        scipy.interpolate.interp1d with the specified spline_type.
         """
         # Make sure the query depth is within the valid range if not extrapolating
         if not self.extrapolate:
@@ -88,18 +200,9 @@ class SplineProfile(AbstractProfile):
             # Create a linear spline
             self._spline = scipy.interpolate.interp1d(
                 self.raw_depth, self.raw_value, kind=self.spline_type,
-                bounds_error=False if self.extrapolate is True else False,
+                bounds_error=False,
                 fill_value="extrapolate")
 
-            self._is_spline_made = True
-
-        # Query the spline
-        return self._spline(depth)
-
-        # If the spline has not been made, create it
-        if not self._is_spline_made:
-            # Create a linear spline
-            self._spline = scipy.interpolate.interp1d(self.raw_depth, self.raw_value, kind=self.spline_type)
             self._is_spline_made = True
 
         # Query the spline
@@ -221,6 +324,40 @@ class RadialEarthModelFromFile(RadialEarthModel):
     """
 
     def __init__(self, model_name: str, description: str = None):
+        """Initialize a radial Earth model by loading profiles from an HDF5 dataset.
+
+        Loads all property profiles from a registered dataset file. The HDF5
+        file must contain a "depth" array and one or more property arrays
+        (e.g., "density", "vs", "vp"). Each property is wrapped in a
+        SplineProfile for interpolation.
+
+        Parameters
+        ----------
+        model_name : str
+            Name of the registered dataset (e.g., "1d_prem",
+            "1d_solidus_Andrault_et_al_2011_EPSL"). Must exist in the
+            dataset registry.
+        description : str, optional
+            Human-readable description of the model. If None, no description
+            is set. Default is None.
+
+        Raises
+        ------
+        ValueError
+            If model_name is not in the dataset registry.
+        KeyError
+            If the HDF5 file does not contain a "depth" array.
+
+        Examples
+        --------
+        >>> import gdrift
+        >>> andrault = gdrift.RadialEarthModelFromFile(
+        ...     "1d_solidus_Andrault_et_al_2011_EPSL")
+        >>> print(andrault.get_profile_names())
+        ['solidus temperature']
+        >>> solidus = andrault.get_profile("solidus temperature")
+        >>> T = solidus.at_depth(410e3)
+        """
         # Set the profile name
         self.model_name = model_name
         # Set the description
@@ -260,6 +397,36 @@ class PreliminaryRefEarthModel(RadialEarthModelFromFile):
     PREM_FILENAME = "1d_prem"
 
     def __init__(self):
+        """Initialize the Preliminary Reference Earth Model (PREM).
+
+        Loads the PREM dataset (Dziewonski & Anderson, 1981) containing
+        reference profiles for density, seismic velocities, elastic moduli,
+        pressure, and gravity as a function of radius/depth.
+
+        The model spans from Earth's center to the surface and includes
+        discontinuities at major boundaries (e.g., core-mantle boundary,
+        410 km, 660 km discontinuities).
+
+        Notes
+        -----
+        PREM is the standard 1D reference model for seismology and geodynamics.
+        It represents a spherically symmetric, non-rotating, oceanless Earth.
+
+        Examples
+        --------
+        >>> import gdrift
+        >>> prem = gdrift.PreliminaryRefEarthModel()
+        >>> print(prem.get_profile_names())
+        ['density', 'vs', 'vp', ...]
+        >>> rho_profile = prem.get_profile("density")
+        >>> rho_670km = rho_profile.at_depth(670e3)
+
+        References
+        ----------
+        Dziewonski, A. M., & Anderson, D. L. (1981). Preliminary reference
+        Earth model. Physics of the Earth and Planetary Interiors, 25(4),
+        297-356. https://doi.org/10.1016/0031-9201(81)90046-7
+        """
         # Initialize the RadialEarthModel
         super().__init__(PreliminaryRefEarthModel.PREM_FILENAME, "Preliminary Reference Earth Model")
 
@@ -285,6 +452,35 @@ class HirschmannSolidusProfile(AbstractProfile):
     _name = "solidus temperature"
 
     def __init__(self):
+        """Initialize the Hirschmann solidus temperature profile.
+
+        Creates a solidus profile based on the experimental petrology data
+        of Hirschmann (2000). The solidus temperature is computed as a
+        quadratic function of pressure, with pressure derived from depth
+        using PREM density and gravity profiles.
+
+        The depth-to-pressure converter is initialized lazily on first query
+        to avoid loading PREM during module import.
+
+        Notes
+        -----
+        Valid depth range: 0 to ~730 km (pressure < 10 GPa).
+        The solidus represents the temperature at which partial melting begins
+        in fertile peridotite (pyrolite) composition.
+
+        Examples
+        --------
+        >>> import gdrift
+        >>> solidus_profile = gdrift.profile.HirschmannSolidusProfile()
+        >>> T_solidus_100km = solidus_profile.at_depth(100e3)
+        >>> print(f"Solidus at 100 km: {T_solidus_100km:.1f} K")
+
+        References
+        ----------
+        Hirschmann, M. M. (2000). Mantle solidus: Experimental constraints
+        and the effects of peridotite composition. Geochemistry, Geophysics,
+        Geosystems, 1(10). https://doi.org/10.1029/2000GC000070
+        """
         self._is_depth_converter_setup = False
         self.name = HirschmannSolidusProfile._name
 
@@ -365,6 +561,27 @@ class HirschmannSolidus(RadialEarthModel):
     """
 
     def __init__(self):
+        """Initialize a Hirschmann solidus radial Earth model.
+
+        Creates a RadialEarthModel containing a single profile: the Hirschmann
+        (2000) solidus temperature. This is a convenience wrapper around
+        HirschmannSolidusProfile that conforms to the RadialEarthModel interface.
+
+        The solidus can be accessed via `get_profile("solidus temperature")` or
+        directly through the `solidus_profile` attribute.
+
+        Examples
+        --------
+        >>> import gdrift
+        >>> solidus_model = gdrift.HirschmannSolidus()
+        >>> solidus_profile = solidus_model.get_profile("solidus temperature")
+        >>> T_410km = solidus_profile.at_depth(410e3)
+        >>> print(f"Solidus at 410 km: {T_410km:.1f} K")
+
+        See Also
+        --------
+        HirschmannSolidusProfile : The underlying solidus implementation
+        """
         # Initialize the solidus profile
         self.solidus_profile = HirschmannSolidusProfile()
 

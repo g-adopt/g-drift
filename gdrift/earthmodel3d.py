@@ -1,3 +1,75 @@
+"""Three-dimensional Earth models with KD-tree spatial interpolation.
+
+This module provides a flexible framework for working with 3D gridded data
+representing spatially varying properties throughout the Earth's mantle.
+The primary use case is loading and querying 3D seismic tomography models,
+but the infrastructure supports any 3D geophysical dataset.
+
+Key features:
+- KD-tree based nearest-neighbor search for fast spatial queries
+- Multiple interpolation kernels (IDW, Gaussian, Wendland, linear)
+- Coordinate system handling (geographic, Cartesian, normalized)
+- Support for multiple quantities per model (e.g., dVs, dVp, density)
+- Configurable search radii and neighbor counts
+
+Architecture
+------------
+The module defines an abstract base class (`AbstractEarthModel`) that
+specifies the interface for querying 3D models. The concrete implementation
+(`EarthModel3D`) uses scipy's cKDTree for efficient spatial indexing and
+supports pluggable interpolation kernels through the `interpolate_to_points`
+utility function.
+
+Subclasses (e.g., `SeismicModel` in seismic.py) extend `EarthModel3D` to
+provide domain-specific loading and validation logic.
+
+Class Hierarchy
+---------------
+AbstractEarthModel (ABC)
+  └── EarthModel3D : KD-tree interpolation with configurable kernels
+
+Key Classes
+-----------
+EarthModel3D : 3D spatial interpolation container with KD-tree
+AbstractEarthModel : Abstract interface for 3D Earth models
+
+Key Methods
+-----------
+EarthModel3D.set_coordinates : Define the 3D grid coordinates
+EarthModel3D.add_quantity : Add a named quantity field to the model
+EarthModel3D.at : Query quantities at arbitrary spatial locations
+
+Examples
+--------
+>>> import gdrift
+>>> import numpy as np
+>>> # Create a simple 3D model
+>>> model = gdrift.EarthModel3D(nearest_neighbours=8, default_max_distance=500e3)
+>>> # Define coordinates (Cartesian, normalized to Earth radius)
+>>> x = np.linspace(-0.5, 0.5, 10)
+>>> y = np.linspace(-0.5, 0.5, 10)
+>>> z = np.linspace(-0.5, 0.5, 10)
+>>> xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
+>>> coords = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+>>> model.set_coordinates(coords)
+>>> # Add a quantity (e.g., synthetic velocity perturbation)
+>>> dv = np.random.randn(len(coords)) * 0.02
+>>> model.add_quantity("dvs", dv, "velocity perturbation")
+>>> # Query at a specific location
+>>> value = model.at(x=0.1, y=0.2, z=-0.3, quantity="dvs", kernel="idw")
+
+Notes
+-----
+Coordinates can be provided in Cartesian (x, y, z) or geographic (lat, lon, depth)
+systems. The `at()` method automatically handles coordinate transformations.
+All spatial dimensions are normalized to Earth radius for numerical stability.
+
+See Also
+--------
+gdrift.seismic.SeismicModel : 3D seismic tomography models
+gdrift.utility.interpolate_to_points : Kernel-based interpolation
+"""
+
 from abc import ABC, abstractmethod
 from typing import List, Union
 import numpy as np
@@ -50,7 +122,80 @@ class AbstractEarthModel(ABC):
 
 
 class EarthModel3D(AbstractEarthModel):
+    """Three-dimensional Earth model with KD-tree spatial interpolation.
+
+    A container for 3D gridded geophysical data with efficient spatial queries
+    using scipy's cKDTree. Supports multiple interpolation kernels (IDW,
+    Gaussian, Wendland, linear, cubic, nearest neighbor) and handles both
+    Cartesian and geographic coordinate systems.
+
+    Typical workflow:
+    1. Create model: `model = EarthModel3D(nearest_neighbours=8)`
+    2. Set coordinates: `model.set_coordinates(x, y, z)`
+    3. Add quantities: `model.add_quantity("dvs", dvs_array, "label")`
+    4. Query: `value = model.at(lat=45, lon=0, depth=500e3, quantity="dvs")`
+
+    Parameters
+    ----------
+    nearest_neighbours : int, optional
+        Number of nearest neighbors to use for interpolation. Higher values
+        produce smoother interpolation but increase computational cost.
+        Default is 8 (suitable for most 3D tomography models).
+    default_max_distance : float, optional
+        Maximum search distance in meters for finding neighbors. Points
+        farther than this from all data points return NaN. Default is 200e3
+        (200 km), suitable for typical mantle convection resolution.
+
+    Attributes
+    ----------
+    coordinates : ndarray or None
+        Nx3 array of (x, y, z) coordinates in normalized units (scaled to
+        R_earth). Set via `set_coordinates()`. None until coordinates are set.
+    available_fields : dict
+        Dictionary mapping quantity names to (data_array, label) tuples.
+        Populated via `add_quantity()`.
+    tree : scipy.spatial.cKDTree or None
+        KD-tree for fast spatial queries. Built automatically when
+        coordinates are set. None until `set_coordinates()` is called.
+    nearest_neighbours : int
+        Number of neighbors for interpolation (from initialization).
+    default_max_distance : float
+        Maximum search distance in meters (from initialization).
+
+    Examples
+    --------
+    >>> import gdrift
+    >>> import numpy as np
+    >>> # Create synthetic 3D model
+    >>> model = gdrift.EarthModel3D(nearest_neighbours=8)
+    >>> x = np.linspace(-0.5, 0.5, 10)  # normalized coords
+    >>> y = np.linspace(-0.5, 0.5, 10)
+    >>> z = np.linspace(-0.5, 0.5, 10)
+    >>> xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
+    >>> coords = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+    >>> model.set_coordinates(coords[:, 0], coords[:, 1], coords[:, 2])
+    >>> # Add velocity perturbation
+    >>> dvs = np.random.randn(len(coords)) * 0.02
+    >>> model.add_quantity("dvs", dvs, "dln(Vs)")
+    >>> # Query using geographic coordinates
+    >>> value = model.at(lat=45.0, lon=10.0, depth=1000e3, quantity="dvs")
+
+    See Also
+    --------
+    SeismicModel : Subclass for loading seismic tomography models
+    interpolate_to_points : Underlying interpolation engine
+    """
+
     def __init__(self, nearest_neighbours=8, default_max_distance=200e3):
+        """Initialize a 3D Earth model with interpolation parameters.
+
+        Parameters
+        ----------
+        nearest_neighbours : int, optional
+            Number of nearest neighbors for interpolation. Default is 8.
+        default_max_distance : float, optional
+            Maximum search distance in meters. Default is 200e3 (200 km).
+        """
         self.coordinates = None
         self.available_fields = {}
         self.tree = None

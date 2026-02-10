@@ -1,3 +1,50 @@
+"""GPlates plate reconstruction integration for ParaView visualization.
+
+This module provides optional integration with PyGPlates for reconstructing
+coastline geometries through geological time and exporting them to VTK format
+for visualization in ParaView. This enables overlaying plate boundaries and
+continental outlines on geodynamic model outputs.
+
+**Note**: This module requires optional dependencies (pygplates, pyvista) that
+are not installed by default. It is primarily intended for advanced users who
+need to visualize geodynamic models in 3D alongside tectonic reconstructions.
+
+Key Classes
+-----------
+CoastlineVTKFile : Reconstruct and export coastlines as time-series VTK
+
+Key Methods
+-----------
+CoastlineVTKFile.reconstructed_coastlines : Get coastlines at specific age
+CoastlineVTKFile.write_output : Generate .pvd + .vtp files for ParaView
+
+Examples
+--------
+>>> import gdrift
+>>> # Requires pygplates and pyvista installed
+>>> coastlines = gdrift.CoastlineVTKFile(
+...     filename="coastlines.pvd",
+...     rotation_model="rotation_files.rot",
+...     coastlines="coastline_polygons.gpml",
+...     earth_radius=1.0)  # normalized radius
+>>> # Generate coastlines from 0-100 Ma in 10 Ma steps
+>>> coastlines.write_output(ages=range(0, 110, 10))
+>>> # Open coastlines.pvd in ParaView to visualize time evolution
+
+Notes
+-----
+- Optional dependencies: `pip install pygplates pyvista`
+- Input files are GPlates format (.rot, .gpml, .gpmlz)
+- Output is ParaView time-series (.pvd + directory of .vtp files)
+- Coastlines are filtered by polygon length to remove small artifacts
+- Coordinate system can be normalized to unit sphere for consistency with
+  geodynamic models
+
+See Also
+--------
+Example script: examples/06_vtp_pygplates.py
+"""
+
 from pathlib import Path
 import numpy as np
 import pyvista as pv

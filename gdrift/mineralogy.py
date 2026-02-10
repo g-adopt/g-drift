@@ -1,3 +1,79 @@
+"""Thermodynamic lookup tables for mineral physics properties.
+
+This module provides 2D lookup tables (depth × temperature) for mantle
+mineralogy computed using self-consistent thermodynamic databases. The
+primary use case is converting between temperature and seismic velocities
+in forward and inverse modeling of mantle convection.
+
+Key capabilities:
+- Load pre-computed thermodynamic tables (SLB_16, SLB_21 pyrolite/basalt)
+- Query properties at arbitrary (depth, temperature) pairs via bivariate spline
+- Inverse lookups: velocity → temperature at fixed depth
+- Compute derived properties (Vs, Vp) from elastic moduli and density
+- Regularize phase transition discontinuities for smooth gradients
+
+Architecture
+------------
+The module uses 2D bivariate splines (scipy.interpolate.RectBivariateSpline)
+for fast interpolation of pre-tabulated mineral physics data. Tables are
+stored in HDF5 format with multiple property keys (rho, bulk_mod, shear_mod,
+v_s, v_p, etc.) loaded simultaneously.
+
+Phase transitions (e.g., 410 km, 660 km) create sharp discontinuities in
+properties. The `regularise_thermodynamic_table` function smooths these
+discontinuities within specified depth ranges to enable gradient-based
+inverse methods.
+
+Key Classes
+-----------
+Table : Simple 2D table container (x, y, values)
+ThermodynamicModel : 2D lookup table with forward/inverse queries
+RegularisedThermodynamicModel : Dynamically created class with smoothed transitions
+
+Key Functions
+-------------
+compute_swave_speed : Calculate Vs from shear modulus and density
+compute_pwave_speed : Calculate Vp from bulk/shear moduli and density
+regularise_thermodynamic_table : Smooth phase transition discontinuities
+LinearRectBivariateSpline : Linear (kx=1, ky=1) bivariate spline factory
+
+Examples
+--------
+>>> import gdrift
+>>> # Load SLB 2021 pyrolite model
+>>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
+>>> # Query Vs at 1600 K, 500 km depth
+>>> vs = tm.temperature_to_vs(temperature=1600, depth=500e3)
+>>> print(f"Vs = {vs:.3f} m/s")
+>>>
+>>> # Inverse: convert Vs to temperature
+>>> T = tm.vs_to_temperature(vs=4500, depth=500e3)
+>>> print(f"Temperature = {T:.1f} K")
+>>>
+>>> # Query arbitrary property (if available in table)
+>>> rho = tm.temperature_to_property("rho", temperature=1600, depth=500e3)
+>>>
+>>> # Regularize phase transitions for smooth gradients
+>>> tm_smooth = gdrift.regularise_thermodynamic_table(
+...     tm, regular_range={"v_s": (350e3, 750e3)})
+>>> # Now vs_to_temperature uses smoothed table for inverse
+
+Notes
+-----
+- All depths are in meters from the surface
+- Temperatures are in Kelvin (use constants.celcius2kelvin for conversion)
+- Velocities are in m/s, densities in kg/m³, moduli in Pa
+- SLB_16 uses Stixrude & Lithgow-Bertelloni (2011) database
+- SLB_21 uses updated parameters from Stixrude & Lithgow-Bertelloni (2021)
+- Not all model/composition combinations are available (see MODELS_AVAIL,
+  COMPOSITIONS_AVAIL)
+
+See Also
+--------
+gdrift.anelasticity : Apply frequency-dependent corrections to velocities
+gdrift.profile : 1D radial profiles for reference models
+"""
+
 import numpy
 from .profile import AbstractProfile
 from .io import load_dataset
@@ -43,77 +119,326 @@ def dataset_name(model: str, composition: str):
 
 
 class Table:
-    """Base class for a table
+    """Base class for a 2D table with rows and columns.
 
-        A table per definition has rows and columns
+    A simple container for 2D gridded data with x (row) and y (column)
+    coordinates. Used internally by ThermodynamicModel to store individual
+    property tables (e.g., density, velocity) as a function of depth and
+    temperature.
+
+    Parameters
+    ----------
+    x : array_like
+        Row coordinates (typically depth values in meters).
+    y : array_like
+        Column coordinates (typically temperature values in Kelvin).
+    vals : ndarray
+        2D array of property values with shape (len(x), len(y)).
+    name : str, optional
+        Name of the property stored in this table (e.g., "rho", "v_s").
+        Default is None.
+
+    Attributes
+    ----------
+    _x : ndarray
+        Row coordinates.
+    _y : ndarray
+        Column coordinates.
+    _vals : ndarray
+        2D array of property values.
+    _name : str or None
+        Name of the property.
     """
 
     def __init__(self, x, y, vals, name=None):
+        """Initialize a 2D table with coordinates and values.
+
+        Parameters
+        ----------
+        x : array_like
+            Row coordinates (depth).
+        y : array_like
+            Column coordinates (temperature).
+        vals : ndarray
+            2D array of property values.
+        name : str, optional
+            Name of the property. Default is None.
+        """
         self._x = x
         self._y = y
         self._vals = vals
         self._name = name
 
     def get_x(self):
+        """Get the row coordinates (typically depth).
+
+        Returns
+        -------
+        ndarray
+            Row coordinates array.
+        """
         return self._x
 
     def get_y(self):
+        """Get the column coordinates (typically temperature).
+
+        Returns
+        -------
+        ndarray
+            Column coordinates array.
+        """
         return self._y
 
     def get_vals(self):
+        """Get the 2D array of property values.
+
+        Returns
+        -------
+        ndarray
+            2D array of property values with shape (len(x), len(y)).
+        """
         return self._vals
 
     def get_name(self):
+        """Get the name of the property stored in this table.
+
+        Returns
+        -------
+        str or None
+            Property name (e.g., "rho", "v_s"), or None if not set.
+        """
         return self._name
 
 
 class ThermodynamicModel(object):
-    def __init__(self, model: str, composition: str, temps=None, depths=None):
+    """Thermodynamic lookup table for mantle mineral physics properties.
+
+    Provides 2D interpolation of pre-computed mineral physics properties
+    (density, seismic velocities, elastic moduli) as a function of depth
+    and temperature. Tables are based on self-consistent thermodynamic
+    databases (Stixrude & Lithgow-Bertelloni 2011, 2021) and stored in
+    HDF5 format with bivariate spline interpolation.
+
+    The model supports:
+    - Forward queries: (depth, temperature) → property (e.g., Vs, Vp, rho)
+    - Inverse queries: (depth, velocity) → temperature
+    - Multiple compositions (pyrolite, basalt) and database versions (SLB_16, SLB_21)
+    - On-the-fly computation of Vs/Vp from elastic moduli
+
+    Parameters
+    ----------
+    model : str
+        Thermodynamic database version. Must be one of:
+        - "SLB_16": Stixrude & Lithgow-Bertelloni (2011) parameters
+        - "SLB_21": Stixrude & Lithgow-Bertelloni (2021) updated parameters
+    composition : str
+        Mantle composition. Available options depend on the model:
+        - "pyrolite": Fertile peridotite (most common)
+        - "pyroliteCFMAS": SLB_21 pyrolite in CFMAS system
+        - "pyroliteNCMAS": SLB_21 pyrolite in NCMAS system
+        - "basalt": MORB-like composition (SLB_16 only)
+    temps : array_like, optional
+        Temperature grid for subsampling (Kelvin). If None, uses full
+        temperature range from dataset. Default is None.
+    depths : array_like, optional
+        Depth grid for subsampling (meters). If None, uses full depth
+        range from dataset. Default is None.
+    extrapolate : bool, optional
+        Whether to allow extrapolation outside the table bounds. If False,
+        queries outside the range raise ValueError. Default is False.
+
+    Attributes
+    ----------
+    model : str
+        Database version (e.g., "SLB_21").
+    composition : str
+        Mantle composition (e.g., "pyroliteCFMAS").
+    extrapolate : bool
+        Extrapolation flag.
+    _tables : dict
+        Dictionary mapping property names to Table objects. Keys are the
+        property names from the HDF5 file (e.g., "rho", "bulk_mod",
+        "shear_mod", "v_s", "v_p").
+
+    Examples
+    --------
+    >>> import gdrift
+    >>> # Load SLB 2021 pyrolite model
+    >>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
+    >>> # List available properties
+    >>> print(tm.available_tables())
+    ['rho', 'bulk_mod', 'shear_mod', 'v_s', 'v_p', ...]
+    >>> # Forward query: temperature to Vs
+    >>> vs = tm.temperature_to_vs(temperature=1600, depth=500e3)
+    >>> print(f"Vs = {vs:.1f} m/s")
+    >>> # Inverse query: Vs to temperature
+    >>> T = tm.vs_to_temperature(vs=4500, depth=500e3)
+    >>> print(f"Temperature = {T:.1f} K")
+    >>> # Generic property lookup
+    >>> rho = tm.temperature_to_property("rho", temperature=1600, depth=500e3)
+
+    Notes
+    -----
+    - All depths are in meters from the surface
+    - All temperatures are in Kelvin
+    - Velocities are in m/s, densities in kg/m³, moduli in Pa
+    - Not all model/composition combinations are available
+    - Use `available_tables()` to see which properties are loaded
+    - Vs and Vp are computed from moduli if not present in HDF5 file
+
+    See Also
+    --------
+    regularise_thermodynamic_table : Smooth phase transitions
+    apply_anelastic_correction : Convert to seismic-frequency velocities
+    compute_swave_speed : Calculate Vs from shear modulus and density
+    compute_pwave_speed : Calculate Vp from bulk/shear moduli and density
+
+    References
+    ----------
+    Stixrude, L., & Lithgow-Bertelloni, C. (2011). Thermodynamics of mantle
+    minerals—II. Phase equilibria. Geophysical Journal International, 184(3),
+    1180-1213. https://doi.org/10.1111/j.1365-246X.2010.04890.x
+
+    Stixrude, L., & Lithgow-Bertelloni, C. (2021). Thermal expansivity,
+    heat capacity and bulk modulus of the mantle. Geophysical Journal
+    International. (In preparation for SLB_21 parameters)
+    """
+
+    def __init__(self, model: str, composition: str, temps=None, depths=None, extrapolate=False):
         self.model = model
         self.composition = composition
+        self.extrapolate = extrapolate
 
-        # Todo: I am commenting this out, but it should be replace in load_dataset
-        # if model not in MODELS_AVAIL:
-        #     raise ValueError(
-        #         f"{model} not available. Use `print_available_models` to see all available models")
+        # Load the HDF5 dataset
+        loaded_model = load_dataset(dataset_name(model, composition))
 
-        # load the hdf5 table (load all available keys)
-        loaded_model = load_dataset(
-            dataset_name(model, composition)
-        )
-        # a dictionary that includes all the models
+        # Dictionary to store all property tables
         self._tables = {}
 
-        # Determine which keys are actual data tables (skip coordinate arrays)
-        skip_keys = {"Depths", "Temperatures", "Pressures"}
-        table_keys = set(["bulk_mod", "shear_mod", "rho"]) | (set(loaded_model.keys()) - skip_keys)
+        # NEW GROUPED STRUCTURE: Extract from /prop group
+        if 'prop' not in loaded_model:
+            raise ValueError(
+                f"Dataset {dataset_name(model, composition)} has invalid structure. "
+                f"Expected 'prop' group not found."
+            )
+
+        prop_group = loaded_model['prop']
+
+        # Convert pressures to depths using PREM
+        pressures = prop_group['Pressures']
+        depths_from_p = self._pressure_to_depth(pressures)
+        temperatures = prop_group['Temperatures']
+
+        # Store coordinate arrays for access
+        self._pressures = pressures
+        self._depths = depths_from_p
+        self._temperatures = temperatures
+
+        # Build tables with depth as x-coordinate
+        skip_keys = {"Pressures", "Temperatures"}
+        table_keys = set(prop_group.keys()) - skip_keys
 
         for key in table_keys:
-            if key not in loaded_model:
-                continue
-            # in case we need to interpolate
+            # In case we need to interpolate to custom grid
             if temps is not None or depths is not None:
                 self._tables[key] = interpolate_table(
-                    loaded_model["Depths"] if depths is None else depths,
-                    loaded_model["Temperatures"] if temps is None else temps,
+                    depths_from_p if depths is None else depths,
+                    temperatures if temps is None else temps,
                     Table(
-                        x=loaded_model.get("Depths"),
-                        y=loaded_model.get("Temperatures"),
-                        vals=loaded_model.get(key),
-                        name=key)
+                        x=depths_from_p,
+                        y=temperatures,
+                        vals=prop_group[key],
+                        name=key
+                    )
                 )
             else:
                 self._tables[key] = Table(
-                    x=loaded_model.get("Depths"),
-                    y=loaded_model.get("Temperatures"),
-                    vals=loaded_model.get(key),
+                    x=depths_from_p,
+                    y=temperatures,
+                    vals=prop_group[key],
                     name=key
                 )
 
+    def _pressure_to_depth(self, pressures):
+        """Convert pressures to depths using PREM hydrostatic equilibrium.
+
+        Computes pressure by integrating PREM's density profile with gravity.
+        """
+        from .profile import PreliminaryRefEarthModel
+        from .utility import compute_pressure, compute_gravity, compute_mass
+        from scipy.interpolate import interp1d
+        import numpy as np
+        from .constants import R_earth
+
+        prem = PreliminaryRefEarthModel()
+
+        # Get PREM density profile
+        density_profile = prem.get_profile('density')
+        prem_depths = density_profile.raw_depth  # meters
+        prem_densities = density_profile.raw_value  # kg/m^3
+
+        # Convert depths to radii and reverse arrays (need center to surface)
+        prem_radii = R_earth - prem_depths
+        # Reverse arrays so they go from center (r=0) to surface (r=R_earth)
+        prem_radii = prem_radii[::-1]
+        prem_densities = prem_densities[::-1]
+        prem_depths = prem_depths[::-1]
+
+        # Compute mass and gravity at each radius
+        prem_mass = compute_mass(prem_radii, prem_densities)
+        prem_gravity = compute_gravity(prem_radii, prem_mass)
+
+        # Compute pressure at each radius using hydrostatic integration
+        prem_pressures = compute_pressure(prem_radii, prem_densities, prem_gravity)
+
+        # Invert: pressure → depth
+        # Sort by pressure (increasing from surface to CMB)
+        sort_idx = np.argsort(prem_pressures)
+        prem_pressures_sorted = prem_pressures[sort_idx]
+        prem_depths_sorted = prem_depths[sort_idx]
+
+        # Interpolate (use linear, allow extrapolation for deep mantle)
+        depth_interp = interp1d(
+            prem_pressures_sorted,
+            prem_depths_sorted,
+            kind='linear',
+            bounds_error=False,
+            fill_value='extrapolate'
+        )
+
+        return depth_interp(pressures)
+
     def get_temperatures(self):
+        """Get the temperature grid for this thermodynamic model.
+
+        Returns
+        -------
+        ndarray
+            1D array of temperatures in Kelvin. Typically ranges from
+            ~300 K to ~7000 K depending on the model.
+
+        Notes
+        -----
+        Uses the temperature grid from the "shear_mod" table as a
+        representative example (all tables share the same grid).
+        """
         return self._tables["shear_mod"].get_y()
 
     def get_depths(self):
+        """Get the depth grid for this thermodynamic model.
+
+        Returns
+        -------
+        ndarray
+            1D array of depths in meters from the surface. Typically
+            ranges from 0 to 2890 km (CMB depth) for mantle models.
+
+        Notes
+        -----
+        Depths are converted from the pressure grid in the HDF5 file
+        using PREM hydrostatic equilibrium. Uses the depth grid from
+        the "shear_mod" table as a representative example.
+        """
         return self._tables["shear_mod"].get_x()
 
     def vs_to_temperature(self, vs: Number, depth: Number, bounds: Optional[Union[Tuple[float, float], Tuple[numpy.ndarray, numpy.ndarray]]] = (300, 7000)) -> Number:
@@ -188,23 +513,154 @@ class ThermodynamicModel(object):
 
         Returns:
             Interpolated property value(s) at the given temperature and depth.
+            Returns NaN if extrapolate=False and inputs are out of bounds.
         """
         table = self._get_table(property_name)
-        return LinearRectBivariateSpline(
+
+        # Get bounds
+        depth_min, depth_max = table.get_x().min(), table.get_x().max()
+        temp_min, temp_max = table.get_y().min(), table.get_y().max()
+
+        # Perform interpolation
+        result = LinearRectBivariateSpline(
             table.get_x(),
             table.get_y(),
             table.get_vals()).ev(depth, temperature)
 
+        # If extrapolate is False, return NaN for out-of-bounds values
+        if not self.extrapolate:
+            import numpy as np
+            # Convert to arrays for consistent handling
+            depth_arr = np.atleast_1d(depth)
+            temp_arr = np.atleast_1d(temperature)
+            result_arr = np.atleast_1d(result)
+
+            # Create mask for out-of-bounds values
+            out_of_bounds = (
+                (depth_arr < depth_min) | (depth_arr > depth_max) |
+                (temp_arr < temp_min) | (temp_arr > temp_max)
+            )
+
+            # Set out-of-bounds values to NaN
+            result_arr = np.where(out_of_bounds, np.nan, result_arr)
+
+            # Return scalar if input was scalar
+            if np.ndim(depth) == 0 and np.ndim(temperature) == 0:
+                result = result_arr.item()
+            else:
+                result = result_arr
+
+        return result
+
     def temperature_to_vs(self, temperature, depth):
+        """Convert temperature and depth to shear wave velocity (Vs).
+
+        Convenience wrapper for `temperature_to_property("vs", ...)`.
+        Computes Vs from shear modulus and density using the relation:
+        Vs = sqrt(shear_modulus / density).
+
+        Parameters
+        ----------
+        temperature : float or array_like
+            Temperature in Kelvin.
+        depth : float or array_like
+            Depth in meters from the surface.
+
+        Returns
+        -------
+        float or ndarray
+            Shear wave velocity in m/s. Returns NaN for out-of-bounds
+            queries if extrapolate=False.
+
+        Examples
+        --------
+        >>> import gdrift
+        >>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
+        >>> vs = tm.temperature_to_vs(temperature=1600, depth=500e3)
+        >>> print(f"Vs = {vs:.1f} m/s")
+        """
         return self.temperature_to_property("vs", temperature, depth)
 
     def temperature_to_vp(self, temperature, depth):
+        """Convert temperature and depth to compressional wave velocity (Vp).
+
+        Convenience wrapper for `temperature_to_property("vp", ...)`.
+        Computes Vp from bulk modulus, shear modulus, and density using:
+        Vp = sqrt((bulk_modulus + 4/3 * shear_modulus) / density).
+
+        Parameters
+        ----------
+        temperature : float or array_like
+            Temperature in Kelvin.
+        depth : float or array_like
+            Depth in meters from the surface.
+
+        Returns
+        -------
+        float or ndarray
+            Compressional wave velocity in m/s. Returns NaN for out-of-bounds
+            queries if extrapolate=False.
+
+        Examples
+        --------
+        >>> import gdrift
+        >>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
+        >>> vp = tm.temperature_to_vp(temperature=1600, depth=500e3)
+        >>> print(f"Vp = {vp:.1f} m/s")
+        """
         return self.temperature_to_property("vp", temperature, depth)
 
     def temperature_to_rho(self, temperature, depth):
+        """Convert temperature and depth to density.
+
+        Convenience wrapper for `temperature_to_property("rho", ...)`.
+        Queries the pre-computed density lookup table.
+
+        Parameters
+        ----------
+        temperature : float or array_like
+            Temperature in Kelvin.
+        depth : float or array_like
+            Depth in meters from the surface.
+
+        Returns
+        -------
+        float or ndarray
+            Density in kg/m³. Returns NaN for out-of-bounds queries if
+            extrapolate=False.
+
+        Examples
+        --------
+        >>> import gdrift
+        >>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
+        >>> rho = tm.temperature_to_rho(temperature=1600, depth=500e3)
+        >>> print(f"Density = {rho:.1f} kg/m³")
+        """
         return self.temperature_to_property("rho", temperature, depth)
 
     def compute_swave_speed(self):
+        """Compute shear wave velocity (Vs) table from elastic moduli.
+
+        Calculates Vs at all (depth, temperature) grid points using:
+        Vs = sqrt(shear_modulus / density)
+
+        Returns
+        -------
+        Table
+            2D table of shear wave velocities in m/s with the same
+            (depth, temperature) grid as the loaded thermodynamic model.
+
+        Notes
+        -----
+        This method is called automatically by `temperature_to_vs()` and
+        `temperature_to_property("vs", ...)`. The computed table is cached
+        internally for efficiency.
+
+        See Also
+        --------
+        compute_pwave_speed : Compute Vp from bulk and shear moduli
+        temperature_to_vs : Query Vs at specific (depth, temperature)
+        """
         return type(self._tables["shear_mod"])(
             x=self._tables["shear_mod"].get_x(),
             y=self._tables["shear_mod"].get_y(),
@@ -216,6 +672,28 @@ class ThermodynamicModel(object):
         )
 
     def compute_pwave_speed(self):
+        """Compute compressional wave velocity (Vp) table from elastic moduli.
+
+        Calculates Vp at all (depth, temperature) grid points using:
+        Vp = sqrt((bulk_modulus + 4/3 * shear_modulus) / density)
+
+        Returns
+        -------
+        Table
+            2D table of compressional wave velocities in m/s with the same
+            (depth, temperature) grid as the loaded thermodynamic model.
+
+        Notes
+        -----
+        This method is called automatically by `temperature_to_vp()` and
+        `temperature_to_property("vp", ...)`. The computed table is cached
+        internally for efficiency.
+
+        See Also
+        --------
+        compute_swave_speed : Compute Vs from shear modulus
+        temperature_to_vp : Query Vp at specific (depth, temperature)
+        """
         return type(self._tables["shear_mod"])(
             x=self._tables["shear_mod"].get_x(),
             y=self._tables["shear_mod"].get_y(),
@@ -243,6 +721,11 @@ class ThermodynamicModel(object):
         numpy.ndarray: Temperature corresponding to the given wave speed and depth.
         """
 
+        # Convert scalar inputs to arrays for consistent processing
+        is_scalar = numpy.ndim(v) == 0
+        v = numpy.atleast_1d(v)
+        depth = numpy.atleast_1d(depth)
+
         # check if bounds is a tuple of floats
         if isinstance(bounds, tuple) and all(isinstance(b, (float, int)) for b in bounds):
             bounds = tuple([numpy.full_like(v, b) for b in bounds])
@@ -258,11 +741,14 @@ class ThermodynamicModel(object):
             table.get_vals())
 
         # return the temperature
-        return numpy.squeeze(
+        result = numpy.squeeze(
             numpy.array(
                 [self._find_temperature(a_speed, a_depth, bi_spline, bounds=(lb, ub)) for a_speed, a_depth, lb, ub in zip(v, depth, bounds[0], bounds[1])]
             )
         )
+
+        # Return scalar if input was scalar
+        return result.item() if is_scalar else result
 
     def _find_temperature(self, val, depth, interpolator, bounds):
         def objective(temp):

@@ -1,3 +1,78 @@
+"""Anelastic corrections for converting between elastic and anelastic seismic velocities.
+
+This module implements frequency-dependent anelastic attenuation corrections
+that account for the difference between seismic wave velocities measured at
+seismic frequencies (~1 Hz) and elastic velocities computed from mineral
+physics at high frequencies (effective infinite frequency limit).
+
+Anelasticity causes seismic waves to attenuate and disperse as they propagate
+through the mantle. The quality factor Q quantifies this attenuation, with
+lower Q indicating stronger anelastic effects. Velocity corrections depend on
+Q, temperature, pressure, and the homologous temperature (T/T_solidus).
+
+Two parameterizations are provided:
+1. **Cammarano et al. (2003)**: Uses parameters B (grain size), g (activation
+   volume), and a (frequency exponent) to compute Q(depth, temperature)
+2. **Goes et al. (2000)**: Uses Q0 (reference Q) and xi (activation parameter)
+   for simpler Q(depth, temperature) models
+
+Key Classes
+-----------
+BaseAnelasticityModel : Abstract base class for anelastic models
+CammaranoAnelasticityModel : B, g, a parameterization (6 Q-profiles: Q1-Q6)
+GoesAnelasticityModel : Q0, xi parameterization (2 Q-profiles: Q4, Q6)
+
+Key Functions
+-------------
+apply_anelastic_correction : Apply anelastic correction to ThermodynamicModel
+BaseAnelasticityModel.build_ghelichkhan_solidus : Factory for Hirschmann solidus
+
+Examples
+--------
+>>> import gdrift
+>>> # Load elastic thermodynamic model
+>>> tm = gdrift.ThermodynamicModel("SLB_21_pyroliteCFMAS")
+>>>
+>>> # Create Cammarano Q3 anelasticity model
+>>> anelastic = gdrift.CammaranoAnelasticityModel.from_q_profile("Q3")
+>>>
+>>> # Apply correction to get anelastic (seismic-frequency) model
+>>> tm_anelastic = gdrift.apply_anelastic_correction(tm, anelastic)
+>>>
+>>> # Now tm_anelastic.temperature_to_vs returns seismic-frequency Vs
+>>> vs_elastic = tm.temperature_to_vs(1600, 500e3)
+>>> vs_anelastic = tm_anelastic.temperature_to_vs(1600, 500e3)
+>>> print(f"Elastic: {vs_elastic:.1f} m/s, Anelastic: {vs_anelastic:.1f} m/s")
+>>>
+>>> # Use Goes Q4 model instead
+>>> anelastic_goes = gdrift.GoesAnelasticityModel.from_q_profile("Q4")
+>>> tm_anelastic_q4 = gdrift.apply_anelastic_correction(tm, anelastic_goes)
+
+Notes
+-----
+- Anelastic corrections typically reduce Vs by 1-3% in the mantle
+- Corrections are largest at high temperatures (near solidus)
+- Q-profiles (Q1-Q6) represent different assumptions about grain size,
+  water content, and attenuation mechanisms
+- Cammarano Q3 and Goes Q4 are commonly used in geodynamic studies
+- The correction assumes a reference frequency of 1 Hz for seismic waves
+
+References
+----------
+Cammarano, F., Goes, S., Vacher, P., & Giardini, D. (2003). Inferring
+upper-mantle temperatures from seismic velocities. Physics of the Earth
+and Planetary Interiors, 138(3-4), 197-222.
+
+Goes, S., Govers, R., & Vacher, P. (2000). Shallow mantle temperatures
+under Europe from P and S wave tomography. Journal of Geophysical Research,
+105(B5), 11153-11169.
+
+See Also
+--------
+gdrift.mineralogy.ThermodynamicModel : Elastic velocity lookup tables
+gdrift.profile.HirschmannSolidus : Solidus temperature profile
+"""
+
 from abc import ABC, abstractmethod
 import numpy
 import numpy.typing as npt

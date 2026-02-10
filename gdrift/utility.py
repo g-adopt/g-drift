@@ -1,13 +1,119 @@
+"""Utility functions for coordinate transforms, gravity, and interpolation.
+
+This module provides mathematical and geophysical utility functions used
+throughout gdrift, including:
+- Coordinate system conversions (geodetic ↔ Cartesian, normalized coords)
+- Gravity and pressure computation from radial density profiles
+- Spatial interpolation kernels (IDW, Gaussian, Wendland, etc.)
+- Fibonacci sphere for uniform sampling on spheres
+- Array manipulation helpers
+
+The coordinate transforms handle conversions between:
+- **Geodetic**: (latitude, longitude, depth) in degrees and meters
+- **Cartesian**: (x, y, z) in meters with origin at Earth's center
+- **Normalized**: (x, y, z) scaled to R_earth for numerical stability
+
+Key Functions
+-------------
+Coordinate Transforms:
+  geodetic_to_cartesian : (lat, lon, depth) → (x, y, z) in meters
+  cartesian_to_geodetic : (x, y, z) → (lat, lon, depth)
+  nondimensionalise_coords : Scale Cartesian coords to R_earth
+  dimensionalise_coords : Rescale normalized coords to meters
+
+Geophysical Computations:
+  compute_mass : Cumulative mass from radial density profile
+  compute_gravity : Radial gravity from enclosed mass
+  compute_pressure : Hydrostatic pressure from density and gravity
+
+Interpolation:
+  interpolate_to_points : KD-tree kernel-based interpolation
+  Available kernels: "idw" (inverse distance), "gaussian", "wendland",
+                     "linear", "cubic", "nearest_neighbour"
+
+Sampling:
+  fibonacci_sphere : Uniform point distribution on unit sphere
+
+Array Helpers:
+  enlist : Ensure input is numpy array
+  create_labeled_array : Create named structured array
+  is_ascending : Check monotonic increasing sequence
+  is_descending : Check monotonic decreasing sequence
+
+Examples
+--------
+>>> import gdrift
+>>> import numpy as np
+>>> # Coordinate transform
+>>> x, y, z = gdrift.geodetic_to_cartesian(
+...     lat=45.0, lon=10.0, depth=500e3)
+>>> lat, lon, depth = gdrift.cartesian_to_geodetic(x, y, z)
+>>>
+>>> # Compute gravity profile from PREM
+>>> prem = gdrift.PreliminaryRefEarthModel()
+>>> rho_profile = prem.get_profile("density")
+>>> depths = np.linspace(0, 2890e3, 100)
+>>> radii = gdrift.constants.R_earth - depths
+>>> densities = rho_profile.at_depth(depths)
+>>> mass = gdrift.compute_mass(radii[::-1], densities[::-1])
+>>> gravity = gdrift.compute_gravity(radii[::-1], mass)
+>>>
+>>> # Fibonacci sphere sampling
+>>> points = gdrift.fibonacci_sphere(1000)  # 1000 points on unit sphere
+
+Notes
+-----
+- All depths are measured from the surface (positive downward)
+- Radii are measured from Earth's center (positive outward)
+- Coordinate transforms assume spherical Earth with radius R_earth
+- Gravity computation requires radius arrays starting from r=0 (center)
+- Interpolation kernels have different distance decay characteristics:
+  * IDW: power-law decay (customizable exponent)
+  * Gaussian: exponential decay (customizable bandwidth)
+  * Wendland: compact support (zero beyond cutoff radius)
+  * Linear/Cubic: polynomial basis functions
+  * Nearest neighbor: piecewise constant
+
+See Also
+--------
+gdrift.constants : R_earth, R_cmb
+gdrift.earthmodel3d : 3D interpolation using these utilities
+"""
+
 import numpy
 import scipy
 from .constants import R_earth, R_cmb
 
 
 def is_ascending(lst):
+    """Check if a list is monotonically non-decreasing.
+
+    Parameters
+    ----------
+    lst : list or array_like
+        Sequence to check.
+
+    Returns
+    -------
+    bool
+        True if lst[i] <= lst[i+1] for all i, False otherwise.
+    """
     return all(lst[i] <= lst[i + 1] for i in range(len(lst) - 1))
 
 
 def is_descending(lst):
+    """Check if a list is monotonically non-increasing.
+
+    Parameters
+    ----------
+    lst : list or array_like
+        Sequence to check.
+
+    Returns
+    -------
+    bool
+        True if lst[i] >= lst[i+1] for all i, False otherwise.
+    """
     return all(lst[i] >= lst[i + 1] for i in range(len(lst) - 1))
 
 
@@ -182,6 +288,36 @@ def spherical_to_cartesian(r, theta, phi):
 
 
 def nondimensionalise_coords(x, y, z, R_nd_earth=2.22, R_nd_cmb=1.22):
+    """Convert dimensional Cartesian coordinates to nondimensional form.
+
+    Applies linear radial scaling to map physical coordinates (meters)
+    to a nondimensional reference frame. Commonly used in geodynamic
+    simulations to improve numerical conditioning.
+
+    Parameters
+    ----------
+    x, y, z : float or array_like
+        Cartesian coordinates in meters (origin at Earth's center).
+    R_nd_earth : float, optional
+        Nondimensional radius for Earth's surface. Default is 2.22.
+    R_nd_cmb : float, optional
+        Nondimensional radius for core-mantle boundary. Default is 1.22.
+
+    Returns
+    -------
+    tuple of (float or ndarray)
+        Nondimensionalized (x', y', z') coordinates.
+
+    Notes
+    -----
+    Uses linear scaling: r' = a*r + b, where a and b are determined by
+    mapping R_earth → R_nd_earth and R_cmb → R_nd_cmb. Angular coordinates
+    (theta, phi) are preserved.
+
+    See Also
+    --------
+    dimensionalise_coords : Inverse transformation
+    """
     r, theta, phi = cartesian_to_spherical(x, y, z)
 
     # Calculate the slope (a)
@@ -195,7 +331,35 @@ def nondimensionalise_coords(x, y, z, R_nd_earth=2.22, R_nd_cmb=1.22):
 
 
 def dimensionalise_coords(x, y, z, R_nd_cmb=1.22, R_nd_earth=2.22):
-    """
+    """Convert nondimensional Cartesian coordinates back to meters.
+
+    Inverse of `nondimensionalise_coords`. Maps nondimensional coordinates
+    back to physical units (meters) using linear radial scaling.
+
+    Parameters
+    ----------
+    x, y, z : float or array_like
+        Nondimensional Cartesian coordinates.
+    R_nd_cmb : float, optional
+        Nondimensional radius for core-mantle boundary. Must match the
+        value used in nondimensionalisation. Default is 1.22.
+    R_nd_earth : float, optional
+        Nondimensional radius for Earth's surface. Must match the value
+        used in nondimensionalisation. Default is 2.22.
+
+    Returns
+    -------
+    tuple of (float or ndarray)
+        Dimensional (x, y, z) coordinates in meters.
+
+    Notes
+    -----
+    Uses inverse linear scaling: r = a*r' + b, where a and b are determined
+    by mapping R_nd_earth → R_earth and R_nd_cmb → R_cmb.
+
+    See Also
+    --------
+    nondimensionalise_coords : Forward transformation
     """
     r, theta, phi = cartesian_to_spherical(x, y, z)
 
