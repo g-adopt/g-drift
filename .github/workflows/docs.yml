@@ -1,0 +1,89 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Sets permissions for GitHub Pages deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Wait for Firedrake tests to complete successfully
+  check-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - name: Wait for Firedrake tests
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'test_firedrake'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+          allowed-conclusions: success
+
+  # Build and deploy documentation
+  build-and-deploy:
+    # Skip check-tests for manual dispatch
+    needs: ${{ github.event_name == 'push' && 'check-tests' || '' }}
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[docs,examples]"
+
+      - name: Install Jupyter kernel
+        run: python -m ipykernel install --user --name python3
+
+      - name: Prepare demo data and notebooks
+        working-directory: examples
+        run: make all
+        env:
+          MPLBACKEND: Agg
+
+      - name: Generate Data Catalog
+        run: python scripts/generate_data_catalog.py
+
+      - name: Verify generated files
+        run: |
+          test -f docs/data-catalog-generated.md || { echo "❌ data-catalog-generated.md not found"; exit 1; }
+          test -f docs/data-catalog-incomplete.md || { echo "❌ data-catalog-incomplete.md not found"; exit 1; }
+          echo "✅ Data catalog files generated successfully"
+
+      - name: Build documentation
+        run: mkdocs build --strict
+        env:
+          MPLBACKEND: Agg
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
