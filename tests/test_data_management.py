@@ -10,6 +10,8 @@ from gdrift.datasetnames import (
     DatasetType,
     get_manifest_config,
     get_dataset_hash,
+    get_dataset_by_name,
+    hash_name,
     _load_manifest,
 )
 from gdrift.seismic import AVAILABLE_SEISMIC_MODELS
@@ -107,3 +109,24 @@ def test_get_dataset_hash_unknown():
     """get_dataset_hash returns None for unknown datasets."""
     h = get_dataset_hash("totally_bogus_dataset")
     assert h is None
+
+
+def test_hash_name_deterministic():
+    """hash_name produces deterministic 64-char hex output."""
+    h1 = hash_name("1d_prem")
+    h2 = hash_name("1d_prem")
+    assert h1 == h2
+    assert len(h1) == 64
+    assert all(c in "0123456789abcdef" for c in h1)
+    # Different inputs produce different hashes
+    assert hash_name("1d_prem") != hash_name("SLB_16_pyrolite")
+
+
+def test_dataset_get_filename_hashed():
+    """Dataset.get_filename() returns a hashed .h5 filename."""
+    ds = get_dataset_by_name("1d_prem")
+    filename = ds.get_filename()
+    expected = hash_name("1d_prem") + ".h5"
+    assert filename == expected
+    assert filename.endswith(".h5")
+    assert "1d_prem" not in filename

@@ -71,8 +71,8 @@ def test_apply_anelastic_correction():
 
     # Load thermodynamic model
     thermodynamic_model = ThermodynamicModel(
-        model="SLB_16",
-        composition="pyrolite",
+        model="SLB_24",
+        composition="pyroliteCFMAS",
         temps=np.linspace(300, 4000, 10),
         depths=np.linspace(0, 2890e3, 10)
     )
