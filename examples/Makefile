@@ -1,7 +1,7 @@
 .PHONY: all notebooks data clean help
 
 # Demo directories
-DEMOS := 00_solidus 01_anelasticity 02_temperature_to_vs 04_tomography 05_geodynamic_adiabat
+DEMOS := 00_solidus 01_anelasticity 02_temperature_to_vs tomography_models 05_geodynamic_adiabat
 
 help:
 	@echo "Available targets:"
