@@ -175,3 +175,5 @@ docs/data-catalog-incomplete.md
 
 # Enriched manifest (for review before committing)
 gdrift/datasets.json.enriched
+
+*.DS_Store
