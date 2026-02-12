@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 # Define the thermodynamic model for pyrolite composition.
 # -----------------------------------------------------------------------------
 slb_pyrolite = gdrift.ThermodynamicModel(
-    "SLB_16", "pyrolite", temps=np.linspace(300, 4000), depths=np.linspace(0, 2890e3)
+    "SLB_21", "pyroliteCFMAS", temps=np.linspace(300, 4000), depths=np.linspace(0, 2890e3)
 )
 
 # -----------------------------------------------------------------------------

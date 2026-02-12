@@ -1,12 +1,13 @@
-.PHONY: all notebooks data clean help
+.PHONY: all notebooks data clean help test
 
 # Demo directories
-DEMOS := 00_solidus 01_anelasticity 02_temperature_to_vs tomography_models 05_geodynamic_adiabat
+DEMOS := mantle_solidus 01_anelasticity 02_temperature_to_vs tomography_models geodynamic_adiabat
 
 help:
 	@echo "Available targets:"
 	@echo "  all        - Download data and generate all notebooks"
 	@echo "  notebooks  - Convert all Python scripts to notebooks"
+	@echo "  test       - Run regression tests for all demos"
 	@echo "  data       - Download/prepare all demo data"
 	@echo "  clean      - Remove generated notebooks and artifacts"
 	@echo ""
@@ -25,6 +26,15 @@ notebooks:
 		fi \
 	done
 	@echo "All notebooks generated successfully!"
+
+# Run regression tests
+test:
+	@for dir in $(DEMOS); do \
+		if [ -d "$$dir" ] && [ -f "$$dir/Makefile" ]; then \
+			echo "Testing $$dir..."; \
+			$(MAKE) -C "$$dir" test || exit 1; \
+		fi \
+	done
 
 # Download/prepare all demo data
 data:

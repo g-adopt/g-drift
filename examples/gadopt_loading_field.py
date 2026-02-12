@@ -137,7 +137,7 @@ def build_anelasticity_model(solidus):
 
 def build_thermodynamic_model():
     # Thermodynamic model
-    slb_pyrolite = gdrift.ThermodynamicModel("SLB_16", "pyrolite")
+    slb_pyrolite = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 
     # The solid phase changes for mantle minerals are a source of error when
     # interpreting seismic tomography speed in terms of temperature. This
