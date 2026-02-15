@@ -1,7 +1,7 @@
 .PHONY: all notebooks data clean help test
 
 # Demo directories
-DEMOS := mantle_solidus 01_anelasticity 02_temperature_to_vs tomography_models geodynamic_adiabat
+DEMOS := mantle_solidus anelasticity_corrections temperature_to_vs tomography_models geodynamic_adiabat linearisation gadopt_loading_field
 
 help:
 	@echo "Available targets:"
