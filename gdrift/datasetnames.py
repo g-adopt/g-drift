@@ -101,7 +101,7 @@ class DatasetType(Enum):
         temperature, density, velocity profiles).
     THERMODYNAMIC_MODEL : str
         2D thermodynamic lookup tables (depth × temperature) for mineral
-        physics properties (e.g., SLB_16 pyrolite, SLB_21 pyroliteCFMAS).
+        physics properties (e.g., SLB_21 pyroliteCFMAS).
     TOMOGRAPHY_MODEL : str
         3D seismic tomography models with velocity perturbations
         (e.g., S40RTS, GLAD-M25, SEMUCB-WM1).
@@ -183,6 +183,8 @@ class Dataset:
     doi: Optional[str] = None
     year: Optional[int] = None
     file_hash: Optional[str] = None
+    fields: Optional[List[str]] = None
+    regional: Optional[bool] = None
 
     def __post_init__(self):
         """Validate dataset fields after dataclass initialization.
@@ -334,6 +336,11 @@ class DatasetRegistry:
         """Get all datasets that have hash information for integrity verification."""
         return [dataset for dataset in self._datasets.values() if dataset.has_hash()]
 
+    def filter_by_field(self, field: str) -> List[Dataset]:
+        """Filter datasets containing a specific field (e.g., 'dvs')."""
+        return [ds for ds in self._datasets.values()
+                if ds.fields and field in ds.fields]
+
     def __contains__(self, name: str) -> bool:
         """Check if a dataset exists in the registry."""
         return name in self._datasets
@@ -381,6 +388,8 @@ def _build_registry_from_manifest() -> List[Dataset]:
             doi=entry.get("doi"),
             year=entry.get("year"),
             file_hash=f"sha256:{entry['sha256']}" if entry.get("sha256") else None,
+            fields=entry.get("fields"),
+            regional=entry.get("regional"),
         )
         datasets.append(ds)
     return datasets

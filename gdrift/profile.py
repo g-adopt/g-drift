@@ -155,6 +155,8 @@ class SplineProfile(AbstractProfile):
         super().__init__(name)
         self.raw_depth = depth
         self.raw_value = value
+        # display_name defaults to name, can be overridden for richer labels
+        self.display_name = name
 
         self.spline_type = spline_type
         self._is_spline_made = False
@@ -374,7 +376,11 @@ class RadialEarthModelFromFile(RadialEarthModel):
         for name, value in profiles.items():
             if name == "depth":
                 continue
-            all_profiles.append(SplineProfile(depth=depths, value=value, name=name, spline_type="linear"))
+            # Keep internal key as-is, but include description in display name
+            display_name = f"{name} ({self.description})" if self.description else name
+            profile = SplineProfile(depth=depths, value=value, name=name, spline_type="linear")
+            profile.display_name = display_name
+            all_profiles.append(profile)
 
         # Initialize the RadialEarthModel
         super().__init__(all_profiles)
@@ -450,6 +456,7 @@ class HirschmannSolidusProfile(AbstractProfile):
     _nd_radial = 1000
     _maximum_pressure = 10e9
     _name = "solidus temperature"
+    _display_name = "solidus temperature (Hirschmann 2000)"
 
     def __init__(self):
         """Initialize the Hirschmann solidus temperature profile.
@@ -483,6 +490,7 @@ class HirschmannSolidusProfile(AbstractProfile):
         """
         self._is_depth_converter_setup = False
         self.name = HirschmannSolidusProfile._name
+        self.display_name = HirschmannSolidusProfile._display_name
 
     def at_depth(self, depth: float | numpy.ndarray):
         # Setup the depth converter if not already done

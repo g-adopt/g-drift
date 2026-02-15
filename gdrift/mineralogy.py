@@ -6,7 +6,7 @@ primary use case is converting between temperature and seismic velocities
 in forward and inverse modeling of mantle convection.
 
 Key capabilities:
-- Load pre-computed thermodynamic tables (SLB_16, SLB_21 pyrolite/basalt)
+- Load pre-computed thermodynamic tables (SLB_21 pyrolite variants, etc.)
 - Query properties at arbitrary (depth, temperature) pairs via bivariate spline
 - Inverse lookups: velocity → temperature at fixed depth
 - Compute derived properties (Vs, Vp) from elastic moduli and density
@@ -63,10 +63,9 @@ Notes
 - All depths are in meters from the surface
 - Temperatures are in Kelvin (use constants.celcius2kelvin for conversion)
 - Velocities are in m/s, densities in kg/m³, moduli in Pa
-- SLB_16 uses Stixrude & Lithgow-Bertelloni (2011) database
-- SLB_21 uses updated parameters from Stixrude & Lithgow-Bertelloni (2021)
+- SLB_21 uses Stixrude & Lithgow-Bertelloni (2021) parameters
 - Not all model/composition combinations are available (see MODELS_AVAIL,
-  COMPOSITIONS_AVAIL)
+  COMPOSITIONS_AVAIL, derived from the datasets.json manifest)
 
 See Also
 --------
@@ -94,8 +93,12 @@ default_regular_range = {
 }
 
 
-MODELS_AVAIL = ['SLB_16', "SLB_21"]
-COMPOSITIONS_AVAIL = ['pyrolite', 'basalt']
+from .datasetnames import DATASET_REGISTRY, DatasetType
+
+# Derive available models and compositions from the manifest
+_thermo_names = [d.name for d in DATASET_REGISTRY.filter_by_type(DatasetType.THERMODYNAMIC_MODEL)]
+MODELS_AVAIL = sorted({"_".join(n.split("_")[:2]) for n in _thermo_names})
+COMPOSITIONS_AVAIL = sorted({n.split("_", 2)[2] for n in _thermo_names if n.count("_") >= 2})
 
 
 def LinearRectBivariateSpline(x, y, z):
@@ -222,21 +225,18 @@ class ThermodynamicModel(object):
     The model supports:
     - Forward queries: (depth, temperature) → property (e.g., Vs, Vp, rho)
     - Inverse queries: (depth, velocity) → temperature
-    - Multiple compositions (pyrolite, basalt) and database versions (SLB_16, SLB_21)
+    - Multiple compositions and database versions (see MODELS_AVAIL, COMPOSITIONS_AVAIL)
     - On-the-fly computation of Vs/Vp from elastic moduli
 
     Parameters
     ----------
     model : str
-        Thermodynamic database version. Must be one of:
-        - "SLB_16": Stixrude & Lithgow-Bertelloni (2011) parameters
-        - "SLB_21": Stixrude & Lithgow-Bertelloni (2021) updated parameters
+        Thermodynamic database version (e.g. "SLB_21"). See MODELS_AVAIL
+        for all available versions, derived from the datasets.json manifest.
     composition : str
-        Mantle composition. Available options depend on the model:
-        - "pyrolite": Fertile peridotite (most common)
-        - "pyroliteCFMAS": SLB_21 pyrolite in CFMAS system
-        - "pyroliteNCMAS": SLB_21 pyrolite in NCMAS system
-        - "basalt": MORB-like composition (SLB_16 only)
+        Mantle composition. Available options depend on the model. See
+        COMPOSITIONS_AVAIL for all available compositions (e.g.
+        "pyroliteCFMAS", "pyroliteNCMAS", "bulk-oceanic-crustCFMAS").
     temps : array_like, optional
         Temperature grid for subsampling (Kelvin). If None, uses full
         temperature range from dataset. Default is None.

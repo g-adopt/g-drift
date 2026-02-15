@@ -191,13 +191,43 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
         """Create a CammaranoAnelasticityModel from a predefined Q-profile.
 
         Uses the six Q-profiles (Q1-Q6) from Cammarano et al. (2003), with
-        upper/lower mantle parameter switching at 660 km depth.
+        upper/lower mantle parameter switching at 660 km depth. The Q factor
+        is computed as:
+
+            Q = B * omega^a * exp(a * g * T_solidus / T)
+
+        where B controls the overall attenuation amplitude (related to grain
+        size), g is a dimensionless activation energy parameter, a is the
+        frequency exponent, and T_solidus is the solidus temperature at the
+        given depth.
+
+        Q-profiles represent different assumptions about grain size, water
+        content, and attenuation mechanisms in the mantle:
+
+        ======= ============= ============= ======================================
+        Profile B (UM / LM)   g (UM / LM)   Physical Interpretation
+        ======= ============= ============= ======================================
+        Q1      0.5 / 10      20 / 10       Fine grain size, low water content
+        Q2      0.8 / 15      20 / 10       Medium grain size
+        Q3      1.1 / 20      20 / 10       Coarse grain, higher water content
+        Q4      0.035 / 2.25  30 / 15       SLB activation energy, fine grain
+        Q5      0.056 / 3.6   30 / 15       SLB activation energy, medium grain
+        Q6      0.077 / 4.95  30 / 15       SLB activation energy, coarse grain
+        ======= ============= ============= ======================================
+
+        UM = upper mantle (< 660 km), LM = lower mantle (>= 660 km).
+        Q1-Q3 use Cammarano et al. (2003) activation energy parameterization.
+        Q4-Q6 use Stixrude & Lithgow-Bertelloni activation energy values.
+        All profiles use a = 0.2 (frequency exponent) and omega = 1.0 Hz.
 
         Args:
             q_profile (str): One of "Q1" through "Q6".
 
         Returns:
             CammaranoAnelasticityModel: The configured model.
+
+        Raises:
+            ValueError: If q_profile is not one of Q1-Q6.
         """
         parameters = {
             "Q1": {"B": [0.5, 10], "g": [20, 10]},
@@ -299,11 +329,33 @@ class GoesAnelasticityModel(BaseAnelasticityModel):
     def from_q_profile(cls, q_profile: str) -> "GoesAnelasticityModel":
         """Create a GoesAnelasticityModel from a predefined Q-profile.
 
+        Uses the Goes et al. (2000) parameterization where the Q factor is
+        computed as:
+
+            Q = Q0 * omega^a * exp(a * xi * T_solidus / T)
+
+        where Q0 is a reference quality factor, xi is a dimensionless
+        activation energy parameter, a is the frequency exponent, and
+        T_solidus is the solidus temperature at the given depth.
+
+        ======= ============== ============= ======================================
+        Profile Q0 (UM / LM)   xi (UM / LM)  Physical Interpretation
+        ======= ============== ============= ======================================
+        Q4      4.9 / 22.2     26 / 14       Standard Goes parameterization
+        Q6      1.91 / 48.84   26 / 14       Alternative parameterization
+        ======= ============== ============= ======================================
+
+        UM = upper mantle (< 660 km), LM = lower mantle (>= 660 km).
+        All profiles use a = 0.15 (frequency exponent) and omega = 1.0 Hz.
+
         Args:
             q_profile (str): One of "Q4" or "Q6".
 
         Returns:
             GoesAnelasticityModel: The configured model.
+
+        Raises:
+            ValueError: If q_profile is not Q4 or Q6.
         """
         parameters = {
             "Q4": {"Q0": [4.9, 22.2], "xi": [26, 14]},

@@ -72,6 +72,7 @@ DATASET_REGISTRY : Registry of available datasets with metadata
 AVAILABLE_SEISMIC_MODELS : List of 25 seismic tomography models
 """
 
+from .adiabat import compute_adiabat, prem_gravity_profile
 from .anelasticity import CammaranoAnelasticityModel, GoesAnelasticityModel, apply_anelastic_correction
 from .constants import R_earth, R_cmb
 from .datasetnames import print_datasets_markdown, DATASET_REGISTRY
@@ -84,6 +85,8 @@ from .seismic import SeismicModel, AVAILABLE_SEISMIC_MODELS
 from .gplates import CoastlineVTKFile
 
 __all__ = [
+    "compute_adiabat",
+    "prem_gravity_profile",
     "CammaranoAnelasticityModel",
     "GoesAnelasticityModel",
     "apply_anelastic_correction",
