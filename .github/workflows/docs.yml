@@ -18,13 +18,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Wait for Firedrake tests to complete successfully
+  # Wait for Firedrake tests to complete successfully (push only)
   check-tests:
     name: Wait for tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     steps:
       - name: Wait for Firedrake tests
+        if: github.event_name == 'push'
         uses: lewagon/wait-on-check-action@v1.3.1
         with:
           ref: ${{ github.ref }}
@@ -36,9 +36,7 @@ jobs:
   # Build and deploy documentation
   build-and-deploy:
     name: Build and deploy docs
-    # Skip check-tests for manual dispatch
-    needs: ${{ github.event_name == 'push' && 'check-tests' || '' }}
-    if: ${{ !failure() && !cancelled() }}
+    needs: check-tests
     runs-on: ubuntu-latest
 
     steps:
