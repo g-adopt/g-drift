@@ -44,7 +44,10 @@ from pathlib import Path
 import numpy as np
 import gdrift
 
-_demo_dir = Path(__file__).parent
+try:
+    _demo_dir = Path(__file__).parent
+except NameError:
+    _demo_dir = Path.cwd()
 
 # Loading the SLB_21 Thermodynamic Model
 # ----------------------------------------

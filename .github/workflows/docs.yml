@@ -18,25 +18,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Wait for Firedrake tests to complete successfully (push only)
-  check-tests:
-    name: Wait for tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for Firedrake tests
-        if: github.event_name == 'push'
-        uses: lewagon/wait-on-check-action@v1.3.1
-        with:
-          ref: ${{ github.ref }}
-          check-name: 'Unit tests and examples'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 30
-          allowed-conclusions: success
-
   # Build and deploy documentation
   build-and-deploy:
     name: Build and deploy docs
-    needs: check-tests
     runs-on: ubuntu-latest
 
     steps:

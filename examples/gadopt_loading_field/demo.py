@@ -41,7 +41,10 @@ import numpy as np
 from gadopt import *
 import gdrift
 
-_demo_dir = Path(__file__).parent
+try:
+    _demo_dir = Path(__file__).parent
+except NameError:
+    _demo_dir = Path.cwd()
 
 # Helper functions
 # ----------------
