@@ -1,9 +1,10 @@
-# Loading and Visualising Seismic Tomography Models
-# ==================================================
+# Loading and Querying a Seismic Tomography Model
+# =================================================
 #
-# This example demonstrates how to load and visualise 3D seismic tomography
-# models available in gdrift. Tomography models represent velocity perturbations
-# (dVs, dVp) throughout the mantle, derived from seismic wave travel times.
+# This example demonstrates how to load a 3D seismic tomography model
+# and query it at arbitrary points using gdrift. We use S40RTS
+# (Ritsema et al., 2011), one of the most widely-used global shear-wave
+# velocity models, as a concrete example.
 #
 # Background
 # ----------
@@ -14,200 +15,133 @@
 # suggest hotter regions. These velocity anomalies are key inputs for inferring
 # mantle temperature structure in geodynamic studies.
 #
-# The gdrift package provides access to 25+ published tomography models,
-# including widely-used models like S40RTS, GLAD-M25, and SEMUCB-WM1. Each
-# model is stored as an HDF5 file with coordinates and velocity perturbation
-# fields (dvs for shear waves, dvp for compressional waves).
+# The gdrift package provides access to 47 published tomography models,
+# including global and regional models with shear-wave (dVs) and/or
+# compressional-wave (dVp) velocity perturbations. A visual overview of
+# all models is available in the `Data Catalog <../data-catalog.md>`_.
 #
 # This example
 # ------------
 #
 # We demonstrate how to:
 # 1. List all available seismic tomography models
-# 2. Identify which models are global and contain shear-wave velocity (Vs)
-# 3. Query models at a specific depth (2700 km, near the core-mantle boundary)
-# 4. Visualise all global Vs models on a Mollweide projection
+# 2. Load S40RTS and inspect its properties
+# 3. Query the model at a depth slice (2700 km, near the core-mantle boundary)
+# 4. Visualise the dVs field on a Mollweide projection
 
 import numpy as np
 import gdrift
 
-# +
-# First, let's see all available seismic tomography models:
-
-print("Available seismic tomography models:")
-for model_name in gdrift.AVAILABLE_SEISMIC_MODELS:
-    print(f"  - {model_name}")
-# -
-
-# Identifying Global Models with Shear-Wave Velocity
-# --------------------------------------------------
+# Available Models
+# ----------------
 #
-# Not all tomography models cover the entire globe, and some only contain
-# P-wave (compressional) velocities. We need to identify which models:
-# 1. Have shear-wave velocity data (dvs field)
-# 2. Cover the full globe (latitude from -90 to 90, longitude from -180 to 180)
-#
-# We do this by loading each model and checking its properties.
-
-
-def get_global_vs_models():
-    """
-    Identify seismic tomography models that are global and contain Vs data.
-
-    Returns a list of tuples: (model_name, model_object)
-    """
-    global_vs_models = []
-
-    for model_name in gdrift.AVAILABLE_SEISMIC_MODELS:
-        try:
-            model = gdrift.SeismicModel(model_name)
-
-            # Check if the model has dvs (shear-wave velocity perturbation)
-            if not model.check_quantity("dvs"):
-                print(f"  {model_name}: No dvs field, skipping")
-                continue
-
-            # Check if the model is global by examining coordinate extent
-            coords = model.coordinates
-            lat, lon, depth = gdrift.cartesian_to_geodetic(
-                coords[:, 0], coords[:, 1], coords[:, 2]
-            )
-
-            lat_range = (lat.min(), lat.max())
-            lon_range = (lon.min(), lon.max())
-
-            # Consider a model global if it spans most of lat/lon range
-            is_global = (
-                lat_range[0] < -80 and lat_range[1] > 80 and
-                lon_range[0] < -170 and lon_range[1] > 170
-            )
-
-            if is_global:
-                print(f"  {model_name}: Global Vs model "
-                      f"(lat: {lat_range[0]:.1f} to {lat_range[1]:.1f}, "
-                      f"lon: {lon_range[0]:.1f} to {lon_range[1]:.1f})")
-                global_vs_models.append((model_name, model))
-            else:
-                print(f"  {model_name}: Regional model, skipping "
-                      f"(lat: {lat_range[0]:.1f} to {lat_range[1]:.1f}, "
-                      f"lon: {lon_range[0]:.1f} to {lon_range[1]:.1f})")
-
-        except Exception as e:
-            print(f"  {model_name}: Error loading - {e}")
-
-    return global_vs_models
-
+# The full list of tomography models is built from the dataset manifest
+# at import time. Each entry corresponds to an HDF5 file on the server
+# that is downloaded on first use.
 
 # +
-print("\nScanning models for global coverage and Vs data:")
-global_vs_models = get_global_vs_models()
-print(f"\nFound {len(global_vs_models)} global Vs models")
+print(f"Number of available models: {len(gdrift.AVAILABLE_SEISMIC_MODELS)}")
+print("\nFirst 10 models:")
+for name in gdrift.AVAILABLE_SEISMIC_MODELS[:10]:
+    print(f"  - {name}")
 # -
 
-# Generating Query Points at a Fixed Depth
-# ----------------------------------------
+# Loading S40RTS
+# --------------
+#
+# We load S40RTS by passing its name to ``SeismicModel``. This downloads
+# the HDF5 file (if not already cached), reads all fields, and builds a
+# KD-tree for spatial interpolation.
+
+# +
+model = gdrift.SeismicModel("S40RTS")
+
+print(f"Model: S40RTS")
+print(f"Available fields: {list(model.available_fields.keys())}")
+print(f"Number of data points: {len(model.coordinates)}")
+# -
+
+# Inspecting Model Extent
+# -----------------------
+#
+# Each model stores its data points in Cartesian coordinates (x, y, z in
+# metres from Earth's centre). We convert to geographic coordinates to
+# inspect the spatial coverage.
+
+# +
+coords = model.coordinates
+lat, lon, depth = gdrift.cartesian_to_geodetic(
+    coords[:, 0], coords[:, 1], coords[:, 2]
+)
+
+print(f"Latitude range:  {lat.min():.1f} to {lat.max():.1f} degrees")
+print(f"Longitude range: {lon.min():.1f} to {lon.max():.1f} degrees")
+print(f"Depth range:     {depth.min()/1e3:.0f} to {depth.max()/1e3:.0f} km")
+# -
+
+# Querying at a Fixed Depth
+# -------------------------
 #
 # We create a regular grid in latitude and longitude at 2700 km depth,
-# which is close to the core-mantle boundary. This depth is of particular
-# interest because it shows features like Large Low Shear Velocity Provinces
-# (LLSVPs) beneath Africa and the Pacific.
-
-# Define the grid parameters
-depth = 2700e3  # 2700 km in meters
-lat_resolution = 1  # 1 degree
-lon_resolution = 1  # 1 degree
-
-# Create the lat/lon grid
-lats = np.arange(-90, 90 + lat_resolution, lat_resolution)
-lons = np.arange(-180, 180 + lon_resolution, lon_resolution)
-lon_grid, lat_grid = np.meshgrid(lons, lats)
-
-# Convert to Cartesian coordinates for querying
-depth_grid = np.full_like(lat_grid, depth)
-query_coords = gdrift.geodetic_to_cartesian(lat_grid.ravel(), lon_grid.ravel(), depth_grid.ravel())
-
-print(f"Query grid: {len(lats)} x {len(lons)} = {len(query_coords)} points at {depth/1e3:.0f} km depth")
-
-# Querying All Global Vs Models
-# -----------------------------
+# close to the core-mantle boundary. This depth is of particular interest
+# because it reveals Large Low Shear Velocity Provinces (LLSVPs) beneath
+# Africa and the Pacific.
 #
-# Now we query each model at our grid points. The `at()` method returns
-# interpolated values using the model's KD-tree with inverse distance weighting.
+# The ``at()`` method accepts an Nx3 array of Cartesian coordinates and
+# returns interpolated values using inverse distance weighting over the
+# 8 nearest data points.
 
 # +
-model_data = {}
-for model_name, model in global_vs_models:
-    print(f"Querying {model_name}...")
-    dvs = model.at("dvs", query_coords)
-    dvs_grid = dvs.reshape(lat_grid.shape)
-    model_data[model_name] = {
-        "dvs": dvs_grid,
-        "alpha": np.nanmax(np.abs(dvs_grid))  # max absolute value for colorbar scaling
-    }
-    print(f"  dVs range: {np.nanmin(dvs_grid):.2f}% to {np.nanmax(dvs_grid):.2f}%")
+depth_km = 2700
+depth_m = depth_km * 1e3
+
+lats = np.arange(-90, 91, 1)
+lons = np.arange(-180, 181, 1)
+lon_grid, lat_grid = np.meshgrid(lons, lats)
+depth_grid = np.full_like(lat_grid, depth_m, dtype=float)
+
+query_coords = gdrift.geodetic_to_cartesian(
+    lat_grid.ravel(), lon_grid.ravel(), depth_grid.ravel()
+)
+
+dvs = model.at("dvs", query_coords)
+dvs_grid = dvs.reshape(lat_grid.shape)
+
+print(f"Query grid: {len(lats)} x {len(lons)} = {query_coords.shape[0]} points")
+print(f"dVs range at {depth_km} km: {np.nanmin(dvs_grid):.2f}% to {np.nanmax(dvs_grid):.2f}%")
 # -
 
 # Visualisation
 # -------------
 #
-# We plot all models using a Mollweide projection, which is well-suited for
-# global data visualisation. Each subplot shows one model with its name and
-# the maximum amplitude (alpha) annotated. All subplots share the same
-# colormap but have individually scaled color ranges.
+# We plot the dVs field on a Mollweide projection using a diverging
+# colour scale centred at zero. Red regions (negative dVs) indicate
+# slower-than-average velocities (hotter material), while blue regions
+# (positive dVs) indicate faster-than-average velocities (colder material).
+#
+# The two prominent red patches beneath Africa and the Pacific are the
+# LLSVPs, thermochemical structures that are among the largest features
+# in the deep mantle.
 
 # + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 # from matplotlib.colors import TwoSlopeNorm
 #
-# n_models = len(model_data)
-# fig_height = 3 * n_models  # 3 inches per model
-# fig, axes = plt.subplots(
-#     n_models, 1,
-#     figsize=(10, fig_height),
-#     subplot_kw={"projection": "mollweide"}
+# alpha = np.nanmax(np.abs(dvs_grid))
+# norm = TwoSlopeNorm(vmin=-alpha, vcenter=0, vmax=alpha)
+#
+# fig, ax = plt.subplots(figsize=(10, 5), subplot_kw={"projection": "mollweide"})
+# im = ax.pcolormesh(
+#     np.radians(lon_grid), np.radians(lat_grid), dvs_grid,
+#     cmap="RdBu", norm=norm, shading="auto",
 # )
+# ax.grid(True, alpha=0.3)
+# ax.set_title(f"S40RTS at {depth_km} km depth", fontsize=14, fontweight="bold")
 #
-# # Handle single model case
-# if n_models == 1:
-#     axes = [axes]
+# cbar = fig.colorbar(im, ax=ax, orientation="horizontal", fraction=0.06, pad=0.08)
+# cbar.set_label(r"$\delta V_s / V_s$ (%)", fontsize=11)
 #
-# # Use a diverging colormap centred at zero
-# cmap = plt.cm.RdBu
-#
-# for idx, (model_name, data) in enumerate(model_data.items()):
-#     ax = axes[idx]
-#     dvs = data["dvs"]
-#     alpha = data["alpha"]
-#
-#     # Convert lon/lat to radians for Mollweide projection
-#     lon_rad = np.radians(lon_grid)
-#     lat_rad = np.radians(lat_grid)
-#
-#     # Create a symmetric normalisation around zero
-#     norm = TwoSlopeNorm(vmin=-alpha, vcenter=0, vmax=alpha)
-#
-#     # Plot the data
-#     im = ax.pcolormesh(lon_rad, lat_rad, dvs, cmap=cmap, norm=norm, shading="auto")
-#
-#     # Add gridlines
-#     ax.grid(True, alpha=0.3)
-#
-#     # Title with model name and alpha value
-#     ax.set_title(f"{model_name}  (±{alpha:.2f}%)", fontsize=12, fontweight="bold")
-#
-# # Add a shared colorbar
-# cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
-# cbar = fig.colorbar(
-#     plt.cm.ScalarMappable(cmap=cmap, norm=TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)),
-#     cax=cbar_ax,
-#     orientation="vertical"
-# )
-# cbar.set_label(r"$\delta V_s / V_s$ (normalised to $\pm\alpha$)", fontsize=11)
-# cbar.set_ticks([-1, -0.5, 0, 0.5, 1])
-# cbar.set_ticklabels([r"$-\alpha$", r"$-\alpha/2$", "0", r"$+\alpha/2$", r"$+\alpha$"])
-#
-# fig.suptitle(f"Global Seismic Tomography Models at {depth/1e3:.0f} km Depth", fontsize=14, y=0.98)
-# plt.tight_layout(rect=[0, 0, 0.9, 0.96])
+# plt.tight_layout()
 # plt.show()
 # -
 
@@ -215,12 +149,12 @@ for model_name, model in global_vs_models:
 # -------
 #
 # This example showed how to:
-# - Access the list of available seismic tomography models via `gdrift.AVAILABLE_SEISMIC_MODELS`
-# - Load models using `gdrift.SeismicModel(model_name)`
-# - Check model properties (available fields, coordinate extent)
-# - Query models at arbitrary points using `model.at("dvs", coordinates)`
-# - Visualise global models on a Mollweide projection
 #
-# The velocity perturbations at 2700 km depth reveal the Large Low Shear
-# Velocity Provinces (LLSVPs) beneath Africa and the Pacific, as well as
-# faster regions associated with subducted slabs.
+# - List available models via ``gdrift.AVAILABLE_SEISMIC_MODELS``
+# - Load a model with ``gdrift.SeismicModel("S40RTS")``
+# - Inspect fields (``available_fields``) and coordinate extent
+# - Query at arbitrary points with ``model.at("dvs", coordinates)``
+# - Visualise a depth slice on a Mollweide projection
+#
+# The same workflow applies to any of the 47 available models. See the
+# `Data Catalog <../data-catalog.md>`_ for a gallery of all models.

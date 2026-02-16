@@ -17,7 +17,7 @@ THUMBNAIL_DIR = Path(__file__).resolve().parents[2] / "docs" / "assets" / "image
 
 
 def generate():
-    model = gdrift.SeismicModel("3d_seismic_S40RTS")
+    model = gdrift.SeismicModel("S40RTS")
     depth = 2700e3
 
     lats = np.arange(-90, 91, 2)
