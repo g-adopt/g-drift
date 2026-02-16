@@ -141,7 +141,7 @@ print(f"Vs anomaly at ({lat}°, {lon}°, {depth/1e3} km): {vs_anomaly:.2f}%")
 import gdrift
 
 # Load SLB (Stixrude & Lithgow-Bertelloni) pyrolite model
-thermo = gdrift.ThermodynamicModel("SLB_16", "pyrolite")
+thermo = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 
 # See available properties
 print(thermo.available_tables())

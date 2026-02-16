@@ -222,10 +222,12 @@ model = gdrift.SeismicModel("3d_seismic_<model_name>")
 
 | Name | Composition | Citation |
 |------|-------------|----------|
-| `SLB_16_pyrolite` | Pyrolite | Stixrude & Lithgow-Bertelloni (2016) |
-| `SLB_16_basalt` | Basalt | Stixrude & Lithgow-Bertelloni (2016) |
 | `SLB_21_pyroliteCFMAS` | Pyrolite CFMAS | Stixrude & Lithgow-Bertelloni (2021) |
 | `SLB_21_pyroliteNCMAS` | Pyrolite NCMAS | Stixrude & Lithgow-Bertelloni (2021) |
+
+Additional thermodynamic models (SLB_08, SLB_11, SLB_24) with various
+compositions are available. Use `gdrift.mineralogy.MODELS_AVAIL` and
+`gdrift.mineralogy.COMPOSITIONS_AVAIL` to see the full list.
 
 #### Geodynamic Profiles
 

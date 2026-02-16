@@ -1,0 +1,88 @@
+site_name: gdrift
+site_description: A community platform for accessing geodynamic data
+site_url: https://gdrift.gadopt.org
+repo_url: https://github.com/g-adopt/g-drift
+repo_name: g-adopt/g-drift
+
+theme:
+  name: material
+  logo: assets/images/logo.svg
+  favicon: assets/images/logo.svg
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    scheme: default
+    primary: white
+    accent: black
+  features:
+    - content.code.copy
+    - navigation.indexes
+    - navigation.top
+    - search.highlight
+    - search.suggest
+  custom_dir: docs/overrides
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+      toc_depth: 3
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      include_source: true
+      execute: false
+      allow_errors: false
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            heading_level: 2
+            members_order: source
+            docstring_style: numpy
+            show_signature_annotations: true
+            separate_signature: true
+            show_bases: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/g-adopt/g-drift
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Examples:
+      - examples/index.md
+      - Mantle Solidus: examples/mantle_solidus/demo.ipynb
+      - Anelastic Corrections: examples/anelasticity_corrections/demo.ipynb
+      - Geodynamic Adiabat: examples/geodynamic_adiabat/demo.ipynb
+      - Table Regularisation: examples/linearisation/demo.ipynb
+      - Seismic Tomography: examples/tomography_models/demo.ipynb
+      - Vs-to-Temperature: examples/temperature_to_vs/demo.ipynb
+  - Data Catalog: data-catalog.md
+  - API Reference: api.md

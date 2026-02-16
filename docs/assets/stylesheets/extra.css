@@ -1,0 +1,89 @@
+/* Black header text on white background */
+.md-header {
+  background-color: #fff;
+  color: #333;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.md-header__topic {
+  color: #333;
+}
+
+.md-header .md-header__button {
+  color: #333;
+}
+
+.md-tabs {
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.md-tabs__link {
+  color: #555;
+}
+
+.md-tabs__link--active {
+  color: #000;
+}
+
+/* Example card grid */
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.example-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+
+.example-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.example-card a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.example-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.example-card .card-body {
+  padding: 1rem;
+}
+
+.example-card .card-body h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.example-card .card-body p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Placeholder for missing thumbnails */
+.example-card .placeholder-img {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #e0e0e0;
+}

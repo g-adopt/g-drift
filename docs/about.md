@@ -168,8 +168,8 @@ seismic.set_kernel(kernel="gaussian", sigma=100e3)  # 100 km smoothing
 
 gdrift uses lookup tables from Stixrude & Lithgow-Bertelloni (SLB) for mineral physics:
 
-- **SLB_16**: Pyrolite and basalt compositions (2016 parameterization)
-- **SLB_21**: Updated pyrolite CFMAS and NCMAS (2021)
+- **SLB_21**: Pyrolite CFMAS and NCMAS (2021 parameterization)
+- Additional models (SLB_08, SLB_11, SLB_24) available via the manifest
 
 Tables are 2D grids in (depth, temperature) space with properties:
 - Density (`rho`)

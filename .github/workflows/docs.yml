@@ -62,14 +62,33 @@ jobs:
         env:
           MPLBACKEND: Agg
 
+      - name: Generate thumbnails
+        run: python scripts/generate_thumbnails.py
+        env:
+          MPLBACKEND: Agg
+
+      - name: Copy notebooks to docs
+        run: |
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs; do
+            if [ -f "examples/${demo}/demo.ipynb" ]; then
+              mkdir -p "docs/examples/${demo}"
+              cp "examples/${demo}/demo.ipynb" "docs/examples/${demo}/demo.ipynb"
+              echo "Copied ${demo}/demo.ipynb"
+            fi
+          done
+
       - name: Generate Data Catalog
         run: python scripts/generate_data_catalog.py
 
       - name: Verify generated files
         run: |
-          test -f docs/data-catalog-generated.md || { echo "❌ data-catalog-generated.md not found"; exit 1; }
-          test -f docs/data-catalog-incomplete.md || { echo "❌ data-catalog-incomplete.md not found"; exit 1; }
-          echo "✅ Data catalog files generated successfully"
+          test -f docs/data-catalog-generated.md || { echo "FAIL: data-catalog-generated.md not found"; exit 1; }
+          test -f docs/data-catalog-incomplete.md || { echo "FAIL: data-catalog-incomplete.md not found"; exit 1; }
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs; do
+            test -f "docs/assets/images/thumbnails/${demo}.png" || { echo "FAIL: thumbnail ${demo}.png not found"; exit 1; }
+            test -f "docs/examples/${demo}/demo.ipynb" || { echo "FAIL: notebook ${demo}/demo.ipynb not found"; exit 1; }
+          done
+          echo "OK: All generated files present"
 
       - name: Build documentation
         run: mkdocs build --strict

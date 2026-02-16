@@ -51,27 +51,7 @@ jobs:
           . .venv/bin/activate
           python -m pytest tests/ -v --maxfail=5 --tb=short
 
-      - name: "Example 00: solidus temperature"
+      - name: Run example demo tests
         run: |
           . .venv/bin/activate
-          python examples/00_load_solidus_temperature.py
-
-      - name: "Example 01: anelasticity models"
-        run: |
-          . .venv/bin/activate
-          python examples/01_anelasticity_models.py
-
-      - name: "Example 02: temperature to Vs conversion"
-        run: |
-          . .venv/bin/activate
-          python examples/02_converting_temperature_to_vs.py
-
-      - name: "Example 04: seismic tomography model"
-        run: |
-          . .venv/bin/activate
-          python examples/04_test_tomography_model.py
-
-      - name: "Example 05: geodynamic adiabat"
-        run: |
-          . .venv/bin/activate
-          python examples/05_geodynamic_adiabat.py
+          python -m pytest examples/ -v --maxfail=5 --tb=short
