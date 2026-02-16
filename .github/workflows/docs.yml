@@ -20,6 +20,7 @@ concurrency:
 jobs:
   # Wait for Firedrake tests to complete successfully
   check-tests:
+    name: Wait for tests
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
@@ -34,6 +35,7 @@ jobs:
 
   # Build and deploy documentation
   build-and-deploy:
+    name: Build and deploy docs
     # Skip check-tests for manual dispatch
     needs: ${{ github.event_name == 'push' && 'check-tests' || '' }}
     if: ${{ !failure() && !cancelled() }}
