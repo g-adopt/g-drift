@@ -22,4 +22,8 @@ When using these datasets, please cite both the original publication (DOI links 
 
 ---
 
+--8<-- "tomography-gallery-generated.md"
+
+---
+
 --8<-- "data-catalog-generated.md"

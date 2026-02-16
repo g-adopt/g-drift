@@ -172,6 +172,8 @@ examples/*/*.pdf
 # Auto-generated documentation (regenerated in CI)
 docs/data-catalog-generated.md
 docs/data-catalog-incomplete.md
+docs/tomography-gallery-generated.md
+docs/assets/images/tomography/
 
 # Enriched manifest (for review before committing)
 gdrift/datasets.json.enriched
