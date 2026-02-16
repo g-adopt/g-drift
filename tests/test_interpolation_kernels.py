@@ -1,105 +1,132 @@
 #!/usr/bin/env python3
 """
-Test script to compare different interpolation kernels for seismic models.
+Tests for the interpolation kernels in EarthModel3D.
+
+Constructs a synthetic 3D model with a known analytic field and verifies
+that each kernel returns sensible results: correct shape, finite values,
+exact recovery at data points, and smooth behaviour away from them.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+import pytest
 import gdrift
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 
-def test_kernels():
-    """Test different interpolation kernels on a small region."""
 
-    print("Loading LLNL-G3Dv3 model...")
-    llnl = gdrift.SeismicModel("LLNL-G3Dv3", nearest_neighbours=20)
+@pytest.fixture
+def synthetic_model():
+    """Build a synthetic EarthModel3D on a regular lat/lon/depth grid
+    with a smooth analytic field: f = cos(lat_rad) * sin(lon_rad)."""
+    lats = np.linspace(-80, 80, 17)
+    lons = np.linspace(0, 350, 36)
+    depths = np.array([100e3, 500e3, 1000e3])
 
-    # Define a small test region (Pacific)
-    lons = np.linspace(170, 190, 41)  # 20° longitude range
-    lats = np.linspace(-10, 10, 41)   # 20° latitude range
-    depth_km = 100  # 100 km depth
+    lat_grid, lon_grid, dep_grid = np.meshgrid(lats, lons, depths, indexing='ij')
+    lat_flat = lat_grid.ravel()
+    lon_flat = lon_grid.ravel()
+    dep_flat = dep_grid.ravel()
 
-    # Create coordinate grid
-    lons_mesh, lats_mesh = np.meshgrid(lons, lats, indexing='xy')
-    depths_mesh = np.full_like(lons_mesh, depth_km)
+    coords = gdrift.geodetic_to_cartesian(lat_flat, lon_flat, dep_flat)
 
-    # Convert to Cartesian coordinates
-    coordinates = gdrift.geodetic_to_cartesian(
-        lats_mesh.flatten(),
-        lons_mesh.flatten(),
-        depths_mesh.flatten()
+    # Smooth analytic field
+    values = np.cos(np.radians(lat_flat)) * np.sin(np.radians(lon_flat))
+
+    model = gdrift.EarthModel3D(nearest_neighbours=8, default_max_distance=2000e3)
+    model.set_coordinates(*coords.T)
+    model.add_quantity("test_field", values)
+    return model
+
+
+KERNELS = [
+    {"kernel": "idw"},
+    {"kernel": "gaussian"},
+    {"kernel": "gaussian", "sigma": 50000},
+    {"kernel": "idw_power", "power": 3.0},
+    {"kernel": "exponential", "decay_length": 100000},
+    {"kernel": "wendland", "support_radius": 200000},
+]
+
+KERNEL_IDS = [
+    "idw",
+    "gaussian_adaptive",
+    "gaussian_fixed",
+    "idw_power3",
+    "exponential",
+    "wendland",
+]
+
+
+@pytest.mark.parametrize("kernel_params", KERNELS, ids=KERNEL_IDS)
+def test_kernel_returns_correct_shape(synthetic_model, kernel_params):
+    """Each kernel should return one value per query point."""
+    query_coords = gdrift.geodetic_to_cartesian(
+        np.array([0.0, 30.0, -45.0]),
+        np.array([90.0, 180.0, 270.0]),
+        np.array([300e3, 300e3, 300e3]),
     )
+    result = synthetic_model.at(label="test_field", coordinates=query_coords, **kernel_params)
+    assert result.shape == (3,)
 
-    # Test different kernels
-    kernels = {
-        'IDW (Original)': {'kernel': 'idw'},
-        'Gaussian (Adaptive)': {'kernel': 'gaussian'},
-        'Gaussian (25km)': {'kernel': 'gaussian', 'sigma': 25000},
-        'IDW Power=3': {'kernel': 'idw_power', 'power': 3.0},
-        'Exponential (30km)': {'kernel': 'exponential', 'decay_length': 30000},
-        'Wendland (75km)': {'kernel': 'wendland', 'support_radius': 75000}
-    }
 
-    # Create figure with subplots
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12),
-                            subplot_kw={'projection': ccrs.PlateCarree()})
-    axes = axes.flatten()
+@pytest.mark.parametrize("kernel_params", KERNELS, ids=KERNEL_IDS)
+def test_kernel_returns_finite_values(synthetic_model, kernel_params):
+    """All interpolated values should be finite (no NaN or Inf)."""
+    lats = np.linspace(-60, 60, 7)
+    lons = np.linspace(10, 340, 7)
+    lat_q, lon_q = np.meshgrid(lats, lons, indexing='ij')
+    dep_q = np.full_like(lat_q, 500e3)
+    query_coords = gdrift.geodetic_to_cartesian(lat_q.ravel(), lon_q.ravel(), dep_q.ravel())
 
-    for i, (name, params) in enumerate(kernels.items()):
-        print(f"Testing {name}...")
+    result = synthetic_model.at(label="test_field", coordinates=query_coords, **kernel_params)
+    assert np.all(np.isfinite(result))
 
-        try:
-            # Get VP data with specific kernel
-            vp_data = llnl.at(label="dvp", coordinates=coordinates, **params)
-            vp_data = vp_data.reshape(lats_mesh.shape)
 
-            # Plot
-            ax = axes[i]
-            ax.set_extent([170, 190, -10, 10], crs=ccrs.PlateCarree())
+@pytest.mark.parametrize("kernel_params", KERNELS, ids=KERNEL_IDS)
+def test_kernel_values_within_data_range(synthetic_model, kernel_params):
+    """Interpolated values should stay within [-1, 1] since the analytic
+    field is cos(lat)*sin(lon) which is bounded by [-1, 1]."""
+    lats = np.linspace(-60, 60, 5)
+    lons = np.linspace(10, 340, 5)
+    lat_q, lon_q = np.meshgrid(lats, lons, indexing='ij')
+    dep_q = np.full_like(lat_q, 500e3)
+    query_coords = gdrift.geodetic_to_cartesian(lat_q.ravel(), lon_q.ravel(), dep_q.ravel())
 
-            # Calculate symmetric color limits
-            vmax = np.nanmax(np.abs(vp_data))
-            vmin = -vmax
+    result = synthetic_model.at(label="test_field", coordinates=query_coords, **kernel_params)
+    assert np.all(result >= -1.1), f"Values below -1.1: {result.min()}"
+    assert np.all(result <= 1.1), f"Values above 1.1: {result.max()}"
 
-            # Plot data
-            im = ax.contourf(lons_mesh, lats_mesh, vp_data,
-                           levels=50, transform=ccrs.PlateCarree(),
-                           cmap='RdBu_r', vmin=vmin, vmax=vmax)
 
-            # Add features
-            ax.coastlines(resolution='50m', color='black', linewidth=0.5)
-            ax.add_feature(cfeature.LAND, color='lightgray', alpha=0.3)
-            ax.gridlines(draw_labels=True, alpha=0.3)
+@pytest.mark.parametrize("kernel_params", KERNELS, ids=KERNEL_IDS)
+def test_kernel_recovers_at_data_points(synthetic_model, kernel_params):
+    """Querying exactly at a grid node should recover the analytic value."""
+    lat, lon, depth = 0.0, 90.0, 500e3
+    expected = np.cos(np.radians(lat)) * np.sin(np.radians(lon))  # = 1.0
 
-            # Add colorbar
-            cbar = plt.colorbar(im, ax=ax, orientation='horizontal',
-                              pad=0.05, shrink=0.8)
-            cbar.set_label('dVp (%)', fontsize=10)
+    query_coords = gdrift.geodetic_to_cartesian(
+        np.array([lat]), np.array([lon]), np.array([depth])
+    )
+    result = synthetic_model.at(label="test_field", coordinates=query_coords, **kernel_params)
+    np.testing.assert_allclose(result, expected, atol=0.05)
 
-            # Set title
-            ax.set_title(f'{name}\n(Range: {vmin:.2f} to {vmax:.2f}%)',
-                        fontsize=12, fontweight='bold')
 
-            print(f"  - Range: {vmin:.2f} to {vmax:.2f}%")
+def test_unknown_kernel_raises(synthetic_model):
+    """Requesting a non-existent kernel should raise ValueError."""
+    query_coords = gdrift.geodetic_to_cartesian(
+        np.array([0.0]), np.array([0.0]), np.array([500e3])
+    )
+    with pytest.raises(ValueError, match="Unknown kernel"):
+        synthetic_model.at(label="test_field", coordinates=query_coords, kernel="cubic_magic")
 
-        except Exception as e:
-            print(f"  - Error: {e}")
-            ax.text(0.5, 0.5, f'Error:\n{str(e)}',
-                   transform=ax.transAxes, ha='center', va='center')
-            ax.set_title(name, fontsize=12, fontweight='bold')
 
-    plt.tight_layout()
-    plt.savefig('kernel_comparison.png', dpi=300, bbox_inches='tight')
-    plt.close(fig)
+def test_kernels_produce_different_results(synthetic_model):
+    """Different kernels should generally give slightly different values
+    at non-grid points, confirming they're not all identical."""
+    query_coords = gdrift.geodetic_to_cartesian(
+        np.array([15.0]), np.array([135.0]), np.array([300e3])
+    )
+    results = []
+    for kp in KERNELS:
+        val = synthetic_model.at(label="test_field", coordinates=query_coords, **kp)
+        results.append(float(val))
 
-    print("\nKernel comparison plot saved as 'kernel_comparison.png'")
-    print("\nKernel characteristics:")
-    print("- IDW: Sharp, preserves local extrema, can be noisy")
-    print("- Gaussian: Smooth, good for continuous fields")
-    print("- IDW Power>1: Sharper than standard IDW")
-    print("- Exponential: Smooth decay, good for correlated fields")
-    print("- Wendland: Smooth with compact support, computationally efficient")
-
-if __name__ == "__main__":
-    test_kernels()
+    # Not all kernels should give the exact same number
+    assert len(set(f"{v:.6f}" for v in results)) > 1, "All kernels returned identical values"
