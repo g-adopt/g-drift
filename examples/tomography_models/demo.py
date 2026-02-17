@@ -16,9 +16,15 @@
 # mantle temperature structure in geodynamic studies.
 #
 # The gdrift package provides access to 47 published tomography models,
-# including global and regional models with shear-wave (dVs) and/or
-# compressional-wave (dVp) velocity perturbations. A visual overview of
-# all models is available in the `Data Catalog <../data-catalog.md>`_.
+# including global and regional models with shear-wave and/or
+# compressional-wave velocities. A visual overview of all models is available
+# in the `Data Catalog <../data-catalog.md>`_.
+#
+# gdrift stores absolute physical quantities (e.g. Vs in m/s) rather than
+# pre-computed perturbations. This keeps the data self-contained and allows
+# derived quantities like :math:`\delta V_s / V_s` to be computed against any
+# reference model. In this example we compute dVs relative to PREM using the
+# Voigt average for the isotropic shear-wave velocity.
 #
 # This example
 # ------------
@@ -26,8 +32,8 @@
 # We demonstrate how to:
 # 1. List all available seismic tomography models
 # 2. Load S40RTS and inspect its properties
-# 3. Query the model at a depth slice (2700 km, near the core-mantle boundary)
-# 4. Visualise the dVs field on a Mollweide projection
+# 3. Compute velocity perturbations relative to PREM
+# 4. Visualise the dVs field at 2700 km depth on a Mollweide projection
 
 import numpy as np
 import gdrift
@@ -79,6 +85,47 @@ print(f"Longitude range: {lon.min():.1f} to {lon.max():.1f} degrees")
 print(f"Depth range:     {depth.min()/1e3:.0f} to {depth.max()/1e3:.0f} km")
 # -
 
+# Computing dVs Relative to PREM
+# -------------------------------
+#
+# gdrift tomography models store absolute velocities. To obtain the
+# commonly used velocity perturbation :math:`\delta V_s / V_s` we need a
+# reference 1-D model. Here we use PREM and compute the isotropic
+# shear-wave velocity via the Voigt average:
+#
+# .. math::
+#
+#    V_s^{\text{Voigt}} = \sqrt{\frac{2\,V_{sv}^2 + V_{sh}^2}{3}}
+#
+# For models that only provide an isotropic ``vs`` field (no ``vsh``/``vsv``
+# decomposition), we use that value directly.
+
+# +
+prem = gdrift.PreliminaryRefEarthModel()
+vsh_prem = prem.get_profile("Vsh")
+vsv_prem = prem.get_profile("Vsv")
+
+coords = model.coordinates
+_, _, depth_all = gdrift.cartesian_to_geodetic(
+    coords[:, 0], coords[:, 1], coords[:, 2]
+)
+
+fields = model.available_fields
+if "vsh" in fields and "vsv" in fields:
+    vs_voigt = np.sqrt((2 * fields["vsv"]**2 + fields["vsh"]**2) / 3)
+elif "vs" in fields:
+    vs_voigt = fields["vs"]
+else:
+    raise ValueError("Model has no shear-wave velocity field")
+
+vs_prem_voigt = np.sqrt((2 * vsv_prem.at_depth(depth_all)**2
+                         + vsh_prem.at_depth(depth_all)**2) / 3)
+
+dvs_all = (vs_voigt - vs_prem_voigt) / vs_prem_voigt * 100
+
+print(f"dVs range over full model: {dvs_all.min():.2f}% to {dvs_all.max():.2f}%")
+# -
+
 # Querying at a Fixed Depth
 # -------------------------
 #
@@ -89,7 +136,8 @@ print(f"Depth range:     {depth.min()/1e3:.0f} to {depth.max()/1e3:.0f} km")
 #
 # The ``at()`` method accepts an Nx3 array of Cartesian coordinates and
 # returns interpolated values using inverse distance weighting over the
-# 8 nearest data points.
+# 8 nearest data points. We query the absolute ``vs`` field and then
+# convert to dVs using the PREM reference at that depth.
 
 # +
 depth_km = 2700
@@ -104,7 +152,10 @@ query_coords = gdrift.geodetic_to_cartesian(
     lat_grid.ravel(), lon_grid.ravel(), depth_grid.ravel()
 )
 
-dvs = model.at("dvs", query_coords)
+vs_query = model.at("vs", query_coords)
+vs_prem_at_depth = np.sqrt((2 * vsv_prem.at_depth(depth_m)**2
+                            + vsh_prem.at_depth(depth_m)**2) / 3)
+dvs = (vs_query - vs_prem_at_depth) / vs_prem_at_depth * 100
 dvs_grid = dvs.reshape(lat_grid.shape)
 
 print(f"Query grid: {len(lats)} x {len(lons)} = {query_coords.shape[0]} points")
@@ -153,7 +204,9 @@ print(f"dVs range at {depth_km} km: {np.nanmin(dvs_grid):.2f}% to {np.nanmax(dvs
 # - List available models via ``gdrift.AVAILABLE_SEISMIC_MODELS``
 # - Load a model with ``gdrift.SeismicModel("S40RTS")``
 # - Inspect fields (``available_fields``) and coordinate extent
-# - Query at arbitrary points with ``model.at("dvs", coordinates)``
+# - Compute :math:`\delta V_s / V_s` from absolute velocities using PREM
+#   and the Voigt average
+# - Query at arbitrary points with ``model.at("vs", coordinates)``
 # - Visualise a depth slice on a Mollweide projection
 #
 # The same workflow applies to any of the 47 available models. See the
