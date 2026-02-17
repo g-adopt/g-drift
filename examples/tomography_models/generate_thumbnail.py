@@ -27,7 +27,13 @@ def generate():
     coords = gdrift.geodetic_to_cartesian(
         lat_grid.ravel(), lon_grid.ravel(), depth_grid.ravel())
 
-    dvs = model.at("dvs", coords).reshape(lat_grid.shape)
+    prem = gdrift.PreliminaryRefEarthModel()
+    vsh_prem = prem.get_profile("Vsh")
+    vsv_prem = prem.get_profile("Vsv")
+    vs_query = model.at("vs", coords)
+    vs_prem_at_depth = np.sqrt((2 * vsv_prem.at_depth(depth)**2
+                                + vsh_prem.at_depth(depth)**2) / 3)
+    dvs = ((vs_query - vs_prem_at_depth) / vs_prem_at_depth * 100).reshape(lat_grid.shape)
     alpha = np.nanmax(np.abs(dvs))
 
     fig, ax = plt.subplots(figsize=(5, 3), subplot_kw={"projection": "mollweide"})
@@ -35,7 +41,7 @@ def generate():
     im = ax.pcolormesh(np.radians(lon_grid), np.radians(lat_grid), dvs,
                        cmap="RdBu", norm=norm, shading="auto")
     ax.grid(True, alpha=0.3)
-    ax.set_title(f"S40RTS at {depth/1e3:.0f} km", fontsize=9)
+    ax.set_title(f"S40RTS at {depth / 1e3:.0f} km", fontsize=9)
     fig.colorbar(im, ax=ax, orientation="horizontal", fraction=0.06, pad=0.08,
                  label=r"$\delta V_s / V_s$")
     ax.tick_params(labelsize=6)

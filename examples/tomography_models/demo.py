@@ -62,7 +62,7 @@ for name in gdrift.AVAILABLE_SEISMIC_MODELS[:10]:
 # +
 model = gdrift.SeismicModel("S40RTS")
 
-print(f"Model: S40RTS")
+print("Model: S40RTS")
 print(f"Available fields: {list(model.available_fields.keys())}")
 print(f"Number of data points: {len(model.coordinates)}")
 # -
@@ -82,7 +82,7 @@ lat, lon, depth = gdrift.cartesian_to_geodetic(
 
 print(f"Latitude range:  {lat.min():.1f} to {lat.max():.1f} degrees")
 print(f"Longitude range: {lon.min():.1f} to {lon.max():.1f} degrees")
-print(f"Depth range:     {depth.min()/1e3:.0f} to {depth.max()/1e3:.0f} km")
+print(f"Depth range:     {depth.min() / 1e3:.0f} to {depth.max() / 1e3:.0f} km")
 # -
 
 # Computing dVs Relative to PREM

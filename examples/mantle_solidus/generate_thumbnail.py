@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Generate thumbnail for the mantle solidus example."""
-import sys
 from pathlib import Path
 
 import matplotlib

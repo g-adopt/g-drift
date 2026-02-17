@@ -85,7 +85,7 @@ temperature_profile = gdrift.SplineProfile(
 
 anchor_depths = np.array([0, 500, 1500, 2700]) * 1e3
 for d in anchor_depths:
-    print(f"  T at {d/1e3:.0f} km: {temperature_profile.at_depth(d):.0f} K")
+    print(f"  T at {d / 1e3:.0f} km: {temperature_profile.at_depth(d):.0f} K")
 # -
 
 # Regularising the Model

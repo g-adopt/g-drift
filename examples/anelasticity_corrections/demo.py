@@ -60,8 +60,8 @@ import gdrift
 # +
 slb_pyrolite = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 print(f"Available tables: {slb_pyrolite.available_tables()}")
-print(f"Depth range: {slb_pyrolite.get_depths().min()/1e3:.0f} -- "
-      f"{slb_pyrolite.get_depths().max()/1e3:.0f} km")
+print(f"Depth range: {slb_pyrolite.get_depths().min() / 1e3:.0f} -- "
+      f"{slb_pyrolite.get_depths().max() / 1e3:.0f} km")
 print(f"Temperature range: {slb_pyrolite.get_temperatures().min():.0f} -- "
       f"{slb_pyrolite.get_temperatures().max():.0f} K")
 # -
@@ -151,7 +151,7 @@ for model_key, corrected_model in all_models.items():
     reduction = (vs_elastic - vs_anel) / vs_elastic * 100
     velocity_reduction[model_key] = reduction
 
-print(f"Elastic Vs at {test_depth/1e3:.0f} km: {vs_elastic}")
+print(f"Elastic Vs at {test_depth / 1e3:.0f} km: {vs_elastic}")
 for key in sorted(velocity_reduction):
     print(f"  {key}: reduction = {velocity_reduction[key]} %")
 # -

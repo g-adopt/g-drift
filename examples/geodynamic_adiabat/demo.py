@@ -45,7 +45,6 @@
 # the CFMS chemical system (CaO-FeO-MgO-SiO2), while SLB_21 includes
 # the fuller CFMAS system (with Al2O3).
 
-import numpy as np
 import gdrift
 
 # Gravity from PREM

@@ -103,4 +103,4 @@ def test_anchor_agreement(demo_namespace):
         t_idx = np.abs(temperatures - anchor_T).argmin()
         np.testing.assert_allclose(
             Vs_reg[d_idx, t_idx], Vs_orig[d_idx, t_idx], rtol=1e-2,
-            err_msg=f"Vs mismatch at anchor T for depth {d/1e3:.0f} km")
+            err_msg=f"Vs mismatch at anchor T for depth {d / 1e3:.0f} km")

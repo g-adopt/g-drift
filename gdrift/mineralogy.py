@@ -76,6 +76,7 @@ gdrift.profile : 1D radial profiles for reference models
 import numpy
 from .profile import AbstractProfile
 from .io import load_dataset
+from .datasetnames import DATASET_REGISTRY, DatasetType
 from scipy.interpolate import RectBivariateSpline
 from scipy.optimize import minimize_scalar
 from scipy.spatial import cKDTree
@@ -91,9 +92,6 @@ default_regular_range = {
     "v_p": (-np.inf, 0.0),
     "rho": (-np.inf, 0.0),
 }
-
-
-from .datasetnames import DATASET_REGISTRY, DatasetType
 
 # Derive available models and compositions from the manifest
 _thermo_names = [d.name for d in DATASET_REGISTRY.filter_by_type(DatasetType.THERMODYNAMIC_MODEL)]

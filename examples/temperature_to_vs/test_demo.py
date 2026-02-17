@@ -49,7 +49,7 @@ def test_anelastic_reduces_velocity(demo_namespace):
         Vs_reg = regular.temperature_to_vs(test_temperatures, d)
         Vs_cor = corrected.temperature_to_vs(test_temperatures, d)
         assert np.all(Vs_cor <= Vs_reg), \
-            f"Corrected Vs should be <= regularised Vs at depth {d/1e3:.0f} km"
+            f"Corrected Vs should be <= regularised Vs at depth {d / 1e3:.0f} km"
 
 
 def test_vs_isotropic_range(demo_namespace, expected_values):

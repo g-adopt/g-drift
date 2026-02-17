@@ -239,7 +239,7 @@ def test_dataset_count(datasets):
         dtype = dataset["type"]
         types_count[dtype] = types_count.get(dtype, 0) + 1
 
-    print(f"\n📊 Dataset counts by type:")
+    print("\nDataset counts by type:")
     for dtype, count in sorted(types_count.items()):
         print(f"  {dtype}: {count}")
 

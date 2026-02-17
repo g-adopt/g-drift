@@ -41,7 +41,7 @@ def generate():
 
     ax.set_xlabel("Temperature [K]", fontsize=9)
     ax.set_ylabel("Vs Reduction [%]", fontsize=9)
-    ax.set_title(f"Velocity reduction at {test_depth/1e3:.0f} km", fontsize=10)
+    ax.set_title(f"Velocity reduction at {test_depth / 1e3:.0f} km", fontsize=10)
     ax.legend(ncol=2, fontsize=6)
     ax.grid(alpha=0.2)
     ax.tick_params(labelsize=8)

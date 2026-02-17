@@ -155,8 +155,8 @@ r = Function(V, name="coordinates").interpolate(X / rmax * gdrift.R_earth)
 depth = Function(Q, name="depth").interpolate(
     Constant(gdrift.R_earth) - sqrt(r[0]**2 + r[1]**2 + r[2]**2)
 )
-print(f"Depth range: {depth.dat.data_with_halos.min()/1e3:.0f} "
-      f"- {depth.dat.data_with_halos.max()/1e3:.0f} km")
+print(f"Depth range: {depth.dat.data_with_halos.min() / 1e3:.0f} "
+      f"- {depth.dat.data_with_halos.max() / 1e3:.0f} km")
 # -
 
 # Loading the REVEAL seismic model

@@ -61,8 +61,8 @@ except NameError:
 slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 
 print(f"Available tables: {slb21.available_tables()}")
-print(f"Depth range: {slb21.get_depths().min()/1e3:.0f}"
-      f" - {slb21.get_depths().max()/1e3:.0f} km")
+print(f"Depth range: {slb21.get_depths().min() / 1e3:.0f}"
+      f" - {slb21.get_depths().max() / 1e3:.0f} km")
 print(f"Temperature range: {slb21.get_temperatures().min():.0f}"
       f" - {slb21.get_temperatures().max():.0f} K")
 # -
@@ -162,7 +162,7 @@ Vs_corrected = np.array([
 
 for i, d in enumerate(comparison_depths):
     reduction = (Vs_elastic[i] - Vs_corrected[i]) / Vs_elastic[i] * 100
-    print(f"Depth {d/1e3:.0f} km: max Vs reduction = {reduction.max():.1f}%")
+    print(f"Depth {d / 1e3:.0f} km: max Vs reduction = {reduction.max():.1f}%")
 # -
 
 # Loading the REVEAL Tomography Model
@@ -190,7 +190,7 @@ reveal_data = seismic_model.at(["vsh", "vsv"], coordinates)
 vsh = reveal_data[:, 0]
 vsv = reveal_data[:, 1]
 
-print(f"Queried {len(vsh)} points at {slice_depth/1e3:.0f} km depth")
+print(f"Queried {len(vsh)} points at {slice_depth / 1e3:.0f} km depth")
 # -
 
 # Computing Isotropic Shear-Wave Speed
@@ -204,7 +204,7 @@ print(f"Queried {len(vsh)} points at {slice_depth/1e3:.0f} km depth")
 # +
 vs_isotropic = np.sqrt((2 * vsh**2 + vsv**2) / 3)
 
-print(f"Vs range at {slice_depth/1e3:.0f} km: "
+print(f"Vs range at {slice_depth / 1e3:.0f} km: "
       f"{np.nanmin(vs_isotropic):.0f} - {np.nanmax(vs_isotropic):.0f} m/s")
 # -
 
@@ -221,7 +221,7 @@ converted_temperature = np.full_like(vs_isotropic, np.nan)
 converted_temperature[valid] = corrected_slb21.vs_to_temperature(
     vs_isotropic[valid], depth_grid.ravel()[valid])
 
-print(f"Temperature range at {slice_depth/1e3:.0f} km: "
+print(f"Temperature range at {slice_depth / 1e3:.0f} km: "
       f"{np.nanmin(converted_temperature):.0f}"
       f" - {np.nanmax(converted_temperature):.0f} K")
 # -
@@ -245,7 +245,7 @@ print(f"Temperature range at {slice_depth/1e3:.0f} km: "
 #     ax1.plot(test_temperatures, Vs_elastic[i], color=colors[i],
 #              linestyle="--", alpha=0.6)
 #     ax1.plot(test_temperatures, Vs_corrected[i], color=colors[i],
-#              label=f"{d/1e3:.0f} km")
+#              label=f"{d / 1e3:.0f} km")
 # ax1.set_xlabel("Temperature [K]")
 # ax1.set_ylabel(r"$V_s$ [m/s]")
 # ax1.set_title(r"Elastic (dashed) vs Corrected $V_s$")
@@ -257,7 +257,7 @@ print(f"Temperature range at {slice_depth/1e3:.0f} km: "
 # for i, d in enumerate(comparison_depths):
 #     reduction = (Vs_elastic[i] - Vs_corrected[i]) / Vs_elastic[i] * 100
 #     ax2.plot(test_temperatures, reduction, color=colors[i],
-#              label=f"{d/1e3:.0f} km")
+#              label=f"{d / 1e3:.0f} km")
 # ax2.set_xlabel("Temperature [K]")
 # ax2.set_ylabel("Velocity reduction [%]")
 # ax2.set_title("Anelastic velocity reduction")
@@ -272,7 +272,7 @@ print(f"Temperature range at {slice_depth/1e3:.0f} km: "
 # fig.colorbar(img3, ax=ax3, label=r"$V_s$ [m/s]")
 # ax3.set_xlabel("Longitude")
 # ax3.set_ylabel("Latitude")
-# ax3.set_title(f"REVEAL isotropic Vs at {slice_depth/1e3:.0f} km")
+# ax3.set_title(f"REVEAL isotropic Vs at {slice_depth / 1e3:.0f} km")
 #
 # # --- Panel 4: Converted temperature at 200 km ---
 # ax4 = fig.add_subplot(gs[1, 1])
@@ -282,7 +282,7 @@ print(f"Temperature range at {slice_depth/1e3:.0f} km: "
 # fig.colorbar(img4, ax=ax4, label="Temperature [K]")
 # ax4.set_xlabel("Longitude")
 # ax4.set_ylabel("Latitude")
-# ax4.set_title(f"Converted temperature at {slice_depth/1e3:.0f} km")
+# ax4.set_title(f"Converted temperature at {slice_depth / 1e3:.0f} km")
 #
 # plt.show()
 # -

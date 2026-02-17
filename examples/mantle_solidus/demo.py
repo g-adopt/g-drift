@@ -56,7 +56,7 @@ for name, model in [("Hirschmann", hirsch_solidus),
                     ("Fiquet", fiquet_solidus)]:
     profile = model.get_profile("solidus temperature")
     d_min, d_max = profile.min_max_depth()
-    print(f"{name}: {d_min/1e3:.0f} km to {d_max/1e3:.0f} km")
+    print(f"{name}: {d_min / 1e3:.0f} km to {d_max / 1e3:.0f} km")
 # -
 
 # Creating a Composite Solidus
@@ -88,7 +88,7 @@ ghelichkhan_et_al = SplineProfile(
     name="solidus temperature (Ghelichkhan et al 2021)")
 
 d_min, d_max = ghelichkhan_et_al.min_max_depth()
-print(f"Composite solidus spans: {d_min/1e3:.0f} km to {d_max/1e3:.0f} km")
+print(f"Composite solidus spans: {d_min / 1e3:.0f} km to {d_max / 1e3:.0f} km")
 # -
 
 # Visualisation
