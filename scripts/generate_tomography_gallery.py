@@ -53,12 +53,27 @@ FIELD_ORDER = ["dvs", "dvp", "vs", "vp", "vsv", "vsh", "vpv", "vph"]
 def classify_model(model):
     """Classify a seismic model as global or regional.
 
+    Uses only coordinates with valid (non-NaN) data to determine extent,
+    since some models (e.g. MITS-18) have a global coordinate grid but
+    valid data only in a regional subset.
+
     Returns (is_global, lat_range, lon_range, depth_range).
     """
     coords = model.coordinates
     lat, lon, depth = gdrift.cartesian_to_geodetic(
         coords[:, 0], coords[:, 1], coords[:, 2]
     )
+
+    # Build mask of points that have valid data in at least one field
+    valid = np.zeros(len(lat), dtype=bool)
+    for field, values in model.available_fields.items():
+        if field == "coordinates":
+            continue
+        valid |= ~np.isnan(values)
+
+    if valid.any():
+        lat, lon, depth = lat[valid], lon[valid], depth[valid]
+
     lat_range = (float(lat.min()), float(lat.max()))
     lon_range = (float(lon.min()), float(lon.max()))
     depth_range = (float(depth.min()), float(depth.max()))
@@ -124,7 +139,7 @@ def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out
     )
 
     vmax = np.nanmax(np.abs(data))
-    if vmax == 0:
+    if not np.isfinite(vmax) or vmax == 0:
         vmax = 1.0
     norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
 
@@ -169,7 +184,7 @@ def plot_regional_slice(model_name, field, lat_grid, lon_grid, values, mid_depth
         )
 
         vmax = np.nanmax(np.abs(data))
-        if vmax == 0:
+        if not np.isfinite(vmax) or vmax == 0:
             vmax = 1.0
         norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
 
@@ -191,7 +206,7 @@ def plot_regional_slice(model_name, field, lat_grid, lon_grid, values, mid_depth
         # Fallback without cartopy
         fig, ax = plt.subplots(figsize=FIG_SIZE, dpi=DPI)
         vmax = np.nanmax(np.abs(data))
-        if vmax == 0:
+        if not np.isfinite(vmax) or vmax == 0:
             vmax = 1.0
         norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
 
