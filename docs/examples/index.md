@@ -3,7 +3,7 @@
 <div class="example-grid" markdown>
 
 <div class="example-card">
-<a href="mantle_solidus/demo.ipynb">
+<a href="mantle_solidus/demo/">
 <img src="../assets/images/thumbnails/mantle_solidus.png" alt="Solidus profiles">
 <div class="card-body">
 <h3>Mantle Solidus Profiles</h3>
@@ -13,7 +13,7 @@
 </div>
 
 <div class="example-card">
-<a href="anelasticity_corrections/demo.ipynb">
+<a href="anelasticity_corrections/demo/">
 <img src="../assets/images/thumbnails/anelasticity_corrections.png" alt="Anelastic corrections">
 <div class="card-body">
 <h3>Anelastic Corrections</h3>
@@ -23,7 +23,7 @@
 </div>
 
 <div class="example-card">
-<a href="geodynamic_adiabat/demo.ipynb">
+<a href="geodynamic_adiabat/demo/">
 <img src="../assets/images/thumbnails/geodynamic_adiabat.png" alt="Geodynamic adiabat">
 <div class="card-body">
 <h3>Geodynamic Adiabat</h3>
@@ -33,7 +33,7 @@
 </div>
 
 <div class="example-card">
-<a href="linearisation/demo.ipynb">
+<a href="linearisation/demo/">
 <img src="../assets/images/thumbnails/linearisation.png" alt="Table regularisation">
 <div class="card-body">
 <h3>Table Regularisation</h3>
@@ -43,7 +43,7 @@
 </div>
 
 <div class="example-card">
-<a href="tomography_models/demo.ipynb">
+<a href="tomography_models/demo/">
 <img src="../assets/images/thumbnails/tomography_models.png" alt="Tomography models">
 <div class="card-body">
 <h3>Seismic Tomography</h3>
@@ -53,7 +53,7 @@
 </div>
 
 <div class="example-card">
-<a href="temperature_to_vs/demo.ipynb">
+<a href="temperature_to_vs/demo/">
 <img src="../assets/images/thumbnails/temperature_to_vs.png" alt="Vs to temperature">
 <div class="card-body">
 <h3>Vs-to-Temperature Conversion</h3>

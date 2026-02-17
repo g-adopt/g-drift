@@ -108,6 +108,10 @@ for label, adiabat in [("SLB_21 (CFMAS)", adiabat_21), ("SLB_24 (CFMS)", adiabat
 # We plot key profiles side by side to compare the two thermodynamic models.
 
 # + tags=["active-ipynb"]
+# %matplotlib inline
+# -
+
+# + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 #
 # fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharey=True)

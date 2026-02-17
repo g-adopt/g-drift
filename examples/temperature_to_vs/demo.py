@@ -233,6 +233,10 @@ print(f"Temperature range at {slice_depth / 1e3:.0f} km: "
 # REVEAL isotropic $V_s$ at 200 km, and the converted temperature field.
 
 # + tags=["active-ipynb"]
+# %matplotlib inline
+# -
+
+# + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 #
 # fig = plt.figure(figsize=(16, 12), constrained_layout=True)

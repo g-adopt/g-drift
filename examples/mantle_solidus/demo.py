@@ -99,6 +99,10 @@ print(f"Composite solidus spans: {d_min / 1e3:.0f} km to {d_max / 1e3:.0f} km")
 # mantle solidus temperatures.
 
 # + tags=["active-ipynb"]
+# %matplotlib inline
+# -
+
+# + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 #
 # plt.close(1)

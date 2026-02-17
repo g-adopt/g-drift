@@ -164,6 +164,10 @@ for key in sorted(velocity_reduction):
 # velocity reduction across all 8 models as a function of temperature.
 
 # + tags=["active-ipynb"]
+# %matplotlib inline
+# -
+
+# + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 #
 # # --- Figure 1: Elastic vs Anelastic Vs contours (Cammarano Q3) ---

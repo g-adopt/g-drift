@@ -165,6 +165,10 @@ for idx in depth_indices:
 # two curves agree at the anchor temperature.
 
 # + tags=["active-ipynb"]
+# %matplotlib inline
+# -
+
+# + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 #
 # fig, axs = plt.subplots(len(depth_indices), 3, figsize=(15, 10),

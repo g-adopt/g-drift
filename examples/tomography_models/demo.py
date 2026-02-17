@@ -175,6 +175,10 @@ print(f"dVs range at {depth_km} km: {np.nanmin(dvs_grid):.2f}% to {np.nanmax(dvs
 # in the deep mantle.
 
 # + tags=["active-ipynb"]
+# %matplotlib inline
+# -
+
+# + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 # from matplotlib.colors import TwoSlopeNorm
 #

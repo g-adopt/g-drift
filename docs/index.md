@@ -1,4 +1,5 @@
 ---
+title: ""
 hide:
   - navigation
   - toc
@@ -27,8 +28,6 @@ prem = gdrift.PreliminaryRefEarthModel()
 thermo = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 seismic = gdrift.SeismicModel("3d_seismic_S40RTS")
 ```
-
-Browse the [examples](examples/index.md) to see what you can do, or check the [data catalog](data-catalog.md) to see what's available.
 
 ---
 

@@ -17,6 +17,7 @@ theme:
   features:
     - content.code.copy
     - navigation.indexes
+    - navigation.tabs
     - navigation.top
     - search.highlight
     - search.suggest
@@ -29,7 +30,8 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
   - pymdownx.details
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      base_path: ["docs"]
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
