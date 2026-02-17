@@ -101,8 +101,10 @@ jobs:
           test -f docs/tomography-gallery-generated.md || { echo "FAIL: tomography-gallery-generated.md not found"; exit 1; }
           test -d docs/assets/images/tomography || { echo "FAIL: tomography image directory not found"; exit 1; }
           test -f docs/assets/images/tomography/reference_cross_section.png || { echo "FAIL: reference map not found"; exit 1; }
-          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs gadopt_loading_field; do
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs; do
             test -f "docs/assets/images/thumbnails/${demo}.png" || { echo "FAIL: thumbnail ${demo}.png not found"; exit 1; }
+          done
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs gadopt_loading_field; do
             test -f "docs/examples/${demo}/demo.ipynb" || { echo "FAIL: notebook ${demo}/demo.ipynb not found"; exit 1; }
           done
           echo "OK: All generated files present"
