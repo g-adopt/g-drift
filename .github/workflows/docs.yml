@@ -22,38 +22,58 @@ jobs:
   build-and-deploy:
     name: Build and deploy docs
     runs-on: ubuntu-latest
+    container:
+      image: firedrakeproject/firedrake-vanilla-default:dev-main
 
     steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y python3-venv libgeos-dev libproj-dev proj-data
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
+      - name: Set up virtual environment
         run: |
-          python -m pip install --upgrade pip
+          python3 -m venv --system-site-packages .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+
+      - name: Install gadopt
+        run: |
+          . .venv/bin/activate
+          pip install git+https://github.com/g-adopt/g-adopt.git
+
+      - name: Install gdrift and docs dependencies
+        run: |
+          . .venv/bin/activate
           pip install -e ".[docs,examples]"
 
       - name: Install Jupyter kernel
-        run: python -m ipykernel install --user --name python3
+        run: |
+          . .venv/bin/activate
+          python -m ipykernel install --user --name python3
 
       - name: Prepare demo data and notebooks
         working-directory: examples
-        run: make all
+        run: |
+          . $GITHUB_WORKSPACE/.venv/bin/activate
+          make all
         env:
           MPLBACKEND: Agg
 
       - name: Generate thumbnails
-        run: python scripts/generate_thumbnails.py
+        run: |
+          . .venv/bin/activate
+          python scripts/generate_thumbnails.py
         env:
           MPLBACKEND: Agg
 
       - name: Copy notebooks to docs
         run: |
-          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs; do
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs gadopt_loading_field; do
             if [ -f "examples/${demo}/demo.ipynb" ]; then
               mkdir -p "docs/examples/${demo}"
               cp "examples/${demo}/demo.ipynb" "docs/examples/${demo}/demo.ipynb"
@@ -62,10 +82,14 @@ jobs:
           done
 
       - name: Generate Data Catalog
-        run: python scripts/generate_data_catalog.py
+        run: |
+          . .venv/bin/activate
+          python scripts/generate_data_catalog.py
 
       - name: Generate Tomography Gallery
-        run: python scripts/generate_tomography_gallery.py
+        run: |
+          . .venv/bin/activate
+          python scripts/generate_tomography_gallery.py
         env:
           MPLBACKEND: Agg
         timeout-minutes: 30
@@ -77,14 +101,16 @@ jobs:
           test -f docs/tomography-gallery-generated.md || { echo "FAIL: tomography-gallery-generated.md not found"; exit 1; }
           test -d docs/assets/images/tomography || { echo "FAIL: tomography image directory not found"; exit 1; }
           test -f docs/assets/images/tomography/reference_cross_section.png || { echo "FAIL: reference map not found"; exit 1; }
-          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs; do
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs gadopt_loading_field; do
             test -f "docs/assets/images/thumbnails/${demo}.png" || { echo "FAIL: thumbnail ${demo}.png not found"; exit 1; }
             test -f "docs/examples/${demo}/demo.ipynb" || { echo "FAIL: notebook ${demo}/demo.ipynb not found"; exit 1; }
           done
           echo "OK: All generated files present"
 
       - name: Build documentation
-        run: mkdocs build --strict
+        run: |
+          . .venv/bin/activate
+          mkdocs build --strict
         env:
           MPLBACKEND: Agg
 
