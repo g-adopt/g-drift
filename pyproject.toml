@@ -82,6 +82,7 @@ python_functions = ["test_*"]
 addopts = "--import-mode=importlib"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "server: marks tests that require downloading from the remote S3 server",
 ]
 
 [tool.flake8]
