@@ -54,7 +54,7 @@ jobs:
       - name: Install Jupyter kernel
         run: |
           . .venv/bin/activate
-          python -m ipykernel install --user --name python3
+          python -m ipykernel install --prefix .venv --name python3
 
       - name: Prepare demo data and notebooks
         working-directory: examples
