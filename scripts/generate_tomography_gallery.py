@@ -404,13 +404,15 @@ def generate_gallery():
 def write_gallery_markdown(gallery):
     """Write the tomography-gallery-generated.md file.
 
-    Image paths use ``../assets/`` because this file is snippet-included
-    into ``data-catalog.md``, which MkDocs renders at
-    ``data-catalog/index.html``.  Raw HTML ``<img src>`` attributes are
-    not rewritten by MkDocs, so we need the ``../`` prefix to resolve
-    correctly from the output directory.
+    Markdown image references (``![alt](path)``) use ``assets/…`` because
+    MkDocs resolves them relative to the source file and rewrites the path
+    in the rendered output.  Raw HTML ``<img src>`` attributes are NOT
+    rewritten, so they need ``../assets/…`` to resolve correctly from the
+    ``data-catalog/index.html`` output directory.
     """
-    img_prefix = "../assets/images/tomography"
+    # MkDocs rewrites markdown images but not HTML src attributes
+    md_img = "assets/images/tomography"
+    html_img = "../assets/images/tomography"
 
     lines = []
     lines.append("## Tomography Model Gallery\n")
@@ -421,7 +423,7 @@ def write_gallery_markdown(gallery):
         f"model's mid-depth.\n"
     )
     lines.append(
-        f'![Reference cross-section path]({img_prefix}/reference_cross_section.png)'
+        f'![Reference cross-section path]({md_img}/reference_cross_section.png)'
         '{: style="max-width:500px; display:block; margin:0 auto 1.5rem auto;" }\n'
     )
 
@@ -437,7 +439,7 @@ def write_gallery_markdown(gallery):
             tag = "Global" if is_global else "Regional"
             lines.append(f'<div class="tomography-card">')
             lines.append(
-                f'<img src="{img_prefix}/{png_name}" '
+                f'<img src="{html_img}/{png_name}" '
                 f'alt="{model_name} {field}" loading="lazy">'
             )
             lines.append(f'<span class="tomography-label">{model_name}</span>')
@@ -458,7 +460,7 @@ def write_gallery_markdown(gallery):
             tag = "Global" if is_global else "Regional"
             lines.append(f'<div class="tomography-card">')
             lines.append(
-                f'<img src="{img_prefix}/{png_name}" '
+                f'<img src="{html_img}/{png_name}" '
                 f'alt="{model_name} {field}" loading="lazy">'
             )
             lines.append(f'<span class="tomography-label">{model_name}</span>')
