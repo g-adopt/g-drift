@@ -133,6 +133,17 @@ def make_regional_coords(lat_range, lon_range, depth_range):
     return lat_grid, lon_grid, mid_depth, query_coords
 
 
+def _format_field_label(field):
+    """Format a field name for display, e.g. 'dvs' -> 'dVs', 'vsh' -> 'Vsh'."""
+    labels = {
+        "dvs": "dVs", "dvp": "dVp",
+        "vs": "Vs", "vp": "Vp",
+        "vsv": "Vsv", "vsh": "Vsh",
+        "vpv": "Vpv", "vph": "Vph",
+    }
+    return labels.get(field, field.capitalize())
+
+
 def _format_lat(deg):
     """Format a latitude value as e.g. '20\u00b0N' or '70\u00b0S'."""
     if deg > 0:
@@ -418,7 +429,7 @@ def write_gallery_markdown(gallery):
         if field not in gallery:
             continue
         entries = gallery[field]
-        field_label = field.upper() if field.startswith("d") else field.capitalize()
+        field_label = _format_field_label(field)
         lines.append(f"### {field_label} Models\n")
         lines.append('<div class="tomography-grid">\n')
 

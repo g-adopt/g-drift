@@ -255,11 +255,6 @@ class DatasetCatalogGenerator:
                     lines.append(f"**Usage:** `gdrift.{utility}(\"{dataset['name']}\")`")
                     lines.append("")
 
-                # File info
-                filename = dataset.get("filename", "N/A")
-                lines.append(f"**File:** `{filename}`")
-                lines.append("")
-
                 lines.append("---")
                 lines.append("")
 
