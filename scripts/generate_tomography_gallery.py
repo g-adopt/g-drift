@@ -4,7 +4,7 @@
 For each of the 47 seismic tomography models available in gdrift, this script:
 1. Classifies the model as global or regional based on lat/lon extent
 2. Groups models by field category (dvs, dvp, vs, vp, vsv, etc.)
-3. Generates a cross-section annulus plot (global) or depth-slice map (regional)
+3. Generates a wedge cross-section plot (global) or depth-slice map (regional)
 4. Outputs individual PNGs and a gallery markdown file for mkdocs inclusion
 
 Usage:
@@ -39,8 +39,12 @@ FIG_SIZE = (3.5, 3.5)
 DPI = 120
 
 # Cross-section sampling
-N_LAT = 180  # latitude samples along great circle
+N_LAT = 180  # latitude samples per side of the great circle
 N_DEPTH = 60  # depth samples
+
+# Cross-section latitude bounds (wedge shape)
+LAT_NORTH = 20.0   # northern bound (degrees)
+LAT_SOUTH = -70.0   # southern bound (degrees)
 
 # Depth-slice sampling for regional models
 REGIONAL_LAT_RES = 1.0  # degrees
@@ -85,28 +89,27 @@ def classify_model(model):
     return is_global, lat_range, lon_range, depth_range
 
 
-def make_cross_section_coords():
-    """Build query coordinates for a 0/180 great-circle annulus.
+def make_cross_section_coords(lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
+    """Build query coordinates for a wedge cross-section along 0/180 longitude.
 
-    Theta 0..pi = lon 0 from N pole to S pole.
-    Theta pi..2pi = lon 180 from S pole to N pole.
-    r-axis = R_cmb (inner) to R_earth (outer).
+    The wedge spans from lat_north to lat_south on both sides of the
+    great circle.  In polar coordinates theta=0 is placed at the top
+    (lat_north) using theta_zero_location("N").  Positive theta goes
+    clockwise (lon=0 side); negative theta goes counter-clockwise
+    (lon=180 side).
 
     Returns (theta_grid, r_grid, query_coords) where query_coords is Nx3.
     """
-    theta = np.linspace(0, 2 * np.pi, 2 * N_LAT, endpoint=False)
+    half_span = np.radians(lat_north - lat_south)
+    theta = np.linspace(-half_span, half_span, 2 * N_LAT)
     depths = np.linspace(0, R_earth - R_cmb, N_DEPTH)
     theta_grid, depth_grid = np.meshgrid(theta, depths)
     r_grid = R_earth - depth_grid
 
-    # Convert theta to lat/lon: theta 0..pi -> lat 90..-90, lon=0
-    #                            theta pi..2pi -> lat -90..90, lon=180
-    lats = np.where(
-        theta_grid < np.pi,
-        90.0 - np.degrees(theta_grid),
-        -90.0 + np.degrees(theta_grid - np.pi),
-    )
-    lons = np.where(theta_grid < np.pi, 0.0, 180.0)
+    # theta > 0 -> lon=0 (right side), theta < 0 -> lon=180 (left side)
+    # latitude decreases symmetrically from lat_north at theta=0
+    lats = lat_north - np.degrees(np.abs(theta_grid))
+    lons = np.where(theta_grid >= 0, 0.0, 180.0)
 
     query_coords = gdrift.geodetic_to_cartesian(
         lats.ravel(), lons.ravel(), depth_grid.ravel()
@@ -130,13 +133,26 @@ def make_regional_coords(lat_range, lon_range, depth_range):
     return lat_grid, lon_grid, mid_depth, query_coords
 
 
-def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out_path):
-    """Plot a cross-section annulus in polar projection."""
+def _format_lat(deg):
+    """Format a latitude value as e.g. '20\u00b0N' or '70\u00b0S'."""
+    if deg > 0:
+        return f"{deg:.0f}\u00b0N"
+    elif deg < 0:
+        return f"{abs(deg):.0f}\u00b0S"
+    return "Eq"
+
+
+def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out_path,
+                               lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
+    """Plot a wedge cross-section in polar projection."""
     data = values.reshape(theta_grid.shape)
+    half_span_deg = lat_north - lat_south
 
     fig, ax = plt.subplots(
         figsize=FIG_SIZE, subplot_kw={"projection": "polar"}, dpi=DPI
     )
+    ax.set_theta_zero_location("N")
+    ax.set_theta_direction(-1)
 
     vmax = np.nanmax(np.abs(data))
     if not np.isfinite(vmax) or vmax == 0:
@@ -145,10 +161,25 @@ def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out
 
     ax.pcolormesh(theta_grid, r_grid / 1e3, data, cmap=CMAP, norm=norm, shading="auto")
 
-    ax.set_ylim(R_cmb / 1e3, R_earth / 1e3)
+    ax.set_thetamin(-half_span_deg)
+    ax.set_thetamax(half_span_deg)
+    ax.set_rorigin(0)
+    ax.set_rlim(R_cmb / 1e3, R_earth / 1e3)
+
     ax.set_yticks([])
-    ax.set_xticks([0, np.pi / 2, np.pi, 3 * np.pi / 2])
-    ax.set_xticklabels(["N", "", "S", ""], fontsize=7)
+
+    # Tick labels: top = lat_north, bottom endpoints = longitude labels
+    ticks = [0, np.radians(half_span_deg), np.radians(-half_span_deg)]
+    labels = [_format_lat(lat_north), "0\u00b0", "180\u00b0"]
+
+    # Add equator ticks if the latitude range spans the equator
+    if lat_south < 0 < lat_north:
+        eq_theta = np.radians(lat_north)
+        ticks.extend([eq_theta, -eq_theta])
+        labels.extend(["Eq", "Eq"])
+
+    ax.set_xticks(ticks)
+    ax.set_xticklabels(labels, fontsize=6)
     ax.tick_params(axis="x", pad=1)
     ax.set_title(f"{model_name}\n{field}", fontsize=8, pad=8)
     ax.grid(False)
@@ -223,8 +254,8 @@ def plot_regional_slice(model_name, field, lat_grid, lon_grid, values, mid_depth
     plt.close(fig)
 
 
-def generate_reference_map():
-    """Generate a reference map showing the 0/180 longitude cross-section path."""
+def generate_reference_map(lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
+    """Generate a reference map showing the cross-section path and latitude bounds."""
     try:
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
@@ -238,27 +269,46 @@ def generate_reference_map():
         ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
         ax.add_feature(cfeature.LAND, facecolor="#e8e8e8")
 
-        # Draw the great circle: lon=0 and lon=180
-        lats = np.linspace(-90, 90, 200)
+        # Draw the great circle within the latitude bounds
+        lats = np.linspace(lat_south, lat_north, 200)
         ax.plot(
             np.zeros_like(lats), lats,
-            "r-", linewidth=2, transform=ccrs.PlateCarree(), label="0\u00b0 / 180\u00b0",
+            "r-", linewidth=2, transform=ccrs.PlateCarree(),
         )
         ax.plot(
             np.full_like(lats, 180), lats,
             "r-", linewidth=2, transform=ccrs.PlateCarree(),
         )
-        ax.set_title("Cross-section path (0\u00b0/180\u00b0 longitude)", fontsize=10)
+
+        # Draw latitude bound lines
+        lons_line = np.linspace(-180, 180, 360)
+        for lat_bound in [lat_north, lat_south]:
+            ax.plot(
+                lons_line, np.full_like(lons_line, lat_bound),
+                "r--", linewidth=0.8, alpha=0.6, transform=ccrs.PlateCarree(),
+            )
+
+        ax.set_title(
+            f"Cross-section path (0\u00b0/180\u00b0, "
+            f"{_format_lat(lat_north)} to {_format_lat(lat_south)})",
+            fontsize=10,
+        )
 
     except ImportError:
         fig, ax = plt.subplots(figsize=(6, 3), dpi=DPI)
         ax.set_xlim(-180, 180)
         ax.set_ylim(-90, 90)
-        ax.axvline(0, color="r", linewidth=2, label="0\u00b0")
-        ax.axvline(180, color="r", linewidth=2, label="180\u00b0")
+        ax.axvline(0, color="r", linewidth=2)
+        ax.axvline(180, color="r", linewidth=2)
+        ax.axhline(lat_north, color="r", linestyle="--", linewidth=0.8, alpha=0.6)
+        ax.axhline(lat_south, color="r", linestyle="--", linewidth=0.8, alpha=0.6)
         ax.set_xlabel("Longitude")
         ax.set_ylabel("Latitude")
-        ax.set_title("Cross-section path (0\u00b0/180\u00b0 longitude)", fontsize=10)
+        ax.set_title(
+            f"Cross-section path (0\u00b0/180\u00b0, "
+            f"{_format_lat(lat_north)} to {_format_lat(lat_south)})",
+            fontsize=10,
+        )
         ax.set_aspect("equal")
 
     out_path = IMAGE_DIR / "reference_cross_section.png"
@@ -341,16 +391,26 @@ def generate_gallery():
 
 
 def write_gallery_markdown(gallery):
-    """Write the tomography-gallery-generated.md file."""
+    """Write the tomography-gallery-generated.md file.
+
+    Image paths use ``../assets/`` because this file is snippet-included
+    into ``data-catalog.md``, which MkDocs renders at
+    ``data-catalog/index.html``.  Raw HTML ``<img src>`` attributes are
+    not rewritten by MkDocs, so we need the ``../`` prefix to resolve
+    correctly from the output directory.
+    """
+    img_prefix = "../assets/images/tomography"
+
     lines = []
     lines.append("## Tomography Model Gallery\n")
     lines.append(
-        "Cross-sections are taken along the 0\u00b0/180\u00b0 longitude great circle "
-        "(see reference map below). Regional models show a depth slice at the "
-        "model's mid-depth.\n"
+        f"Cross-sections are taken along the 0\u00b0/180\u00b0 longitude great circle "
+        f"between {_format_lat(LAT_NORTH)} and {_format_lat(LAT_SOUTH)} "
+        f"(see reference map below). Regional models show a depth slice at the "
+        f"model's mid-depth.\n"
     )
     lines.append(
-        '![Reference cross-section path](assets/images/tomography/reference_cross_section.png)'
+        f'![Reference cross-section path]({img_prefix}/reference_cross_section.png)'
         '{: style="max-width:500px; display:block; margin:0 auto 1.5rem auto;" }\n'
     )
 
@@ -366,7 +426,7 @@ def write_gallery_markdown(gallery):
             tag = "Global" if is_global else "Regional"
             lines.append(f'<div class="tomography-card">')
             lines.append(
-                f'<img src="assets/images/tomography/{png_name}" '
+                f'<img src="{img_prefix}/{png_name}" '
                 f'alt="{model_name} {field}" loading="lazy">'
             )
             lines.append(f'<span class="tomography-label">{model_name}</span>')
@@ -387,7 +447,7 @@ def write_gallery_markdown(gallery):
             tag = "Global" if is_global else "Regional"
             lines.append(f'<div class="tomography-card">')
             lines.append(
-                f'<img src="assets/images/tomography/{png_name}" '
+                f'<img src="{img_prefix}/{png_name}" '
                 f'alt="{model_name} {field}" loading="lazy">'
             )
             lines.append(f'<span class="tomography-label">{model_name}</span>')
