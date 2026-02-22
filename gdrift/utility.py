@@ -494,9 +494,9 @@ def great_circle_path(lat_A, lon_A, lat_B, lon_B, n_points=360, major_arc=False)
 
 
 def great_circle_cross_section(lat_A, lon_A, lat_B, lon_B,
-                                n_arc=360, n_depth=60,
-                                major_arc=False,
-                                min_depth=0.0, max_depth=None):
+                               n_arc=360, n_depth=60,
+                               major_arc=False,
+                               min_depth=0.0, max_depth=None):
     """Build a 2-D cross-section grid along a great-circle arc.
 
     The returned grids are ready for polar-projection plotting (theta vs r)
