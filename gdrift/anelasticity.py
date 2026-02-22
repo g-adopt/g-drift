@@ -13,14 +13,14 @@ Q, temperature, pressure, and the homologous temperature (T/T_solidus).
 Two parameterizations are provided:
 1. **Cammarano et al. (2003)**: Uses parameters B (grain size), g (activation
    volume), and a (frequency exponent) to compute Q(depth, temperature)
-2. **Goes et al. (2000)**: Uses Q0 (reference Q) and xi (activation parameter)
-   for simpler Q(depth, temperature) models
+2. **Goes et al. (2000)**: Uses activation energy H* and activation volume V*
+   with pressure from PREM to compute Q(depth, temperature) for the upper mantle
 
 Key Classes
 -----------
 BaseAnelasticityModel : Abstract base class for anelastic models
 CammaranoAnelasticityModel : B, g, a parameterization (6 Q-profiles: Q1-Q6)
-GoesAnelasticityModel : Q0, xi parameterization (2 Q-profiles: Q4, Q6)
+GoesAnelasticityModel : Activation energy parameterization (2 Q-profiles: Q1, Q2)
 
 Key Functions
 -------------
@@ -44,9 +44,9 @@ Examples
 >>> vs_anelastic = tm_anelastic.temperature_to_vs(1600, 500e3)
 >>> print(f"Elastic: {vs_elastic:.1f} m/s, Anelastic: {vs_anelastic:.1f} m/s")
 >>>
->>> # Use Goes Q4 model instead
->>> anelastic_goes = gdrift.GoesAnelasticityModel.from_q_profile("Q4")
->>> tm_anelastic_q4 = gdrift.apply_anelastic_correction(tm, anelastic_goes)
+>>> # Use Goes Q1 model instead
+>>> anelastic_goes = gdrift.GoesAnelasticityModel.from_q_profile("Q1")
+>>> tm_anelastic_q1 = gdrift.apply_anelastic_correction(tm, anelastic_goes)
 
 Notes
 -----
@@ -54,7 +54,7 @@ Notes
 - Corrections are largest at high temperatures (near solidus)
 - Q-profiles (Q1-Q6) represent different assumptions about grain size,
   water content, and attenuation mechanisms
-- Cammarano Q3 and Goes Q4 are commonly used in geodynamic studies
+- Cammarano Q3 and Goes Q1 are commonly used in geodynamic studies
 - The correction assumes a reference frequency of 1 Hz for seismic waves
 
 References
@@ -74,11 +74,15 @@ gdrift.profile.HirschmannSolidus : Solidus temperature profile
 """
 
 from abc import ABC, abstractmethod
+import warnings
 import numpy
 import numpy.typing as npt
+import scipy.interpolate
 from typing import TypeVar, Callable
 
-from .profile import SplineProfile, RadialEarthModelFromFile, HirschmannSolidus
+from .profile import SplineProfile, RadialEarthModelFromFile, HirschmannSolidus, PreliminaryRefEarthModel
+from .utility import compute_mass, compute_gravity, compute_pressure
+from .constants import R_earth
 
 AnelasticityModel = TypeVar("AnelasticityModel", bound="BaseAnelasticityModel")
 
@@ -293,127 +297,132 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
 
 
 class GoesAnelasticityModel(BaseAnelasticityModel):
-    """
-    Anelasticity model following the approach by Goes et al. (2004).
-    Uses parameters Q0 and xi instead of B and g.
+    """Anelasticity model following Goes et al. (2000, JGR).
+
+    Uses activation energy and activation volume to compute the shear quality
+    factor Q_mu via:
+
+        Q_mu = A * omega^a * exp(a * (H* + P * V*) / (R * T))
+
+    where A is a pre-exponential factor, H* is activation energy (J/mol),
+    V* is activation volume (m^3/mol), P is pressure from PREM, R is the
+    gas constant, and T is temperature (K).
+
+    This model was calibrated for the upper mantle (50-200 km depth). Below
+    660 km depth, Q is set to a very large value (effectively no attenuation).
     """
 
-    def __init__(
-        self,
-        Q0: Callable,
-        xi: Callable,
-        a: Callable,
-        omega: Callable,
-        solidus: SplineProfile,
-        Q_bulk: Callable = lambda x: 10000,
-    ):
+    _nd_radial = 1000  # number of radial points for PREM pressure interpolant
+
+    def __init__(self, A, H_star, V_star, a, omega=1.0, Q_bulk=1000.0, max_depth=660e3):
         """
         Initialize the Goes anelasticity model.
 
         Args:
-            Q0 (Callable): Reference quality factor as a function of depth.
-            xi (Callable): Activation energy parameter as a function of depth.
-            a (Callable): Frequency dependency parameter as a function of depth.
-            omega (Callable): Seismic frequency as a function of depth.
-            solidus (SplineProfile): Solidus temperature profile for mantle.
-            Q_bulk (Callable): Bulk quality factor (default is 10000).
+            A (float): Pre-exponential scaling factor.
+            H_star (float): Activation energy in J/mol.
+            V_star (float): Activation volume in m^3/mol.
+            a (float): Frequency exponent.
+            omega (float): Seismic frequency in Hz (default 1.0).
+            Q_bulk (float): Constant bulk Q (default 1000, Durek & Ekstrom 1996).
+            max_depth (float): Depth below which Q is set very high (default 660e3 m).
         """
-        self.Q0 = Q0
-        self.xi = xi
-        self.a = a
+        self.A = A
+        self.H_star = H_star
+        self.V_star = V_star
+        self._a_value = a
+        self.a = lambda x: a  # callable for compatibility with apply_anelastic_correction
         self.omega = omega
-        self.solidus = solidus
         self.Q_bulk = Q_bulk
+        self.max_depth = max_depth
+        self._warned_deep = False
+        self._setup_depth_to_pressure()
+
+    def _setup_depth_to_pressure(self):
+        """Build a PREM-based depth-to-pressure interpolant."""
+        prem = PreliminaryRefEarthModel()
+        radius = numpy.linspace(0.0, R_earth, self._nd_radial)
+        depths = R_earth - radius
+        mass = compute_mass(radius, prem.at_depth("density", depths))
+        gravity = compute_gravity(radius, mass)
+        pressure = compute_pressure(radius, prem.at_depth("density", depths), gravity)
+        self._depth_to_pressure = scipy.interpolate.interp1d(depths, pressure, kind="linear")
 
     @classmethod
     def from_q_profile(cls, q_profile: str) -> "GoesAnelasticityModel":
         """Create a GoesAnelasticityModel from a predefined Q-profile.
 
-        Uses the Goes et al. (2000) parameterization where the Q factor is
-        computed as:
+        Uses the Goes et al. (2000) parameterization from Table A2 where the
+        Q factor is computed as:
 
-            Q = Q0 * omega^a * exp(a * xi * T_solidus / T)
+            Q_mu = A * omega^a * exp(a * (H* + P * V*) / (R * T))
 
-        where Q0 is a reference quality factor, xi is a dimensionless
-        activation energy parameter, a is the frequency exponent, and
-        T_solidus is the solidus temperature at the given depth.
-
-        ======= ============== ============= ======================================
-        Profile Q0 (UM / LM)   xi (UM / LM)  Physical Interpretation
-        ======= ============== ============= ======================================
-        Q4      4.9 / 22.2     26 / 14       Standard Goes parameterization
-        Q6      1.91 / 48.84   26 / 14       Alternative parameterization
-        ======= ============== ============= ======================================
-
-        UM = upper mantle (< 660 km), LM = lower mantle (>= 660 km).
-        All profiles use a = 0.15 (frequency exponent) and omega = 1.0 Hz.
+        ======= ====== ========== ============= ===============
+        Profile a      A          H* (kJ/mol)   V* (cm^3/mol)
+        ======= ====== ========== ============= ===============
+        Q1      0.15   0.148      500           20
+        Q2      0.25   2.0e-4     584           21
+        ======= ====== ========== ============= ===============
 
         Args:
-            q_profile (str): One of "Q4" or "Q6".
+            q_profile (str): One of "Q1" or "Q2".
 
         Returns:
             GoesAnelasticityModel: The configured model.
 
         Raises:
-            ValueError: If q_profile is not Q4 or Q6.
+            ValueError: If q_profile is not Q1 or Q2.
         """
         parameters = {
-            "Q4": {"Q0": [4.9, 22.2], "xi": [26, 14]},
-            "Q6": {"Q0": [1.91, 48.84], "xi": [26, 14]},
+            "Q1": {"A": 0.148, "H_star": 500e3, "V_star": 20e-6, "a": 0.15},
+            "Q2": {"A": 2.0e-4, "H_star": 584e3, "V_star": 21e-6, "a": 0.25},
         }
         if q_profile not in parameters:
             raise ValueError(f"Unknown Q-profile '{q_profile}'. Choose from {list(parameters.keys())}.")
 
-        p = parameters[q_profile]
-        solidus = BaseAnelasticityModel.build_ghelichkhan_solidus()
-
-        def Q0(x):
-            return numpy.where(x < 660e3, p["Q0"][0], p["Q0"][1])
-
-        def xi(x):
-            return numpy.where(x < 660e3, p["xi"][0], p["xi"][1])
-
-        def a(x):
-            return 0.15
-
-        def omega(x):
-            return 1.0
-
-        def Q_kappa(x):
-            return numpy.where(x < 660e3, 1e3, 1e4)
-
-        return cls(Q0=Q0, xi=xi, a=a, omega=omega, solidus=solidus, Q_bulk=Q_kappa)
+        return cls(**parameters[q_profile])
 
     def compute_Q_shear(self, depths: npt.ArrayLike, temperatures: npt.ArrayLike) -> npt.NDArray:
-        """
-        Compute the shear Q using the Goes et al. (2004) formulation.
+        """Compute the shear Q using the Goes et al. (2000) activation energy formulation.
 
         Args:
-            depths (numpy.ndarray): Array of depths.
-            temperatures (numpy.ndarray): Array of temperatures.
+            depths (numpy.ndarray): Array of depths in meters.
+            temperatures (numpy.ndarray): Array of temperatures in Kelvin.
 
         Returns:
             numpy.ndarray: Shear quality factor Q matrix.
         """
-        depths = numpy.asarray(depths)
-        temperatures = numpy.asarray(temperatures)
+        depths = numpy.asarray(depths, dtype=float)
+        temperatures = numpy.asarray(temperatures, dtype=float)
 
-        Q_values = (
-            self.Q0(depths) * (self.omega(depths)**self.a(depths)) * numpy.exp(
-                (self.a(depths) * self.xi(depths) * self.solidus.at_depth(depths)) / temperatures)
+        if not self._warned_deep and numpy.any(depths > self.max_depth):
+            warnings.warn(
+                "Goes et al. (2000) was calibrated for the upper mantle only "
+                f"(depths <= {self.max_depth/1e3:.0f} km). Depths beyond this "
+                "are assigned Q = 1e10 (no attenuation).",
+                stacklevel=2,
+            )
+            self._warned_deep = True
+
+        pressure = self._depth_to_pressure(numpy.clip(depths, 0, R_earth))
+        R_gas = 8.314  # J/(mol·K)
+        Q = self.A * (self.omega ** self._a_value) * numpy.exp(
+            self._a_value * (self.H_star + pressure * self.V_star) / (R_gas * temperatures)
         )
-
-        return Q_values
+        Q = numpy.where(depths > self.max_depth, 1e10, Q)
+        return Q
 
     def compute_Q_bulk(self, depths: npt.ArrayLike, temperatures: npt.ArrayLike) -> npt.NDArray:
-        """
-        Compute the bulk Q factor.
+        """Compute the bulk Q factor (constant).
 
         Args:
-            depths: Array of depths.
-            temperatures: Array of temperatures (unused for bulk Q in Goes model).
+            depths: Array of depths (unused).
+            temperatures: Array of temperatures (unused).
+
+        Returns:
+            float: Constant bulk Q value.
         """
-        return self.Q_bulk(depths)
+        return self.Q_bulk
 
 
 def apply_anelastic_correction(
