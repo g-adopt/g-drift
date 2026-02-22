@@ -409,6 +409,170 @@ def fibonacci_sphere(n):
     return numpy.array([[x[i], y[i], z[i]] for i in range(len(x))])
 
 
+def great_circle_path(lat_A, lon_A, lat_B, lon_B, n_points=360, major_arc=False):
+    """Compute evenly-spaced points along a great-circle arc between two surface locations.
+
+    Uses spherical linear interpolation (slerp) to produce a continuous
+    path with no coordinate discontinuities.
+
+    Parameters
+    ----------
+    lat_A, lon_A : float
+        Latitude and longitude of the start point in degrees.
+    lat_B, lon_B : float
+        Latitude and longitude of the end point in degrees.
+    n_points : int, optional
+        Number of points along the arc. Default is 360.
+    major_arc : bool, optional
+        If True, follow the major arc (the long way around) instead of
+        the minor arc. Default is False.
+
+    Returns
+    -------
+    lats : numpy.ndarray
+        Latitudes along the arc in degrees, shape ``(n_points,)``.
+    lons : numpy.ndarray
+        Longitudes along the arc in degrees, shape ``(n_points,)``.
+    arc_length : float
+        Total arc length in radians.
+
+    Raises
+    ------
+    ValueError
+        If the two points are identical (angular distance < 1e-12 rad).
+    """
+    lat_A_r, lon_A_r = numpy.radians(lat_A), numpy.radians(lon_A)
+    lat_B_r, lon_B_r = numpy.radians(lat_B), numpy.radians(lon_B)
+
+    a = numpy.array([
+        numpy.cos(lat_A_r) * numpy.cos(lon_A_r),
+        numpy.cos(lat_A_r) * numpy.sin(lon_A_r),
+        numpy.sin(lat_A_r),
+    ])
+    b = numpy.array([
+        numpy.cos(lat_B_r) * numpy.cos(lon_B_r),
+        numpy.cos(lat_B_r) * numpy.sin(lon_B_r),
+        numpy.sin(lat_B_r),
+    ])
+
+    dot = numpy.clip(numpy.dot(a, b), -1.0, 1.0)
+    omega = numpy.arccos(dot)
+
+    if omega < 1e-12:
+        raise ValueError("Start and end points are identical.")
+
+    sin_omega = numpy.sin(omega)
+
+    if not major_arc:
+        t = numpy.linspace(0.0, 1.0, n_points)
+        coeffA = numpy.sin((1.0 - t) * omega) / sin_omega
+        coeffB = numpy.sin(t * omega) / sin_omega
+        pts = coeffA[:, None] * a[None, :] + coeffB[:, None] * b[None, :]
+        arc_length = omega
+    else:
+        # Tangent direction from a toward b
+        if sin_omega > 1e-12:
+            e = (b - dot * a) / sin_omega
+        else:
+            # Antipodal: pick a canonical perpendicular
+            if abs(a[2]) < 0.9:
+                perp = numpy.array([0.0, 0.0, 1.0])
+            else:
+                perp = numpy.array([1.0, 0.0, 0.0])
+            e = numpy.cross(a, perp)
+            e = e / numpy.linalg.norm(e)
+
+        # Sweep the *opposite* direction from a, arriving at b
+        sweep = 2 * numpy.pi - omega
+        alpha = numpy.linspace(0.0, sweep, n_points)
+        pts = numpy.cos(alpha)[:, None] * a[None, :] - numpy.sin(alpha)[:, None] * e[None, :]
+        arc_length = sweep
+
+    lats = numpy.degrees(numpy.arcsin(numpy.clip(pts[:, 2], -1.0, 1.0)))
+    lons = numpy.degrees(numpy.arctan2(pts[:, 1], pts[:, 0]))
+    return lats, lons, arc_length
+
+
+def great_circle_cross_section(lat_A, lon_A, lat_B, lon_B,
+                                n_arc=360, n_depth=60,
+                                major_arc=False,
+                                min_depth=0.0, max_depth=None):
+    """Build a 2-D cross-section grid along a great-circle arc.
+
+    The returned grids are ready for polar-projection plotting (theta vs r)
+    and the query coordinates can be passed directly to
+    :meth:`~gdrift.EarthModel3D.at`.
+
+    Parameters
+    ----------
+    lat_A, lon_A : float
+        Latitude and longitude of the start point (degrees).
+    lat_B, lon_B : float
+        Latitude and longitude of the end point (degrees).
+    n_arc : int, optional
+        Number of points along the arc. Default is 360.
+    n_depth : int, optional
+        Number of depth levels. Default is 60.
+    major_arc : bool, optional
+        If True, follow the major arc. Default is False.
+    min_depth : float, optional
+        Minimum depth in meters. Default is 0.
+    max_depth : float, optional
+        Maximum depth in meters. Default is ``R_earth - R_cmb`` (full mantle).
+
+    Returns
+    -------
+    theta_grid : numpy.ndarray
+        Angular distance from the arc midpoint in radians, shape
+        ``(n_depth, n_arc)``.  Negative values are toward point A,
+        positive toward point B.
+    r_grid : numpy.ndarray
+        Radial distance from Earth's centre in meters, shape
+        ``(n_depth, n_arc)``.
+    query_coords : numpy.ndarray
+        Cartesian coordinates of shape ``(n_depth * n_arc, 3)``
+        suitable for :meth:`~gdrift.EarthModel3D.at`.
+    arc_info : dict
+        Metadata with keys ``arc_length`` (radians), ``major_arc`` (bool),
+        ``midpoint_lat``, ``midpoint_lon``, ``endpoint_A`` and
+        ``endpoint_B`` (tuples).
+    """
+    if max_depth is None:
+        max_depth = R_earth - R_cmb
+
+    lats, lons, arc_length = great_circle_path(
+        lat_A, lon_A, lat_B, lon_B, n_points=n_arc, major_arc=major_arc
+    )
+
+    mid_idx = n_arc // 2
+    midpoint_lat = float(lats[mid_idx])
+    midpoint_lon = float(lons[mid_idx])
+
+    theta_1d = numpy.linspace(-arc_length / 2.0, arc_length / 2.0, n_arc)
+    depths_1d = numpy.linspace(min_depth, max_depth, n_depth)
+    theta_grid, depth_grid = numpy.meshgrid(theta_1d, depths_1d)
+    r_grid = R_earth - depth_grid
+
+    # Tile surface lats/lons across all depth levels
+    lats_2d = numpy.tile(lats, (n_depth, 1))
+    lons_2d = numpy.tile(lons, (n_depth, 1))
+
+    query_coords = geodetic_to_cartesian(
+        lats_2d.ravel(), lons_2d.ravel(), depth_grid.ravel()
+    )
+
+    arc_info = {
+        "arc_length": arc_length,
+        "major_arc": major_arc,
+        "midpoint_lat": midpoint_lat,
+        "midpoint_lon": midpoint_lon,
+        "endpoint_A": (lat_A, lon_A),
+        "endpoint_B": (lat_B, lon_B),
+    }
+
+    return theta_grid, r_grid, query_coords, arc_info
+
+
 def enlist(obj):
     """ Enlist makes sure we have a list
 
@@ -447,16 +611,17 @@ def interpolate_to_points(values, distances, inds, min_distance=1e-6):
     safe_dists = numpy.where(distances < min_distance, min_distance, distances)
     replace_flg = distances[:, 0] < min_distance
 
-    if len(values.shape) > 1:
-        weights = 1 / safe_dists
-        weighted_sum = numpy.einsum("ij, ijk -> ik", weights, values[inds])
-        ret = weighted_sum / numpy.sum(weights, axis=1)[:, numpy.newaxis]
-        ret[replace_flg, :] = values[inds[replace_flg, 0], :]
-    else:
-        weights = 1 / safe_dists
-        weighted_sum = numpy.einsum("ij, ij -> i", weights, values[inds])
-        ret = weighted_sum / numpy.sum(weights, axis=1)
-        ret[replace_flg] = values[inds[replace_flg, 0]]
+    with numpy.errstate(divide='ignore', invalid='ignore'):
+        if len(values.shape) > 1:
+            weights = 1 / safe_dists
+            weighted_sum = numpy.einsum("ij, ijk -> ik", weights, values[inds])
+            ret = weighted_sum / numpy.sum(weights, axis=1)[:, numpy.newaxis]
+            ret[replace_flg, :] = values[inds[replace_flg, 0], :]
+        else:
+            weights = 1 / safe_dists
+            weighted_sum = numpy.einsum("ij, ij -> i", weights, values[inds])
+            ret = weighted_sum / numpy.sum(weights, axis=1)
+            ret[replace_flg] = values[inds[replace_flg, 0]]
 
     return ret
 

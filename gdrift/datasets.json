@@ -213,7 +213,7 @@
         "vsv"
       ],
       "description": "REVEAL global full-waveform inversion seismic model",
-      "sha256": "a061cdbc3fda9b553367a9a18d8a42a1e6807de878962a91a045389257e0ead5",
+      "sha256": "70a6f2ba20e8ccfa2ea3ed76f23db8d6113c8574a1cfbe47203f319f4e401823",
       "author": "Thrastarson, S., van Herwaarden, D.-P., Noe, S., Schiller, C. J., & Fichtner, A.",
       "metadata_source": "web_search",
       "metadata_complete": true,

@@ -42,7 +42,7 @@ KERNELS = [
     {"kernel": "gaussian", "sigma": 50000},
     {"kernel": "idw_power", "power": 3.0},
     {"kernel": "exponential", "decay_length": 100000},
-    {"kernel": "wendland", "support_radius": 200000},
+    {"kernel": "wendland", "support_radius": 1200000},
 ]
 
 KERNEL_IDS = [

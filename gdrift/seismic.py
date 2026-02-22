@@ -73,6 +73,9 @@ class SeismicModel(EarthModel3D):
     minimum_distance = 1e-3
     # Hard coding maximum distance beyond which we don't have access to data
     maximum_distance = 200e3
+    # Default interpolation kernel — Wendland C2 compact support avoids
+    # contamination from distant neighbors in coarse/irregular grids.
+    default_kernel = "wendland"
 
     def __init__(self, model_name, nearest_neighbours: int = 8, default_max_distance: float = 200e3, labels=[]):
         """SeismicModel is a class for handling 3D seismic models.

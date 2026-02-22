@@ -80,7 +80,7 @@ from .earthmodel3d import EarthModel3D
 from .io import load_dataset, create_dataset_file, download_all_datasets
 from .mineralogy import ThermodynamicModel, compute_pwave_speed, compute_swave_speed, regularise_thermodynamic_table
 from .profile import PreliminaryRefEarthModel, RadialEarthModelFromFile, HirschmannSolidus, SplineProfile
-from .utility import compute_gravity, compute_mass, compute_pressure, geodetic_to_cartesian, cartesian_to_geodetic, dimensionalise_coords, nondimensionalise_coords, fibonacci_sphere
+from .utility import compute_gravity, compute_mass, compute_pressure, geodetic_to_cartesian, cartesian_to_geodetic, dimensionalise_coords, nondimensionalise_coords, fibonacci_sphere, great_circle_path, great_circle_cross_section
 from .seismic import SeismicModel, AVAILABLE_SEISMIC_MODELS
 from .gplates import CoastlineVTKFile
 
@@ -113,6 +113,8 @@ __all__ = [
     "dimensionalise_coords",
     "nondimensionalise_coords",
     "fibonacci_sphere",
+    "great_circle_path",
+    "great_circle_cross_section",
     "SeismicModel",
     "AVAILABLE_SEISMIC_MODELS",
     "DATASET_REGISTRY",

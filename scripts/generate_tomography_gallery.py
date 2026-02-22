@@ -42,9 +42,9 @@ DPI = 120
 N_LAT = 180  # latitude samples per side of the great circle
 N_DEPTH = 60  # depth samples
 
-# Cross-section latitude bounds (wedge shape)
-LAT_NORTH = 20.0   # northern bound (degrees)
-LAT_SOUTH = -70.0   # southern bound (degrees)
+# Cross-section endpoints: mid-Atlantic to Afar (cuts through the African LLSVP)
+LAT_A, LON_A = 0.0, -30.0     # equatorial mid-Atlantic Ridge
+LAT_B, LON_B = 11.5, 42.0     # Afar triple junction
 
 # Depth-slice sampling for regional models
 REGIONAL_LAT_RES = 1.0  # degrees
@@ -52,6 +52,9 @@ REGIONAL_LON_RES = 1.0  # degrees
 
 # Fields of interest (ordered for display)
 FIELD_ORDER = ["dvs", "dvp", "vs", "vp", "vsv", "vsh", "vpv", "vph"]
+
+# Perturbation fields (already relative to a 1D model, no subtraction needed)
+PERTURBATION_FIELDS = {"dvs", "dvp"}
 
 
 def classify_model(model):
@@ -87,34 +90,6 @@ def classify_model(model):
         and lon_range[0] < -170 and lon_range[1] > 170
     )
     return is_global, lat_range, lon_range, depth_range
-
-
-def make_cross_section_coords(lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
-    """Build query coordinates for a wedge cross-section along 0/180 longitude.
-
-    The wedge spans from lat_north to lat_south on both sides of the
-    great circle.  In polar coordinates theta=0 is placed at the top
-    (lat_north) using theta_zero_location("N").  Positive theta goes
-    clockwise (lon=0 side); negative theta goes counter-clockwise
-    (lon=180 side).
-
-    Returns (theta_grid, r_grid, query_coords) where query_coords is Nx3.
-    """
-    half_span = np.radians(lat_north - lat_south)
-    theta = np.linspace(-half_span, half_span, 2 * N_LAT)
-    depths = np.linspace(0, R_earth - R_cmb, N_DEPTH)
-    theta_grid, depth_grid = np.meshgrid(theta, depths)
-    r_grid = R_earth - depth_grid
-
-    # theta > 0 -> lon=0 (right side), theta < 0 -> lon=180 (left side)
-    # latitude decreases symmetrically from lat_north at theta=0
-    lats = lat_north - np.degrees(np.abs(theta_grid))
-    lons = np.where(theta_grid >= 0, 0.0, 180.0)
-
-    query_coords = gdrift.geodetic_to_cartesian(
-        lats.ravel(), lons.ravel(), depth_grid.ravel()
-    )
-    return theta_grid, r_grid, query_coords
 
 
 def make_regional_coords(lat_range, lon_range, depth_range):
@@ -154,10 +129,10 @@ def _format_lat(deg):
 
 
 def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out_path,
-                               lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
-    """Plot a wedge cross-section in polar projection."""
+                               arc_info=None):
+    """Plot a wedge cross-section in polar projection with colorbar."""
     data = values.reshape(theta_grid.shape)
-    half_span_deg = lat_north - lat_south
+    half_span_deg = np.degrees(arc_info["arc_length"] / 2.0)
 
     fig, ax = plt.subplots(
         figsize=FIG_SIZE, subplot_kw={"projection": "polar"}, dpi=DPI
@@ -165,12 +140,12 @@ def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out
     ax.set_theta_zero_location("N")
     ax.set_theta_direction(-1)
 
-    vmax = np.nanmax(np.abs(data))
+    vmax = np.nanpercentile(np.abs(data), 98)
     if not np.isfinite(vmax) or vmax == 0:
         vmax = 1.0
     norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
 
-    ax.pcolormesh(theta_grid, r_grid / 1e3, data, cmap=CMAP, norm=norm, shading="auto")
+    pcm = ax.pcolormesh(theta_grid, r_grid / 1e3, data, cmap=CMAP, norm=norm, shading="auto")
 
     ax.set_thetamin(-half_span_deg)
     ax.set_thetamax(half_span_deg)
@@ -179,14 +154,18 @@ def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out
 
     ax.set_yticks([])
 
-    # Tick labels: top = lat_north, bottom endpoints = longitude labels
+    midpoint_label = _format_lat(arc_info["midpoint_lat"])
+    ep_A = arc_info["endpoint_A"]
+    ep_B = arc_info["endpoint_B"]
     ticks = [0, np.radians(half_span_deg), np.radians(-half_span_deg)]
-    labels = [_format_lat(lat_north), "0\u00b0", "180\u00b0"]
+    labels = [midpoint_label, _format_lat(ep_B[0]), _format_lat(ep_A[0])]
 
-    # Add equator ticks if the latitude range spans the equator
-    if lat_south < 0 < lat_north:
-        eq_theta = np.radians(lat_north)
-        ticks.extend([eq_theta, -eq_theta])
+    # Add equator tick if the arc spans it (skip if midpoint is already near equator)
+    mid_lat = arc_info["midpoint_lat"]
+    ep_lat = ep_A[0]
+    if abs(mid_lat) > 5 and ((mid_lat > 0 > ep_lat) or (mid_lat < 0 < ep_lat)):
+        eq_theta_rad = np.radians(abs(mid_lat))
+        ticks.extend([eq_theta_rad, -eq_theta_rad])
         labels.extend(["Eq", "Eq"])
 
     ax.set_xticks(ticks)
@@ -195,7 +174,15 @@ def plot_global_cross_section(model_name, field, theta_grid, r_grid, values, out
     ax.set_title(f"{model_name}\n{field}", fontsize=8, pad=8)
     ax.grid(False)
 
-    fig.tight_layout(pad=0.5)
+    cax = fig.add_axes([0.3, 0.25, 0.4, 0.02])
+    cbar = fig.colorbar(pcm, cax=cax, orientation="horizontal")
+    if field in PERTURBATION_FIELDS:
+        cbar_label = _format_field_label(field)
+    else:
+        cbar_label = f"\u0394{_format_field_label(field)}"
+    cbar.set_label(cbar_label, fontsize=6)
+    cbar.ax.tick_params(labelsize=5)
+
     fig.savefig(out_path, dpi=DPI, bbox_inches="tight", facecolor="white")
     plt.close(fig)
 
@@ -265,8 +252,16 @@ def plot_regional_slice(model_name, field, lat_grid, lon_grid, values, mid_depth
     plt.close(fig)
 
 
-def generate_reference_map(lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
-    """Generate a reference map showing the cross-section path and latitude bounds."""
+def generate_reference_map(arc_info):
+    """Generate a reference map showing the great-circle cross-section path."""
+    ep_A = arc_info["endpoint_A"]
+    ep_B = arc_info["endpoint_B"]
+
+    path_lats, path_lons, _ = gdrift.great_circle_path(
+        ep_A[0], ep_A[1], ep_B[0], ep_B[1], n_points=500,
+        major_arc=arc_info["major_arc"],
+    )
+
     try:
         import cartopy.crs as ccrs
         import cartopy.feature as cfeature
@@ -280,28 +275,22 @@ def generate_reference_map(lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
         ax.add_feature(cfeature.COASTLINE, linewidth=0.5)
         ax.add_feature(cfeature.LAND, facecolor="#e8e8e8")
 
-        # Draw the great circle within the latitude bounds
-        lats = np.linspace(lat_south, lat_north, 200)
         ax.plot(
-            np.zeros_like(lats), lats,
-            "r-", linewidth=2, transform=ccrs.PlateCarree(),
-        )
-        ax.plot(
-            np.full_like(lats, 180), lats,
-            "r-", linewidth=2, transform=ccrs.PlateCarree(),
+            path_lons, path_lats,
+            "r-", linewidth=2, transform=ccrs.Geodetic(),
         )
 
-        # Draw latitude bound lines
-        lons_line = np.linspace(-180, 180, 360)
-        for lat_bound in [lat_north, lat_south]:
-            ax.plot(
-                lons_line, np.full_like(lons_line, lat_bound),
-                "r--", linewidth=0.8, alpha=0.6, transform=ccrs.PlateCarree(),
-            )
+        # Mark endpoints
+        ax.plot(
+            ep_A[1], ep_A[0], "ko", markersize=4, transform=ccrs.PlateCarree(),
+        )
+        ax.plot(
+            ep_B[1], ep_B[0], "ko", markersize=4, transform=ccrs.PlateCarree(),
+        )
 
         ax.set_title(
-            f"Cross-section path (0\u00b0/180\u00b0, "
-            f"{_format_lat(lat_north)} to {_format_lat(lat_south)})",
+            f"Cross-section path ({_format_lat(ep_A[0])} {ep_A[1]:.0f}\u00b0 "
+            f"to {_format_lat(ep_B[0])} {ep_B[1]:.0f}\u00b0)",
             fontsize=10,
         )
 
@@ -309,15 +298,14 @@ def generate_reference_map(lat_north=LAT_NORTH, lat_south=LAT_SOUTH):
         fig, ax = plt.subplots(figsize=(6, 3), dpi=DPI)
         ax.set_xlim(-180, 180)
         ax.set_ylim(-90, 90)
-        ax.axvline(0, color="r", linewidth=2)
-        ax.axvline(180, color="r", linewidth=2)
-        ax.axhline(lat_north, color="r", linestyle="--", linewidth=0.8, alpha=0.6)
-        ax.axhline(lat_south, color="r", linestyle="--", linewidth=0.8, alpha=0.6)
+        ax.plot(path_lons, path_lats, "r-", linewidth=2)
+        ax.plot(ep_A[1], ep_A[0], "ko", markersize=4)
+        ax.plot(ep_B[1], ep_B[0], "ko", markersize=4)
         ax.set_xlabel("Longitude")
         ax.set_ylabel("Latitude")
         ax.set_title(
-            f"Cross-section path (0\u00b0/180\u00b0, "
-            f"{_format_lat(lat_north)} to {_format_lat(lat_south)})",
+            f"Cross-section path ({_format_lat(ep_A[0])} {ep_A[1]:.0f}\u00b0 "
+            f"to {_format_lat(ep_B[0])} {ep_B[1]:.0f}\u00b0)",
             fontsize=10,
         )
         ax.set_aspect("equal")
@@ -338,14 +326,19 @@ def generate_gallery():
     """Main entry point: generate all gallery images and the markdown file."""
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Generating reference cross-section map...")
-    ref_map_path = generate_reference_map()
-    print(f"  -> {ref_map_path}")
-
     # Pre-compute shared cross-section coordinates
     print("Building cross-section query grid...")
-    theta_grid, r_grid, xsec_coords = make_cross_section_coords()
+    theta_grid, r_grid, xsec_coords, arc_info = gdrift.great_circle_cross_section(
+        lat_A=LAT_A, lon_A=LON_A,
+        lat_B=LAT_B, lon_B=LON_B,
+        n_arc=2 * N_LAT, n_depth=N_DEPTH,
+        min_depth=50e3,
+    )
     print(f"  {xsec_coords.shape[0]} query points")
+
+    print("Generating reference cross-section map...")
+    ref_map_path = generate_reference_map(arc_info)
+    print(f"  -> {ref_map_path}")
 
     # Collect results: {field: [(model_name, is_global, png_path), ...]}
     gallery = {}
@@ -379,12 +372,20 @@ def generate_gallery():
             try:
                 if is_global:
                     values = model.at(field, xsec_coords)
+                    if field not in PERTURBATION_FIELDS:
+                        data_2d = values.reshape(theta_grid.shape)
+                        row_mean = np.nanmean(data_2d, axis=1, keepdims=True)
+                        data_2d = data_2d - row_mean
+                        values = data_2d.ravel()
                     plot_global_cross_section(
-                        model_name, field, theta_grid, r_grid, values, out_path
+                        model_name, field, theta_grid, r_grid, values, out_path,
+                        arc_info=arc_info,
                     )
                 else:
                     lat_grid, lon_grid, mid_depth, reg_coords = regional_data
                     values = model.at(field, reg_coords)
+                    if field not in PERTURBATION_FIELDS:
+                        values = values - np.nanmean(values)
                     plot_regional_slice(
                         model_name, field, lat_grid, lon_grid, values, mid_depth, out_path
                     )
@@ -397,11 +398,11 @@ def generate_gallery():
 
     # Write the gallery markdown
     print(f"\nWriting gallery markdown to {GALLERY_MD}...")
-    write_gallery_markdown(gallery)
+    write_gallery_markdown(gallery, arc_info)
     print("Done.")
 
 
-def write_gallery_markdown(gallery):
+def write_gallery_markdown(gallery, arc_info):
     """Write the tomography-gallery-generated.md file.
 
     Markdown image references (``![alt](path)``) use ``assets/…`` because
@@ -414,11 +415,15 @@ def write_gallery_markdown(gallery):
     md_img = "assets/images/tomography"
     html_img = "../assets/images/tomography"
 
+    ep_A = arc_info["endpoint_A"]
+    ep_B = arc_info["endpoint_B"]
+    arc_deg = np.degrees(arc_info["arc_length"])
+
     lines = []
     lines.append("## Tomography Model Gallery\n")
     lines.append(
-        f"Cross-sections are taken along the 0\u00b0/180\u00b0 longitude great circle "
-        f"between {_format_lat(LAT_NORTH)} and {_format_lat(LAT_SOUTH)} "
+        f"Cross-sections follow a {arc_deg:.0f}\u00b0 great-circle arc along the "
+        f"0\u00b0 meridian from {_format_lat(ep_A[0])} to {_format_lat(ep_B[0])} "
         f"(see reference map below). Regional models show a depth slice at the "
         f"model's mid-depth.\n"
     )

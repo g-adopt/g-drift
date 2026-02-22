@@ -24,50 +24,51 @@ def expected_values():
         return pickle.load(f)
 
 
-def test_slb21_temperature(demo_namespace, expected_values):
-    """Test SLB_21 adiabatic temperature at key depths."""
-    actual = demo_namespace["adiabat_21"]["temperature"]
+def test_temperature(demo_namespace, expected_values):
+    """Test adiabatic temperature at key depths."""
+    actual = demo_namespace["adiabat"]["temperature"]
     indices = expected_values["test_indices"]
     np.testing.assert_allclose(
-        actual[indices], expected_values["slb21_temperature"], rtol=1e-6)
+        actual[indices], expected_values["temperature"], rtol=1e-6)
 
 
-def test_slb24_temperature(demo_namespace, expected_values):
-    """Test SLB_24 adiabatic temperature at key depths."""
-    actual = demo_namespace["adiabat_24"]["temperature"]
+def test_density_raw(demo_namespace, expected_values):
+    """Test raw density along the adiabat."""
+    actual = demo_namespace["adiabat"]["rho"]
     indices = expected_values["test_indices"]
     np.testing.assert_allclose(
-        actual[indices], expected_values["slb24_temperature"], rtol=1e-6)
+        actual[indices], expected_values["density_raw"], rtol=1e-6)
 
 
-def test_slb21_density(demo_namespace, expected_values):
-    """Test SLB_21 density along the adiabat."""
-    actual = demo_namespace["adiabat_21"]["rho"]
+def test_density_smooth(demo_namespace, expected_values):
+    """Test smoothed density along the adiabat."""
+    actual = demo_namespace["adiabat_smooth"]["rho"]
     indices = expected_values["test_indices"]
     np.testing.assert_allclose(
-        actual[indices], expected_values["slb21_density"], rtol=1e-6)
+        actual[indices], expected_values["density_smooth"], rtol=1e-6)
 
 
-def test_slb24_density(demo_namespace, expected_values):
-    """Test SLB_24 density along the adiabat."""
-    actual = demo_namespace["adiabat_24"]["rho"]
+def test_alpha_smooth(demo_namespace, expected_values):
+    """Test smoothed thermal expansivity at key depths."""
+    actual = demo_namespace["adiabat_smooth"]["alpha"]
     indices = expected_values["test_indices"]
     np.testing.assert_allclose(
-        actual[indices], expected_values["slb24_density"], rtol=1e-6)
+        actual[indices], expected_values["alpha_smooth"], rtol=1e-6)
 
 
-def test_slb21_dissipation_number(demo_namespace, expected_values):
-    """Test SLB_21 dissipation number."""
-    actual = demo_namespace["adiabat_21"]["Di"]
+def test_Cp_SI_smooth(demo_namespace, expected_values):
+    """Test smoothed specific heat capacity at key depths."""
+    actual = demo_namespace["adiabat_smooth"]["Cp_SI"]
+    indices = expected_values["test_indices"]
     np.testing.assert_allclose(
-        actual, expected_values["slb21_Di"], rtol=1e-6)
+        actual[indices], expected_values["Cp_SI_smooth"], rtol=1e-6)
 
 
-def test_slb24_dissipation_number(demo_namespace, expected_values):
-    """Test SLB_24 dissipation number."""
-    actual = demo_namespace["adiabat_24"]["Di"]
+def test_dissipation_number(demo_namespace, expected_values):
+    """Test dissipation number."""
+    actual = demo_namespace["adiabat"]["Di"]
     np.testing.assert_allclose(
-        actual, expected_values["slb24_Di"], rtol=1e-6)
+        actual, expected_values["Di"], rtol=1e-6)
 
 
 def test_surface_gravity(demo_namespace):
@@ -77,16 +78,12 @@ def test_surface_gravity(demo_namespace):
 
 
 def test_temperature_monotonically_increasing(demo_namespace):
-    """Test that temperature increases with depth for both models."""
-    for key in ["adiabat_21", "adiabat_24"]:
-        T = demo_namespace[key]["temperature"]
-        assert np.all(np.diff(T) >= 0), f"{key} temperature not monotonically increasing"
+    """Test that temperature increases with depth."""
+    T = demo_namespace["adiabat"]["temperature"]
+    assert np.all(np.diff(T) >= 0), "Temperature not monotonically increasing"
 
 
 def test_dissipation_number_range(demo_namespace):
     """Test that dissipation number is in a physically reasonable range."""
-    # NOTE: Surface-based Di (~1.6) is higher than the commonly cited
-    # depth-averaged value (~0.5-0.7). See CLAUDE.md for investigation note.
-    for key in ["adiabat_21", "adiabat_24"]:
-        Di = demo_namespace[key]["Di"]
-        assert 0.3 < Di < 3.0, f"{key} Di={Di} outside expected range [0.3, 3.0]"
+    Di = demo_namespace["adiabat"]["Di"]
+    assert 0.3 < Di < 3.0, f"Di={Di} outside expected range [0.3, 3.0]"

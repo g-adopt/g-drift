@@ -5,6 +5,8 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.signal import savgol_filter
 import gdrift
 
 THUMBNAIL_DIR = Path(__file__).resolve().parents[2] / "docs" / "assets" / "images" / "thumbnails"
@@ -12,13 +14,19 @@ THUMBNAIL_DIR = Path(__file__).resolve().parents[2] / "docs" / "assets" / "image
 
 def generate():
     gravity = gdrift.prem_gravity_profile()
-    slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
-    slb24 = gdrift.ThermodynamicModel("SLB_24", "pyroliteCFMS")
+    slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteFMS")
 
-    adiabat_21 = gdrift.compute_adiabat(slb21, T0=1600, gravity_profile=gravity)
-    adiabat_24 = gdrift.compute_adiabat(slb24, T0=1600, gravity_profile=gravity)
+    adiabat = gdrift.compute_adiabat(slb21, T0=1600, gravity_profile=gravity)
 
-    depths_km = adiabat_21["depths"] / 1e3
+    # Smooth phase-transition spikes
+    smooth_keys = ["rho", "alpha", "Cp", "V", "Cv", "beta", "gamma"]
+    adiabat_smooth = dict(adiabat)
+    for key in smooth_keys:
+        adiabat_smooth[key] = savgol_filter(adiabat[key], window_length=21, polyorder=3)
+    adiabat_smooth["Cp_SI"] = adiabat_smooth["Cp"] / (adiabat_smooth["rho"] * adiabat_smooth["V"])
+    adiabat_smooth["Cv_SI"] = adiabat_smooth["Cv"] / (adiabat_smooth["rho"] * adiabat_smooth["V"])
+
+    depths_km = adiabat["depths"] / 1e3
 
     fig, axes = plt.subplots(2, 3, figsize=(7, 4.5), sharey=True)
     specs = [
@@ -31,14 +39,13 @@ def generate():
     ]
 
     for ax, (key, xlabel) in zip(axes.flat, specs):
-        ax.plot(adiabat_21[key], depths_km, linewidth=1, label="SLB_21")
-        ax.plot(adiabat_24[key], depths_km, "--", linewidth=1, label="SLB_24")
+        ax.plot(adiabat[key], depths_km, color="0.75", linewidth=0.6)
+        ax.plot(adiabat_smooth[key], depths_km, linewidth=1, color="C0")
         ax.set_xlabel(xlabel, fontsize=7)
         ax.grid(alpha=0.2)
         ax.invert_yaxis()
         ax.tick_params(labelsize=6)
 
-    axes[0, 0].legend(fontsize=6)
     axes[0, 0].set_ylabel("Depth [km]", fontsize=7)
     axes[1, 0].set_ylabel("Depth [km]", fontsize=7)
     plt.tight_layout()

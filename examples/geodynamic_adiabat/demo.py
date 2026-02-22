@@ -21,6 +21,14 @@
 # thermodynamic properties ($\alpha$, $\rho$, $C_p$, $V$) are themselves
 # functions of temperature and depth, making the ODE nonlinear.
 #
+# Phase transitions at ~410 km and ~660 km depth introduce sharp
+# discontinuities in material properties. While the ODE integration
+# produces a smooth temperature profile (the adiabat itself is continuous),
+# the evaluated properties inherit these jumps from the underlying
+# thermodynamic tables. We apply a Savitzky-Golay filter to the property
+# profiles to obtain smooth reference profiles suitable for mantle
+# convection simulations.
+#
 # The Dissipation Number
 # ----------------------
 #
@@ -38,14 +46,16 @@
 # This example
 # ------------
 #
-# We compute and compare adiabatic profiles using two versions of the
-# Stixrude & Lithgow-Bertelloni thermodynamic database: SLB_21
-# (pyroliteCFMAS) and SLB_24 (pyroliteCFMS), starting from a surface
-# potential temperature of 1600 K. The SLB_24 database is available with
-# the CFMS chemical system (CaO-FeO-MgO-SiO2), while SLB_21 includes
-# the fuller CFMAS system (with Al2O3).
+# We compute an adiabatic profile using the Stixrude & Lithgow-Bertelloni
+# 2021 thermodynamic database with a pyrolite composition in the FMS
+# (FeO-MgO-SiO$_2$) chemical system, starting from a surface potential
+# temperature of 1600 K. The raw profiles are then smoothed with a
+# Savitzky-Golay filter to remove phase-transition spikes, and we compare
+# the raw and smoothed results.
 
 import gdrift
+import numpy as np
+from scipy.signal import savgol_filter
 
 # Gravity from PREM
 # -----------------
@@ -59,20 +69,20 @@ print(f"Surface gravity: {gravity_profile.at_depth(0):.3f} m/s^2")
 print(f"CMB gravity:     {gravity_profile.at_depth(2890e3):.3f} m/s^2")
 # -
 
-# Loading Thermodynamic Models
-# -----------------------------
+# Loading the Thermodynamic Model
+# --------------------------------
 #
-# We load two pyrolite models from the Stixrude & Lithgow-Bertelloni
-# thermodynamic databases: the 2021 version (CFMAS chemical system) and
-# the 2024 version (CFMS chemical system).
+# We load the SLB_21 pyrolite model in the FMS chemical system
+# (FeO-MgO-SiO$_2$). This simplified system captures the dominant
+# mantle minerals and produces adiabatic profiles in close agreement
+# with published reference models.
 
 # +
-slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
-slb24 = gdrift.ThermodynamicModel("SLB_24", "pyroliteCFMS")
+slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteFMS")
 # -
 
-# Computing Adiabatic Profiles
-# -----------------------------
+# Computing the Adiabatic Profile
+# --------------------------------
 #
 # The `compute_adiabat` function integrates the adiabatic gradient ODE
 # from a surface potential temperature $T_0$ and evaluates material
@@ -81,31 +91,56 @@ slb24 = gdrift.ThermodynamicModel("SLB_24", "pyroliteCFMS")
 # +
 T0 = 1600  # surface potential temperature [K]
 
-adiabat_21 = gdrift.compute_adiabat(slb21, T0=T0, gravity_profile=gravity_profile)
-adiabat_24 = gdrift.compute_adiabat(slb24, T0=T0, gravity_profile=gravity_profile)
+adiabat = gdrift.compute_adiabat(slb21, T0=T0, gravity_profile=gravity_profile)
 # -
 
-# Comparing Results
-# -----------------
+# Smoothing Phase-Transition Discontinuities
+# --------------------------------------------
 #
-# The two databases yield slightly different adiabats due to updated
-# thermodynamic parameters and different chemical systems. We compare
-# CMB temperatures, dissipation numbers, and surface properties.
+# The raw property profiles contain sharp jumps at phase transitions
+# (notably the olivine-wadsleyite transition at ~410 km and the
+# post-spinel transition at ~660 km). These discontinuities are physical
+# but problematic for numerical simulations that require smooth reference
+# profiles. We apply a Savitzky-Golay filter (window = 21 points
+# $\approx$ 240 km, cubic polynomial) to remove the spikes while
+# preserving the large-scale depth dependence.
 
 # +
-for label, adiabat in [("SLB_21 (CFMAS)", adiabat_21), ("SLB_24 (CFMS)", adiabat_24)]:
-    print(f"\n{label}:")
-    print(f"  CMB temperature:   {adiabat['temperature'][-1]:.0f} K")
-    print(f"  Dissipation number: {adiabat['Di']:.3f}")
-    print(f"  Surface alpha:     {adiabat['alpha'][0]:.3e} 1/K")
-    print(f"  Surface Cp_SI:     {adiabat['Cp_SI'][0]:.1f} J/kg/K")
-    print(f"  Surface rho:       {adiabat['rho'][0]:.1f} kg/m^3")
+smooth_keys = ["rho", "alpha", "Cp", "V", "Cv", "beta", "gamma"]
+
+adiabat_smooth = dict(adiabat)  # shallow copy
+for key in smooth_keys:
+    adiabat_smooth[key] = savgol_filter(adiabat[key], window_length=21, polyorder=3)
+
+# Recompute derived SI heat capacities from smoothed fields
+adiabat_smooth["Cp_SI"] = adiabat_smooth["Cp"] / (adiabat_smooth["rho"] * adiabat_smooth["V"])
+adiabat_smooth["Cv_SI"] = adiabat_smooth["Cv"] / (adiabat_smooth["rho"] * adiabat_smooth["V"])
+# -
+
+# Results
+# -------
+#
+# We print key values from both the raw and smoothed profiles. The
+# temperature and dissipation number are unchanged by smoothing (the
+# temperature profile is already smooth from the ODE integration, and
+# $Di$ depends only on surface values).
+
+# +
+print(f"\nSLB_21 pyrolite FMS (T0 = {T0} K):")
+print(f"  CMB temperature:    {adiabat['temperature'][-1]:.0f} K")
+print(f"  Dissipation number: {adiabat['Di']:.3f}")
+print(f"\n  Surface properties (raw / smoothed):")
+print(f"    alpha:  {adiabat['alpha'][0]:.3e} / {adiabat_smooth['alpha'][0]:.3e} 1/K")
+print(f"    Cp_SI:  {adiabat['Cp_SI'][0]:.1f} / {adiabat_smooth['Cp_SI'][0]:.1f} J/kg/K")
+print(f"    rho:    {adiabat['rho'][0]:.1f} / {adiabat_smooth['rho'][0]:.1f} kg/m^3")
 # -
 
 # Visualisation
 # -------------
 #
-# We plot key profiles side by side to compare the two thermodynamic models.
+# We plot the raw profiles (thin, translucent) overlaid with the smoothed
+# profiles (solid) to highlight the effect of the Savitzky-Golay filter
+# on phase-transition discontinuities.
 
 # + tags=["active-ipynb"]
 # %matplotlib inline
@@ -115,7 +150,7 @@ for label, adiabat in [("SLB_21 (CFMAS)", adiabat_21), ("SLB_24 (CFMS)", adiabat
 # import matplotlib.pyplot as plt
 #
 # fig, axes = plt.subplots(2, 3, figsize=(14, 10), sharey=True)
-# depths_km = adiabat_21["depths"] / 1e3
+# depths_km = adiabat["depths"] / 1e3
 #
 # plot_specs = [
 #     ("temperature", "Temperature [K]"),
@@ -127,8 +162,8 @@ for label, adiabat in [("SLB_21 (CFMAS)", adiabat_21), ("SLB_24 (CFMS)", adiabat
 # ]
 #
 # for ax, (key, xlabel) in zip(axes.flat, plot_specs):
-#     ax.plot(adiabat_21[key], depths_km, label="SLB_21 (CFMAS)")
-#     ax.plot(adiabat_24[key], depths_km, label="SLB_24 (CFMS)", linestyle="--")
+#     ax.plot(adiabat[key], depths_km, color="0.7", linewidth=0.8, label="Raw")
+#     ax.plot(adiabat_smooth[key], depths_km, linewidth=1.5, label="Smoothed")
 #     ax.set_xlabel(xlabel, fontsize=10)
 #     ax.grid(alpha=0.3)
 #     ax.invert_yaxis()
@@ -138,9 +173,8 @@ for label, adiabat in [("SLB_21 (CFMAS)", adiabat_21), ("SLB_24 (CFMS)", adiabat
 # axes[1, 0].set_ylabel("Depth [km]", fontsize=11)
 #
 # fig.suptitle(
-#     f"Adiabatic Profiles ($T_0$ = {T0} K)\n"
-#     f"Di(SLB_21) = {adiabat_21['Di']:.3f}, "
-#     f"Di(SLB_24) = {adiabat_24['Di']:.3f}",
+#     f"Adiabatic Profile — SLB_21 pyrolite FMS ($T_0$ = {T0} K)\n"
+#     f"Di = {adiabat['Di']:.3f}, CMB T = {adiabat['temperature'][-1]:.0f} K",
 #     fontsize=13,
 # )
 # plt.tight_layout()
@@ -151,11 +185,13 @@ for label, adiabat in [("SLB_21 (CFMAS)", adiabat_21), ("SLB_24 (CFMS)", adiabat
 # -------
 #
 # This example demonstrated how to:
+#
 # - Build a gravity profile from PREM using `gdrift.prem_gravity_profile()`
-# - Compute adiabatic temperature profiles using `gdrift.compute_adiabat()`
-# - Compare adiabats from different thermodynamic databases (SLB_21 vs SLB_24)
-# - Compute the dissipation number $Di$ for each model
+# - Compute an adiabatic temperature profile using `gdrift.compute_adiabat()`
+# - Smooth phase-transition discontinuities with a Savitzky-Golay filter
+# - Compute the dissipation number $Di$
 #
 # The adiabatic profiles computed here serve as the reference state for
-# mantle convection simulations. The dissipation number indicates that
-# compressibility effects are significant for Earth's mantle.
+# mantle convection simulations. The smoothed profiles remove
+# phase-transition spikes while preserving the large-scale depth
+# dependence of material properties.

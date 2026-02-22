@@ -273,7 +273,7 @@ class EarthModel3D(AbstractEarthModel):
         if any(distances > self.default_max_distance):
             raise ValueError("The closest point seems to be beyond the maximum meaningful distance for the Earth model")
 
-    def at(self, label: Union[str, List[str]], coordinates: np.array, kernel='idw', **kernel_params):
+    def at(self, label: Union[str, List[str]], coordinates: np.array, kernel=None, extrapolate=False, **kernel_params):
         """
         Get the value of a quantity at specified coordinates using various interpolation kernels.
 
@@ -284,12 +284,17 @@ class EarthModel3D(AbstractEarthModel):
         coordinates : np.ndarray
             Query coordinates (N x 3 array)
         kernel : str, optional
-            Interpolation kernel. Options:
-            - 'idw': Inverse distance weighting (default, original behavior)
+            Interpolation kernel. If None, uses the class attribute
+            ``default_kernel`` (falls back to 'idw'). Options:
+            - 'idw': Inverse distance weighting
             - 'gaussian': Gaussian kernel with adaptive or fixed bandwidth
             - 'idw_power': IDW with adjustable power parameter
             - 'exponential': Exponential decay kernel
             - 'wendland': Wendland compactly supported kernel
+        extrapolate : bool, optional
+            If False (default), query points whose nearest data point is
+            farther than ``default_max_distance`` return NaN.  If True,
+            the nearest neighbors are used regardless of distance.
         **kernel_params : dict
             Kernel-specific parameters:
             - For 'gaussian': sigma (bandwidth, auto-computed if not provided)
@@ -302,6 +307,10 @@ class EarthModel3D(AbstractEarthModel):
         np.ndarray
             Interpolated values at query coordinates
         """
+        # Resolve kernel: explicit argument > class default > 'idw'
+        if kernel is None:
+            kernel = getattr(self, 'default_kernel', 'idw')
+
         # checking if the quantity is available
         self.check_quantity(label)
 
@@ -313,7 +322,21 @@ class EarthModel3D(AbstractEarthModel):
             self.tree = cKDTree(self.coordinates)
 
         # Finding the nearest points and the indices
-        distances, indices = self.tree.query(coordinates, k=self.nearest_neighbours)
+        query_kwargs = dict(k=self.nearest_neighbours)
+        if not extrapolate:
+            query_kwargs['distance_upper_bound'] = self.default_max_distance
+        distances, indices = self.tree.query(coordinates, **query_kwargs)
+
+        # When not extrapolating, the KD-tree returns sentinel values
+        # (index = n, distance = inf) for neighbors beyond the bound.
+        # Replace sentinel indices with 0 to avoid IndexError during lookup;
+        # their inf distances produce zero weight in every kernel.
+        out_of_range = None
+        if not extrapolate:
+            n_data = self.tree.n
+            sentinel = indices >= n_data
+            indices = np.where(sentinel, 0, indices)
+            out_of_range = sentinel.all(axis=1)
 
         # Use kernel-based interpolation
         if kernel == 'idw' and len(kernel_params) == 0:
@@ -326,6 +349,13 @@ class EarthModel3D(AbstractEarthModel):
             # Use new kernel-based interpolation
             res_dictionary = self._interpolate_with_kernels(
                 label, coordinates, distances, indices, kernel, **kernel_params)
+
+        # Mark points with no valid neighbors as NaN
+        if out_of_range is not None and out_of_range.any():
+            if res_dictionary.ndim > 1:
+                res_dictionary[out_of_range, :] = np.nan
+            else:
+                res_dictionary[out_of_range] = np.nan
 
         return np.squeeze(res_dictionary)
 
@@ -343,18 +373,19 @@ class EarthModel3D(AbstractEarthModel):
         min_distance = getattr(self, 'minimum_distance', 1e-3)
         replace_flg = distances[:, 0] < min_distance
 
-        if len(labeled_data.shape) > 1:
-            # Multi-dimensional field
-            weighted_sum = np.einsum("ij, ijk -> ik", weights, labeled_data[indices])
-            weight_sum = np.sum(weights, axis=1)[:, np.newaxis]
-            result = weighted_sum / weight_sum
-            result[replace_flg, :] = labeled_data[indices[replace_flg, 0], :]
-        else:
-            # 1D field
-            weighted_sum = np.einsum("ij, ij -> i", weights, labeled_data[indices])
-            weight_sum = np.sum(weights, axis=1)
-            result = weighted_sum / weight_sum
-            result[replace_flg] = labeled_data[indices[replace_flg, 0]]
+        with np.errstate(divide='ignore', invalid='ignore'):
+            if len(labeled_data.shape) > 1:
+                # Multi-dimensional field
+                weighted_sum = np.einsum("ij, ijk -> ik", weights, labeled_data[indices])
+                weight_sum = np.sum(weights, axis=1)[:, np.newaxis]
+                result = weighted_sum / weight_sum
+                result[replace_flg, :] = labeled_data[indices[replace_flg, 0], :]
+            else:
+                # 1D field
+                weighted_sum = np.einsum("ij, ij -> i", weights, labeled_data[indices])
+                weight_sum = np.sum(weights, axis=1)
+                result = weighted_sum / weight_sum
+                result[replace_flg] = labeled_data[indices[replace_flg, 0]]
 
         return result
 
@@ -413,8 +444,5 @@ class EarthModel3D(AbstractEarthModel):
 
         else:
             raise ValueError(f"Unknown kernel: {kernel}. Choose from: 'idw', 'gaussian', 'idw_power', 'exponential', 'wendland'")
-
-        # Ensure weights are positive and handle edge cases
-        weights = np.maximum(weights, 1e-12)  # Avoid exactly zero weights
 
         return weights
