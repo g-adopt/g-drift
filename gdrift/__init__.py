@@ -31,7 +31,7 @@ EarthModel3D : Generic 3D data container with KD-tree interpolation
 PreliminaryRefEarthModel : PREM radial reference model
 RadialEarthModelFromFile : Load custom 1D profiles from HDF5
 CammaranoAnelasticityModel : Anelastic corrections (B, g parameterization)
-GoesAnelasticityModel : Anelastic corrections (Q0, xi parameterization)
+GoesAnelasticityModel : Anelastic corrections (activation energy parameterization)
 
 Key Functions
 -------------
