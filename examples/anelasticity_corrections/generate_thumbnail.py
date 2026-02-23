@@ -30,7 +30,7 @@ def generate():
         ax.plot(dense_temps, reduction, "-", label=f"Cam. {qname}",
                 linewidth=1.2)
 
-    for qname in ["Q4", "Q6"]:
+    for qname in ["Q1", "Q2"]:
         model = gdrift.GoesAnelasticityModel.from_q_profile(qname)
         corrected = gdrift.apply_anelastic_correction(slb, model)
         vs_an = corrected.temperature_to_vs(

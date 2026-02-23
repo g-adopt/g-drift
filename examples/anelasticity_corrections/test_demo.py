@@ -36,7 +36,7 @@ def test_elastic_vs(demo_namespace, expected_values):
 @pytest.mark.parametrize("model_key", [
     "Cammarano_Q1", "Cammarano_Q2", "Cammarano_Q3",
     "Cammarano_Q4", "Cammarano_Q5", "Cammarano_Q6",
-    "Goes_Q4", "Goes_Q6",
+    "Goes_Q1", "Goes_Q2",
 ])
 def test_anelastic_vs(demo_namespace, expected_values, model_key):
     """Test that anelastic Vs for each Q-profile matches expected values."""
@@ -60,6 +60,6 @@ def test_all_models_present(demo_namespace):
     expected_keys = {
         "Cammarano_Q1", "Cammarano_Q2", "Cammarano_Q3",
         "Cammarano_Q4", "Cammarano_Q5", "Cammarano_Q6",
-        "Goes_Q4", "Goes_Q6",
+        "Goes_Q1", "Goes_Q2",
     }
     assert set(demo_namespace["all_models"].keys()) == expected_keys
