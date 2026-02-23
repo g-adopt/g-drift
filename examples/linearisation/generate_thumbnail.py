@@ -1,4 +1,4 @@
-geodynamic_adiabat/generate_expected.py#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Generate thumbnail for the linearisation (regularisation) example."""
 from pathlib import Path
 
@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import gdrift
-from gdrift.profile import SplineProfile
 
 THUMBNAIL_DIR = Path(__file__).resolve().parents[2] / "docs" / "assets" / "images" / "thumbnails"
 
@@ -20,7 +19,7 @@ def generate():
         depths=np.linspace(0, 2890e3),
     )
 
-    temp_profile = SplineProfile(
+    temp_profile = gdrift.SplineProfile(
         depth=np.asarray([0., 500e3, 2700e3, 3000e3]),
         value=np.asarray([300, 1000, 3000, 4000]),
     )

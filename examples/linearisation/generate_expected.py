@@ -1,4 +1,4 @@
-geodynamic_adiabat/generate_expected.py#!/usr/bin/env python
+#!/usr/bin/env python
 """Generate expected.pkl for linearisation demo regression tests.
 
 Run this script to regenerate expected values when the underlying
@@ -13,7 +13,6 @@ from pathlib import Path
 
 import numpy as np
 import gdrift
-from gdrift.profile import SplineProfile
 
 
 def main():
@@ -26,7 +25,7 @@ def main():
         depths=np.linspace(0, 2890e3),
     )
 
-    temperature_profile = SplineProfile(
+    temperature_profile = gdrift.SplineProfile(
         depth=np.asarray([0., 500e3, 2700e3, 3000e3]),
         value=np.asarray([300, 1000, 3000, 4000]),
     )

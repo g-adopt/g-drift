@@ -63,6 +63,8 @@ plugins:
             show_signature_annotations: true
             separate_signature: true
             show_bases: true
+            filters: ["!^_"]
+            merge_init_into_class: true
 
 extra:
   social:

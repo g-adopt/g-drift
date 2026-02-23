@@ -398,7 +398,7 @@ class GoesAnelasticityModel(BaseAnelasticityModel):
         if not self._warned_deep and numpy.any(depths > self.max_depth):
             warnings.warn(
                 "Goes et al. (2000) was calibrated for the upper mantle only "
-                f"(depths <= {self.max_depth/1e3:.0f} km). Depths beyond this "
+                f"(depths <= {self.max_depth / 1e3:.0f} km). Depths beyond this "
                 "are assigned Q = 1e10 (no attenuation).",
                 stacklevel=2,
             )

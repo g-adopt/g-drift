@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import gdrift
-from gdrift.profile import SplineProfile
 
 THUMBNAIL_DIR = Path(__file__).resolve().parents[2] / "docs" / "assets" / "images" / "thumbnails"
 
@@ -23,7 +22,7 @@ def generate():
     slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
     terra_data = np.loadtxt(
         _demo_dir.parent / "TerraMT512vs.dat", unpack=False, usecols=(0, 1))
-    temp_profile = SplineProfile(
+    temp_profile = gdrift.SplineProfile(
         depth=terra_data[:, 0] * 1e3, value=terra_data[:, 1],
         name="Terra", extrapolate=True)
     regular = gdrift.regularise_thermodynamic_table(

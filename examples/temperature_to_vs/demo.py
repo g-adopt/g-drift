@@ -1,4 +1,4 @@
-geodynamic_adiabat/generate_expected.py# Converting Seismic Velocity to Temperature
+# Converting Seismic Velocity to Temperature
 # ============================================
 #
 # This example demonstrates how to build a complete pipeline for converting
@@ -43,7 +43,6 @@ from pathlib import Path
 
 import numpy as np
 import gdrift
-from gdrift.profile import SplineProfile
 
 try:
     _demo_dir = Path(__file__).parent
@@ -87,7 +86,7 @@ print(f"Temperature range: {slb21.get_temperatures().min():.0f}"
 terra_data = np.loadtxt(
     _demo_dir.parent / "TerraMT512vs.dat", unpack=False, usecols=(0, 1))
 
-temperature_profile = SplineProfile(
+temperature_profile = gdrift.SplineProfile(
     depth=terra_data[:, 0] * 1e3,
     value=terra_data[:, 1],
     name="Terra average temperature",

@@ -1,4 +1,4 @@
-geodynamic_adiabat/generate_expected.py# Linearising Thermodynamic Lookup Tables
+# Linearising Thermodynamic Lookup Tables
 # ========================================
 #
 # This example demonstrates how to regularise (linearise) thermodynamic
@@ -48,7 +48,6 @@ geodynamic_adiabat/generate_expected.py# Linearising Thermodynamic Lookup Tables
 
 import numpy as np
 import gdrift
-from gdrift.profile import SplineProfile
 
 # Loading the Thermodynamic Model
 # --------------------------------
@@ -79,7 +78,7 @@ print(f"Table shape: {len(slb_pyrolite.get_depths())} depths x "
 # mantle geotherm.
 
 # +
-temperature_profile = SplineProfile(
+temperature_profile = gdrift.SplineProfile(
     depth=np.asarray([0., 500e3, 2700e3, 3000e3]),
     value=np.asarray([300, 1000, 3000, 4000]),
 )
@@ -207,7 +206,7 @@ for idx in depth_indices:
 # This example demonstrated how to:
 #
 # - Load a thermodynamic model with a custom depth/temperature grid
-# - Define a reference temperature profile using `SplineProfile`
+# - Define a reference temperature profile using `gdrift.SplineProfile`
 # - Regularise the model with `gdrift.regularise_thermodynamic_table()`
 # - Compare original and smoothed property tables at phase-transition depths
 #

@@ -13,7 +13,6 @@ from pathlib import Path
 
 import numpy as np
 import gdrift
-from gdrift.profile import SplineProfile
 
 
 def main():
@@ -25,7 +24,7 @@ def main():
     # Step 2: Load Terra temperature profile
     terra_data = np.loadtxt(
         demo_dir.parent / "TerraMT512vs.dat", unpack=False, usecols=(0, 1))
-    temperature_profile = SplineProfile(
+    temperature_profile = gdrift.SplineProfile(
         depth=terra_data[:, 0] * 1e3,
         value=terra_data[:, 1],
         name="Terra average temperature",

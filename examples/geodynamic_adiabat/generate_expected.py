@@ -13,7 +13,6 @@ from pathlib import Path
 
 import numpy as np
 import gdrift
-from gdrift.adiabat import prem_gravity_profile
 from scipy.signal import savgol_filter
 
 
@@ -21,7 +20,7 @@ def main():
     demo_dir = Path(__file__).parent
 
     # Compute gravity and adiabat (same as demo.py)
-    gravity_profile = prem_gravity_profile()
+    gravity_profile = gdrift.prem_gravity_profile()
     slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteFMS")
 
     T0 = 1600

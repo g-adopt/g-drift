@@ -1,4 +1,4 @@
-geodynamic_adiabat/generate_expected.py#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Generate thumbnail for the geodynamic adiabat example."""
 from pathlib import Path
 
@@ -7,13 +7,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 import gdrift
-from gdrift.adiabat import prem_gravity_profile
 
 THUMBNAIL_DIR = Path(__file__).resolve().parents[2] / "docs" / "assets" / "images" / "thumbnails"
 
 
 def generate():
-    gravity = prem_gravity_profile()
+    gravity = gdrift.prem_gravity_profile()
     slb21 = gdrift.ThermodynamicModel("SLB_21", "pyroliteFMS")
 
     adiabat = gdrift.compute_adiabat(slb21, T0=1600, gravity_profile=gravity)
