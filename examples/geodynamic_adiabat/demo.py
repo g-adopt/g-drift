@@ -54,7 +54,6 @@
 # the raw and smoothed results.
 
 import gdrift
-import numpy as np
 from scipy.signal import savgol_filter
 
 # Gravity from PREM
@@ -129,7 +128,7 @@ adiabat_smooth["Cv_SI"] = adiabat_smooth["Cv"] / (adiabat_smooth["rho"] * adiaba
 print(f"\nSLB_21 pyrolite FMS (T0 = {T0} K):")
 print(f"  CMB temperature:    {adiabat['temperature'][-1]:.0f} K")
 print(f"  Dissipation number: {adiabat['Di']:.3f}")
-print(f"\n  Surface properties (raw / smoothed):")
+print("\n  Surface properties (raw / smoothed):")
 print(f"    alpha:  {adiabat['alpha'][0]:.3e} / {adiabat_smooth['alpha'][0]:.3e} 1/K")
 print(f"    Cp_SI:  {adiabat['Cp_SI'][0]:.1f} / {adiabat_smooth['Cp_SI'][0]:.1f} J/kg/K")
 print(f"    rho:    {adiabat['rho'][0]:.1f} / {adiabat_smooth['rho'][0]:.1f} kg/m^3")

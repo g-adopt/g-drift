@@ -5,7 +5,7 @@
 # corrections to elastic seismic velocities computed from mineral physics
 # lookup tables. We cover all eight available Q-profiles: six from the
 # Cammarano et al. (2003) parameterization (Q1--Q6) and two from the
-# Goes et al. (2000) parameterization (Q4, Q6).
+# Goes et al. (2000) parameterization (Q1, Q2).
 #
 # Background
 # ----------
@@ -31,9 +31,9 @@
 # energy, and $T_s$ is the solidus temperature.
 #
 # **Goes et al. (2000)**:
-# $Q = Q_0 \, \omega^{a} \exp\!\left(\frac{a \, \xi \, T_s}{T}\right)$
-# where $Q_0$ is a reference quality factor and $\xi$ is the activation
-# parameter.
+# $Q = A \, \omega^{a} \exp\!\left(\frac{a \, (H^* + P V^*)}{R T}\right)$
+# where $A$ is a pre-exponential factor, $H^*$ is activation energy,
+# $V^*$ is activation volume, and $P$ is pressure from PREM.
 #
 # For P-wave corrections, the quality factor is computed from $Q_\mu$
 # (shear) and $Q_\kappa$ (bulk) following Anderson & Hart (1978).
@@ -90,16 +90,17 @@ for qname in cammarano_q_names:
     print(f"  {key}: created")
 # -
 
-# Goes Q-Profiles (Q4, Q6)
+# Goes Q-Profiles (Q1, Q2)
 # -------------------------
 #
-# The Goes et al. (2000) parameterization uses a different functional
-# form with parameters $Q_0$ and $\xi$. Two profiles are available: Q4
-# (standard) and Q6 (alternative). The frequency exponent is $a = 0.15$
-# compared to $a = 0.2$ for Cammarano.
+# The Goes et al. (2000) parameterization uses activation energy $H^*$
+# and activation volume $V^*$ with pressure from PREM. Two profiles are
+# available from Table A2: Q1 ($a=0.15$, $A=0.148$, $H^*=500$ kJ/mol)
+# and Q2 ($a=0.25$, $A=2\times10^{-4}$, $H^*=584$ kJ/mol). The model
+# is calibrated for the upper mantle only (depths $\le 660$ km).
 
 # +
-goes_q_names = ["Q4", "Q6"]
+goes_q_names = ["Q1", "Q2"]
 goes_models = {}
 
 for qname in goes_q_names:
@@ -233,7 +234,7 @@ for key in sorted(velocity_reduction):
 # This example demonstrated how to:
 # - Load an elastic thermodynamic model with `gdrift.ThermodynamicModel`
 # - Create anelasticity models using `from_q_profile()` factory methods
-#   for both Cammarano (Q1--Q6) and Goes (Q4, Q6) parameterizations
+#   for both Cammarano (Q1--Q6) and Goes (Q1, Q2) parameterizations
 # - Apply anelastic corrections with `gdrift.apply_anelastic_correction()`
 # - Compare velocity reductions across different Q-profiles
 #

@@ -83,39 +83,50 @@ def test_cammarano_q_bulk():
 # ---------------------------------------------------------------------------
 
 def test_goes_q_shear_formula():
-    """Hand-computed Q for Goes model.
+    """Hand-computed Q for Goes activation energy model.
 
-    With Q0=5.0, xi=26, a=0.15, omega=1.0, T_solidus=2000, T=1000:
-        Q = 5.0 * 1.0^0.15 * exp(0.15 * 26 * 2000 / 1000)
-          = 5.0 * exp(7.8)
+    With A=1.0, H*=500e3 J/mol, V*=0 (ignore pressure term), a=0.15,
+    omega=1.0, T=1600 K, P=0:
+        Q = 1.0 * 1.0^0.15 * exp(0.15 * 500e3 / (8.314 * 1600))
+          = exp(0.15 * 500000 / 13302.4)
+          = exp(5.638...)
     """
-    solidus = MockSolidus(T_solidus=2000.0)
-    model = GoesAnelasticityModel(
-        Q0=lambda x: 5.0,
-        xi=lambda x: 26.0,
-        a=lambda x: 0.15,
-        omega=lambda x: 1.0,
-        solidus=solidus,
-    )
-    Q = model.compute_Q_shear(np.array([500e3]), np.array([1000.0]))
-    expected = 5.0 * np.exp(0.15 * 26.0 * 2000.0 / 1000.0)
-    np.testing.assert_allclose(Q, expected, rtol=1e-10)
+    model = GoesAnelasticityModel(A=1.0, H_star=500e3, V_star=0.0, a=0.15, omega=1.0)
+    # At zero depth, PREM pressure is ~0, so the P*V* term vanishes
+    Q = model.compute_Q_shear(np.array([0.0]), np.array([1600.0]))
+    R = 8.314
+    expected = np.exp(0.15 * 500e3 / (R * 1600.0))
+    np.testing.assert_allclose(Q, expected, rtol=1e-3)
+
+
+def test_goes_q_shear_temperature_dependence():
+    """Higher temperature should give lower Q (less attenuation at higher T)."""
+    model = GoesAnelasticityModel(A=0.148, H_star=500e3, V_star=20e-6, a=0.15)
+    Q_cold = model.compute_Q_shear(np.array([100e3]), np.array([1000.0]))
+    Q_hot = model.compute_Q_shear(np.array([100e3]), np.array([2000.0]))
+    assert Q_cold > Q_hot
 
 
 def test_goes_q_bulk():
-    """Goes bulk Q should also switch at 660 km."""
-    solidus = MockSolidus()
-    model = GoesAnelasticityModel(
-        Q0=lambda x: 5.0,
-        xi=lambda x: 26.0,
-        a=lambda x: 0.15,
-        omega=lambda x: 1.0,
-        solidus=solidus,
-        Q_bulk=lambda x: np.where(x < 660e3, 1e3, 1e4),
-    )
-    depths = np.array([300e3, 1000e3])
-    Q_bulk = model.compute_Q_bulk(depths, np.array([1500.0, 1500.0]))
-    np.testing.assert_allclose(Q_bulk, [1e3, 1e4])
+    """Goes bulk Q is a constant (Q_K = 1000 by default)."""
+    model = GoesAnelasticityModel(A=0.148, H_star=500e3, V_star=20e-6, a=0.15)
+    Q_bulk = model.compute_Q_bulk(np.array([300e3, 1000e3]), np.array([1500.0, 1500.0]))
+    assert Q_bulk == 1000.0
+
+
+def test_goes_deep_depth_high_q():
+    """Depths below 660 km should produce very high Q (no attenuation)."""
+    model = GoesAnelasticityModel(A=0.148, H_star=500e3, V_star=20e-6, a=0.15)
+    Q = model.compute_Q_shear(np.array([100e3, 800e3]), np.array([1600.0, 1600.0]))
+    assert Q[0] < 1e9  # upper mantle: normal Q
+    assert Q[1] == 1e10  # below 660 km: clamped
+
+
+def test_goes_deep_depth_warning():
+    """A warning should be issued when querying depths beyond max_depth."""
+    model = GoesAnelasticityModel(A=0.148, H_star=500e3, V_star=20e-6, a=0.15)
+    with pytest.warns(UserWarning, match="calibrated for the upper mantle"):
+        model.compute_Q_shear(np.array([800e3]), np.array([1600.0]))
 
 
 # ---------------------------------------------------------------------------
@@ -138,19 +149,19 @@ def test_cammarano_from_q_profile_invalid():
         CammaranoAnelasticityModel.from_q_profile("Q99")
 
 
-@pytest.mark.parametrize("q_profile", ["Q4", "Q6"])
+@pytest.mark.parametrize("q_profile", ["Q1", "Q2"])
 def test_goes_from_q_profile_valid(q_profile):
     """Both Goes Q-profiles should produce valid models."""
     model = GoesAnelasticityModel.from_q_profile(q_profile)
     assert isinstance(model, GoesAnelasticityModel)
-    Q = model.compute_Q_shear(np.array([500e3]), np.array([2000.0]))
+    Q = model.compute_Q_shear(np.array([100e3]), np.array([2000.0]))
     assert Q > 0
 
 
 def test_goes_from_q_profile_invalid():
     """Invalid Q-profile should raise ValueError for Goes model."""
     with pytest.raises(ValueError, match="Unknown Q-profile"):
-        GoesAnelasticityModel.from_q_profile("Q1")
+        GoesAnelasticityModel.from_q_profile("Q4")
 
 
 # ---------------------------------------------------------------------------
@@ -224,11 +235,17 @@ def test_apply_anelastic_correction_reduces_vp(slb21_model):
 
 
 def test_apply_anelastic_correction_goes(slb21_model):
-    """Goes model should also reduce velocities."""
-    anelastic_model = GoesAnelasticityModel.from_q_profile("Q4")
+    """Goes model should also reduce velocities.
+
+    At very low temperatures or depths > 660 km the correction is negligible
+    (Q is enormous), so we check <= overall and < for the upper-mantle, warm part.
+    """
+    anelastic_model = GoesAnelasticityModel.from_q_profile("Q1")
     corrected = apply_anelastic_correction(slb21_model, anelastic_model)
 
     elastic_vs = slb21_model.compute_swave_speed().get_vals()
     corrected_vs = corrected.compute_swave_speed().get_vals()
 
-    assert np.all(corrected_vs < elastic_vs)
+    assert np.all(corrected_vs <= elastic_vs)
+    # In the warm upper mantle, the correction should be strictly reducing
+    assert np.any(corrected_vs < elastic_vs)

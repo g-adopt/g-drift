@@ -45,7 +45,7 @@ def main():
             temperature=test_temps, depth=test_depths)
 
     # Goes Q-profiles
-    goes_q_names = ["Q4", "Q6"]
+    goes_q_names = ["Q1", "Q2"]
     for qname in goes_q_names:
         anelastic = gdrift.GoesAnelasticityModel.from_q_profile(qname)
         corrected = gdrift.apply_anelastic_correction(slb_pyrolite, anelastic)
