@@ -1,4 +1,4 @@
-# Computing Geodynamic Adiabatic Profiles
+gadopt_loading_field/demo.py# Computing Geodynamic Adiabatic Profiles
 # ========================================
 #
 # This example demonstrates how to compute 1D adiabatic temperature profiles
@@ -54,6 +54,7 @@
 # the raw and smoothed results.
 
 import gdrift
+from gdrift.adiabat import prem_gravity_profile
 from scipy.signal import savgol_filter
 
 # Gravity from PREM
@@ -63,7 +64,7 @@ from scipy.signal import savgol_filter
 # profile will be used by the adiabat integration.
 
 # +
-gravity_profile = gdrift.prem_gravity_profile()
+gravity_profile = prem_gravity_profile()
 print(f"Surface gravity: {gravity_profile.at_depth(0):.3f} m/s^2")
 print(f"CMB gravity:     {gravity_profile.at_depth(2890e3):.3f} m/s^2")
 # -
@@ -185,7 +186,7 @@ print(f"    rho:    {adiabat['rho'][0]:.1f} / {adiabat_smooth['rho'][0]:.1f} kg/
 #
 # This example demonstrated how to:
 #
-# - Build a gravity profile from PREM using `gdrift.prem_gravity_profile()`
+# - Build a gravity profile from PREM using `prem_gravity_profile()`
 # - Compute an adiabatic temperature profile using `gdrift.compute_adiabat()`
 # - Smooth phase-transition discontinuities with a Savitzky-Golay filter
 # - Compute the dissipation number $Di$

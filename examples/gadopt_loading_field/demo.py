@@ -40,6 +40,7 @@ from pathlib import Path
 import numpy as np
 from gadopt import *
 import gdrift
+from gdrift.profile import SplineProfile
 
 try:
     _demo_dir = Path(__file__).parent
@@ -71,7 +72,7 @@ def build_solidus():
         depths.extend(d)
         solidus_temps.extend(model.at_depth("solidus temperature", d))
 
-    return gdrift.SplineProfile(
+    return SplineProfile(
         depth=np.asarray(depths),
         value=np.asarray(solidus_temps),
         name="Composite solidus",
@@ -101,7 +102,7 @@ def build_thermodynamic_model():
 
     terra_data = np.loadtxt(
         _demo_dir.parent / "TerraMT512vs.dat", unpack=False, usecols=(0, 1))
-    terra_profile = gdrift.SplineProfile(
+    terra_profile = SplineProfile(
         depth=terra_data[:, 0] * 1e3,
         value=terra_data[:, 1],
         name="TerraMT512vs",
