@@ -266,12 +266,26 @@ def load_dataset(dataset_name: str, table_names=[], return_metadata=False):
         return dataset
 
 
-def download_all_datasets():
-    """Download all registered datasets for offline use.
+def download_all_datasets(datasets=None):
+    """Download registered datasets for offline use.
 
     Skips datasets already cached locally. Verifies hashes after download.
+
+    Args:
+        datasets (list of str, optional): Dataset names to download.
+            If None, downloads every registered dataset.
     """
-    all_datasets = DATASET_REGISTRY.list_datasets()
+    if datasets is None:
+        all_datasets = DATASET_REGISTRY.list_datasets()
+    else:
+        all_datasets = []
+        for name in datasets:
+            if name not in DATASET_REGISTRY:
+                raise ValueError(
+                    f"Unknown dataset '{name}'. "
+                    f"Use DATASET_REGISTRY.list_datasets() to see available datasets."
+                )
+            all_datasets.append(DATASET_REGISTRY[name])
     total = len(all_datasets)
     cached = 0
     downloaded = 0
