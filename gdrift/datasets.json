@@ -1758,14 +1758,17 @@
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P. (2015). Evidence for long-lived subduction of an ancient tectonic plate beneath the southern Indian Ocean. Geophysical Research Letters, 42, 9270-9278.",
-      "sha256": "7a5edd51728dc4d20b88ba86632d1be1e49fd995ba111d9248e439e3909462d6",
+      "sha256": "d2711babd980f7dae6c426acf617418922d1ce99c9aa3374da401dc3b662c24d",
       "fields": [
+        "dvp",
+        "dvs",
+        "vp",
         "vs"
       ],
       "doi": "10.1002/2015GL066237",
       "year": 2015,
-      "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL.",
-      "etag": "f71672f61415f568412a878137b89ef9-6"
+      "author": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P.",
+      "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL. 1-degree resolution, 60 depth levels from surface to CMB."
     },
     {
       "name": "3d_seismic_MITS-18",

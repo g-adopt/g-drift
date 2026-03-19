@@ -203,6 +203,12 @@ class EarthModel3D(AbstractEarthModel):
         self.nearest_neighbours = nearest_neighbours
         # Default maximum distance beyond which we conclude that there are no meaningful close points
         self.default_max_distance = default_max_distance
+        # Layered interpolation state — populated by _detect_layer_structure()
+        self._n_layers = None
+        self._n_points_per_layer = None
+        self._unit_tree = None
+        self._layer_radii_sorted = None
+        self._layer_sort_idx = None
 
     def set_coordinates(self, *args, max_distance=200e3):
         """
@@ -273,6 +279,134 @@ class EarthModel3D(AbstractEarthModel):
         if any(distances > self.default_max_distance):
             raise ValueError("The closest point seems to be beyond the maximum meaningful distance for the Earth model")
 
+    def _detect_layer_structure(self):
+        """Detect whether coordinates are organized as uniform depth layers.
+
+        Examines the radii of consecutive points: within a layer all points
+        share the same radius, so |dr| between consecutive points is ~0.
+        At layer boundaries, |dr| jumps.  If every detected block has the
+        same size, we have a uniform layered structure and can use the faster
+        layered interpolation path.
+
+        Called automatically the first time ``at()`` is invoked.
+        """
+        if self.coordinates is None or self._n_layers is not None:
+            return
+
+        r = np.linalg.norm(self.coordinates, axis=1)
+        n_total = len(r)
+        if n_total < 2:
+            return
+
+        dr = np.abs(np.diff(r))
+        median_dr = np.median(dr)
+        threshold = max(median_dr * 100, 1.0)
+        boundaries = np.where(dr > threshold)[0] + 1
+        boundaries = np.concatenate([[0], boundaries, [n_total]])
+        layer_sizes = np.diff(boundaries)
+
+        if len(layer_sizes) >= 2 and np.all(layer_sizes == layer_sizes[0]):
+            self._n_layers = int(len(layer_sizes))
+            self._n_points_per_layer = int(layer_sizes[0])
+
+    def _ensure_layered_tree(self):
+        """Build the unit-sphere KD-tree and layer radii on first use."""
+        if self._unit_tree is not None:
+            return
+
+        n = self._n_points_per_layer
+        r = np.linalg.norm(self.coordinates, axis=1)
+
+        layer_radii = np.array([
+            np.mean(r[i * n:(i + 1) * n])
+            for i in range(self._n_layers)
+        ])
+
+        self._layer_sort_idx = np.argsort(layer_radii)
+        self._layer_radii_sorted = layer_radii[self._layer_sort_idx]
+
+        first_layer = self.coordinates[:n]
+        norms = np.linalg.norm(first_layer, axis=1, keepdims=True)
+        self._unit_tree = cKDTree(first_layer / norms)
+
+    def _layered_at(self, label, coordinates, extrapolate=False):
+        """Interpolate using layer-aware two-step method.
+
+        Step 1 — lateral: IDW (1/d²) on a unit-sphere KD-tree shared by
+        all layers, finding neighbours within each of the two bracketing
+        depth layers.
+
+        Step 2 — radial: linear interpolation between the two layers
+        based on the query point's radius.
+        """
+        self._ensure_layered_tree()
+
+        labels = enlist(label)
+        n = self._n_points_per_layer
+        layer_radii = self._layer_radii_sorted
+        sort_idx = self._layer_sort_idx
+
+        query_r = np.linalg.norm(coordinates, axis=1)
+        query_unit = coordinates / query_r[:, np.newaxis]
+
+        # Lateral neighbours on the unit sphere
+        dists_2d, idx_2d = self._unit_tree.query(
+            query_unit, k=self.nearest_neighbours)
+
+        # Bracketing depth layers (sorted ascending by radius)
+        li_above = np.searchsorted(layer_radii, query_r)
+        li_above = np.clip(li_above, 1, len(layer_radii) - 1)
+        li_below = li_above - 1
+
+        orig_below = sort_idx[li_below]
+        orig_above = sort_idx[li_above]
+
+        r_below = layer_radii[li_below]
+        r_above = layer_radii[li_above]
+        dr = r_above - r_below
+        t = np.where(dr > 1.0, (query_r - r_below) / dr, 0.5)
+        t = np.clip(t, 0, 1)
+
+        # IDW weights (power = 2) for lateral interpolation
+        with np.errstate(divide="ignore", invalid="ignore"):
+            weights = 1.0 / (dists_2d ** 2)
+            weight_sum = np.sum(weights, axis=1, keepdims=True)
+            norm_weights = weights / weight_sum
+        close = dists_2d[:, 0] < 1e-10
+        norm_weights[close] = 0
+        norm_weights[close, 0] = 1.0
+
+        # Field offsets for the two bracketing layers
+        offsets_below = (orig_below * n)[:, np.newaxis]
+        offsets_above = (orig_above * n)[:, np.newaxis]
+
+        results = []
+        for lbl in labels:
+            field_data = self.available_fields[lbl]
+            vals_below = field_data[offsets_below + idx_2d]
+            vals_above = field_data[offsets_above + idx_2d]
+            interp_below = np.sum(vals_below * norm_weights, axis=1)
+            interp_above = np.sum(vals_above * norm_weights, axis=1)
+            results.append((1 - t) * interp_below + t * interp_above)
+
+        result = np.column_stack(results) if len(results) > 1 else results[0]
+
+        # Out-of-range handling
+        if not extrapolate:
+            lateral_dist = dists_2d[:, 0] * query_r
+            radial_oor = (
+                (query_r < layer_radii[0] - self.default_max_distance)
+                | (query_r > layer_radii[-1] + self.default_max_distance)
+            )
+            out_of_range = (lateral_dist > self.default_max_distance) | radial_oor
+            if out_of_range.any():
+                if result.ndim > 1:
+                    result[out_of_range, :] = np.nan
+                else:
+                    result[out_of_range] = np.nan
+
+        return np.squeeze(result)
+
     def at(self, label: Union[str, List[str]], coordinates: np.array, kernel=None, extrapolate=False, **kernel_params):
         """
         Get the value of a quantity at specified coordinates using various interpolation kernels.
@@ -307,15 +441,22 @@ class EarthModel3D(AbstractEarthModel):
         np.ndarray
             Interpolated values at query coordinates
         """
-        # Resolve kernel: explicit argument > class default > 'idw'
-        if kernel is None:
-            kernel = getattr(self, 'default_kernel', 'idw')
-
         # checking if the quantity is available
         self.check_quantity(label)
 
         if self.coordinates is None:
             raise ValueError("Coordinates not set for the model")
+
+        # On first call, try to detect layered structure
+        self._detect_layer_structure()
+
+        # Use layered path when structure was detected
+        if self._n_layers is not None:
+            return self._layered_at(label, coordinates, extrapolate=extrapolate)
+
+        # Resolve kernel: explicit argument > class default > 'idw'
+        if kernel is None:
+            kernel = getattr(self, 'default_kernel', 'idw')
 
         # If the KDtree is not created, create it
         if self.tree is None:
