@@ -1768,7 +1768,8 @@
       "doi": "10.1002/2015GL066237",
       "year": 2015,
       "author": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P.",
-      "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL. 1-degree resolution, 60 depth levels from surface to CMB."
+      "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL. 1-degree resolution, 60 depth levels from surface to CMB.",
+      "etag": "25463af4a6dbf9be3c326b74edc3acec-27"
     },
     {
       "name": "3d_seismic_MITS-18",
@@ -1945,6 +1946,24 @@
       "year": 2014,
       "description": "Regional radially anisotropic shear-wave velocity model of the North American upper mantle from full waveform tomography.",
       "etag": "2a0506076a86f984ed6599c87d9e46e6-4"
+    },
+    {
+      "name": "SLB_24_pyroliteCFMASNaCr",
+      "filename": "e949e2abb4ed3f97b2b1e4661322bc4200934b0282548cd652f93f2ae95e7f2a.h5",
+      "type": "THERMODYNAMIC_MODEL",
+      "utility": "THERMODYNAMIC",
+      "source": "Stixrude, L.; Lithgow-Bertelloni, C.; Ghelichkhan, S. \"Thermodynamics of mantle minerals III: The role of iron\", Geophysical Journal International, 2024, 237, 1699-1733.",
+      "doi": null,
+      "year": 2024,
+      "description": "SLB 24 thermodynamic model for pyrolite (CFMASNaCr) from HeFESTo",
+      "sha256": "b87ce8aafa14b9aa1275084dd19128b44787ea2b69c6d2e9c60f014139574991",
+      "author": "Stixrude, L., Lithgow-Bertelloni, C., & Ghelichkhan, S.",
+      "slb_version": "24",
+      "composition": "pyrolite",
+      "chemical_system": "CFMASNaCr",
+      "metadata_source": "hdf5_file",
+      "metadata_complete": true,
+      "etag": "0e3ad6e07bfcff99610caa104baa0353-4"
     }
   ]
 }
