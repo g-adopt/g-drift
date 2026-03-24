@@ -100,3 +100,4 @@ nav:
       - Vs-to-Temperature: examples/temperature_to_vs/demo.ipynb
   - Data Catalog: data-catalog.md
   - API Reference: api.md
+  - Citing gdrift: citation.md

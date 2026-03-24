@@ -84,6 +84,17 @@ from .utility import compute_gravity, compute_mass, compute_pressure, geodetic_t
 from .seismic import SeismicModel, AVAILABLE_SEISMIC_MODELS
 from .gplates import CoastlineVTKFile
 
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
+    import warnings
+    warnings.warn(
+        "gdrift version could not be determined. This usually means the package "
+        "was not installed properly. Try reinstalling with: pip install -e .",
+        stacklevel=2,
+    )
+
 __all__ = [
     "compute_adiabat",
     "prem_gravity_profile",
@@ -119,4 +130,5 @@ __all__ = [
     "AVAILABLE_SEISMIC_MODELS",
     "DATASET_REGISTRY",
     "CoastlineVTKFile",
+    "__version__",
 ]
