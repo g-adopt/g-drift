@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=65", "wheel"]
+requires = ["setuptools>=65", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "gdrift"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Geodynamics Data Reformatting and Integration Facilitation Toolkit"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -73,6 +73,11 @@ packages = ["gdrift"]
 
 [tool.setuptools.package-data]
 gdrift = ["datasets.json"]
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "no-local-version"
+write_to = "gdrift/_version.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "examples"]

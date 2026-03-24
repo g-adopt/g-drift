@@ -1,0 +1,36 @@
+{
+  "title": "gdrift: Geodynamics Data Reformatting and Integration Facilitation Toolkit",
+  "description": "A Python package for loading, processing, and converting geodynamic and seismic data used in large-scale mantle convection studies.",
+  "creators": [
+    {
+      "name": "Ghelichkhan, Sia",
+      "affiliation": "Australian National University",
+      "orcid": "0000-0002-8453-964X"
+    }
+  ],
+  "license": {
+    "id": "MIT"
+  },
+  "keywords": [
+    "geodynamics",
+    "seismic tomography",
+    "mantle convection",
+    "thermodynamics",
+    "earth models",
+    "Python"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/g-adopt/g-drift",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://gdrift.gadopt.org",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    }
+  ],
+  "upload_type": "software",
+  "access_right": "open"
+}

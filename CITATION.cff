@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "gdrift: Geodynamics Data Reformatting and Integration Facilitation Toolkit"
+version: "0.1.0"
+date-released: "2026-03-24"
+authors:
+  - family-names: Ghelichkhan
+    given-names: Sia
+    email: siavash.ghelichkhan@anu.edu.au
+    orcid: "https://orcid.org/0000-0002-8453-964X"
+repository-code: "https://github.com/g-adopt/g-drift"
+url: "https://gdrift.gadopt.org"
+license: MIT
+keywords:
+  - geodynamics
+  - seismic tomography
+  - mantle convection
+  - thermodynamics
+  - earth models
