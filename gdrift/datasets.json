@@ -213,11 +213,11 @@
         "vsv"
       ],
       "description": "REVEAL global full-waveform inversion seismic model",
-      "sha256": "70a6f2ba20e8ccfa2ea3ed76f23db8d6113c8574a1cfbe47203f319f4e401823",
+      "sha256": "2857f702cacd360f20548dd9cf35ccdfebb95c027b3f8ab6a6870f5691a72224",
       "author": "Thrastarson, S., van Herwaarden, D.-P., Noe, S., Schiller, C. J., & Fichtner, A.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "c294891c68b59dfd3df9025b34e69333-63"
+      "etag": "af7d570a6bde1d7784bf58f6fbdf1b1a-24"
     },
     {
       "name": "3d_seismic_S20RTS",

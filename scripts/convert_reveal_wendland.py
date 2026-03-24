@@ -36,11 +36,13 @@ from gdrift.datasetnames import hash_name
 SOURCE_PATH = Path("/Users/sghelichkhani/Downloads/REVEAL.nc")
 OUTPUT_SIA = Path("gdrift/data-sia/3d_seismic_REVEAL.h5")
 
-# Depth-dependent resolution tiers (depth_km_threshold, num_fibonacci_points)
+# Uniform resolution matching all other g-drift seismic models.
+# Using a single layer size ensures _detect_layer_structure() in
+# EarthModel3D recognises the layered layout and uses the clean
+# lateral+radial interpolation path instead of a raw 3D KD-tree
+# (which mixes depth layers and produces noisy results).
 RESOLUTION_TIERS = [
-    (500,  260000),   # 0-500 km:    high res, match source 0.5°
-    (1500, 130000),   # 500-1500 km: medium res
-    (9999, 65341),    # 1500+ km:    standard g-drift density
+    (9999, 65341),    # standard g-drift density for all depths
 ]
 
 NUM_NEIGHBOURS = 20              # enough neighbours to fill Wendland support
