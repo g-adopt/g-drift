@@ -561,9 +561,10 @@ def convert(source_dir, output_path):
         hf.attrs['molar_mass_g_per_mol'] = MOLAR_MASS
         hf.attrs['n_atoms_per_formula_unit'] = sum(BULK_COMPOSITION_MOLES.values())
         hf.attrs['model_reference'] = (
-            'Stixrude, L.; Lithgow-Bertelloni, C.; Ghelichkhan, S. '
+            'Stixrude, L.; Lithgow-Bertelloni, C. '
             '"Thermodynamics of mantle minerals III: The role of iron", '
-            'Geophysical Journal International, 2024, 237, 1699-1733.'
+            'Geophysical Journal International, 2024, 237, 1699-1733. '
+            'doi:10.1093/gji/ggae126'
         )
         hf.attrs['parameter_file'] = 'HeFESTo_Parameters_010123'
         hf.attrs['software'] = 'HeFESTo (Helmholtz Free Energy Surface Explorer)'
