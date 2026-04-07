@@ -97,6 +97,7 @@ nav:
       - Geodynamic Adiabat: examples/geodynamic_adiabat/demo.ipynb
       - Table Regularisation: examples/linearisation/demo.ipynb
       - Seismic Tomography: examples/tomography_models/demo.ipynb
+      - Tomography Cross-Section: examples/tomography_cross_section/demo.ipynb
       - Vs-to-Temperature: examples/temperature_to_vs/demo.ipynb
   - Data Catalog: data-catalog.md
   - API Reference: api.md
