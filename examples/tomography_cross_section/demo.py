@@ -42,7 +42,6 @@
 
 import numpy as np
 import gdrift
-from gdrift.constants import R_earth, R_cmb
 
 # Loading REVEAL
 # --------------
@@ -140,6 +139,7 @@ print(f"dVs range: {np.nanmin(dvs_2d):.0f} to {np.nanmax(dvs_2d):.0f} m/s")
 # + tags=["active-ipynb"]
 # import matplotlib.pyplot as plt
 # from matplotlib.colors import TwoSlopeNorm
+# from gdrift.constants import R_earth, R_cmb
 #
 # half_span_deg = arc_deg / 2.0
 #
