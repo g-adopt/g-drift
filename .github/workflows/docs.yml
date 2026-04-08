@@ -75,7 +75,7 @@ jobs:
 
       - name: Copy notebooks to docs
         run: |
-          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs gadopt_loading_field; do
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models tomography_cross_section temperature_to_vs gadopt_loading_field; do
             if [ -f "examples/${demo}/demo.ipynb" ]; then
               mkdir -p "docs/examples/${demo}"
               cp "examples/${demo}/demo.ipynb" "docs/examples/${demo}/demo.ipynb"
@@ -106,7 +106,7 @@ jobs:
           for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs; do
             test -f "docs/assets/images/thumbnails/${demo}.png" || { echo "FAIL: thumbnail ${demo}.png not found"; exit 1; }
           done
-          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs gadopt_loading_field; do
+          for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models tomography_cross_section temperature_to_vs gadopt_loading_field; do
             test -f "docs/examples/${demo}/demo.ipynb" || { echo "FAIL: notebook ${demo}/demo.ipynb not found"; exit 1; }
           done
           echo "OK: All generated files present"
