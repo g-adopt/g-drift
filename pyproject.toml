@@ -58,6 +58,12 @@ examples = [
     "ipykernel>=6.0",
     "cartopy>=0.21",
 ]
+gplates = [
+    # pygplates is distributed by the GPlates team (not on PyPI for all
+    # platforms); install it per https://www.gplates.org/docs/pygplates/
+    "pyvista>=0.40",
+    "mapbox_earcut>=1.0",
+]
 all = [
     "gdrift[dev,docs,examples]",
 ]
