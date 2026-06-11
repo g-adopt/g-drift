@@ -2,12 +2,14 @@
 
 This module provides optional integration with PyGPlates for reconstructing
 coastline geometries through geological time and exporting them to VTK format
-for visualization in ParaView. This enables overlaying plate boundaries and
-continental outlines on geodynamic model outputs.
+for visualization in ParaView. Each coastline polygon is triangulated on the
+sphere and written as a filled surface, so continents can be overlaid on 3-D
+geodynamic model output and animated through time.
 
-**Note**: This module requires optional dependencies (pygplates, pyvista) that
-are not installed by default. It is primarily intended for advanced users who
-need to visualize geodynamic models in 3D alongside tectonic reconstructions.
+**Note**: This module requires optional dependencies (pygplates, pyvista,
+mapbox_earcut) that are not installed by default. It is primarily intended
+for advanced users who need to visualize geodynamic models in 3D alongside
+tectonic reconstructions.
 
 Key Classes
 -----------
@@ -16,51 +18,62 @@ CoastlineVTKFile : Reconstruct and export coastlines as time-series VTK
 Key Methods
 -----------
 CoastlineVTKFile.reconstructed_coastlines : Get coastlines at specific age
-CoastlineVTKFile.write_output : Generate .pvd + .vtp files for ParaView
+CoastlineVTKFile.write_vtp : Write a single age as a .vtp (and update the .pvd)
 
 Examples
 --------
 >>> import gdrift
->>> # Requires pygplates and pyvista installed
+>>> # Requires pygplates, pyvista and mapbox_earcut installed
 >>> coastlines = gdrift.CoastlineVTKFile(
 ...     filename="coastlines.pvd",
 ...     rotation_model="rotation_files.rot",
 ...     coastlines="coastline_polygons.gpml",
 ...     earth_radius=1.0)  # normalized radius
->>> # Generate coastlines from 0-100 Ma in 10 Ma steps
->>> coastlines.write_output(ages=range(0, 110, 10))
+>>> for age in range(0, 110, 10):
+...     coastlines.write_vtp(age)
 >>> # Open coastlines.pvd in ParaView to visualize time evolution
 
 Notes
 -----
-- Optional dependencies: `pip install pygplates pyvista`
+- Optional dependencies: `pip install pygplates pyvista mapbox_earcut`
 - Input files are GPlates format (.rot, .gpml, .gpmlz)
 - Output is ParaView time-series (.pvd + directory of .vtp files)
 - Coastlines are filtered by polygon length to remove small artifacts
 - Coordinate system can be normalized to unit sphere for consistency with
   geodynamic models
-
-See Also
---------
-Example script: examples/06_vtp_pygplates.py
+- Polygons that enclose a geographic pole (notably Antarctica) are not
+  rendered correctly: earcut triangulates in (lon, lat) and does not
+  close the ring across the pole, so such polygons appear as strips with
+  a polar hole. Fixing this requires injecting the pole as an extra
+  vertex or meshing in a polar projection.
 """
 
 from pathlib import Path
 import numpy as np
 import pyvista as pv
 import pygplates
+import mapbox_earcut
 
 
 class CoastlineVTKFile(object):
-    """
-    is a class for visualising coastlines using vtk
-    It rotates back present-day coastlines using pygplates
+    """Reconstruct present-day coastlines to a given age and export them as
+    sphere-conforming filled surfaces for ParaView.
 
-    methods:
-        reconstructed_coastlines(age: Ma): returns a list of coastlines
-             at age
-
+    Each ``write_vtp(age)`` call reconstructs every coastline feature via
+    pygplates, splits polygons that cross the antimeridian with
+    ``DateLineWrapper``, triangulates each sub-polygon in (lon, lat) using
+    ``mapbox_earcut``, refines the mesh adaptively on the sphere so long
+    thin "ear" triangles are broken into uniform patches, re-orients the
+    normals outward, and saves the combined mesh as a ``.vtp`` inside the
+    sibling directory of the ``.pvd`` collection.
     """
+
+    # Max triangle edge length expressed in units of ``earth_radius``;
+    # 0.01 corresponds to ~0.57 degrees on the sphere (~63 km on Earth).
+    _MAX_EDGE_LEN = 0.01
+    # Number of adaptive refinement passes. Each pass splits remaining
+    # over-long edges and re-projects new vertices onto the sphere.
+    _ADAPTIVE_PASSES = 4
 
     def __init__(
             self,
@@ -125,18 +138,6 @@ class CoastlineVTKFile(object):
             for polygon in input_coastlines
         ]
 
-    def _record_call_time(method):
-        def wrapper(self, age, *args, **kwargs):
-            ret = method(self, age, *args, **kwargs)
-            vtp_filename = (
-                self.vtp_dir /
-                f"{self.filename.stem}_{age:1d}.vtp"
-            )
-            self._vtp_records.append((age, vtp_filename))
-            self._write_pvd()
-            return ret
-        return wrapper
-
     def _write_pvd(self):
 
         lines = ['<?xml version="1.0"?>',
@@ -148,31 +149,92 @@ class CoastlineVTKFile(object):
         lines.append('</VTKFile>')
         self.filename.write_text('\n'.join(lines))
 
-    @_record_call_time
+    def _project_to_sphere(self, points):
+        norms = np.linalg.norm(points, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        return self.earth_radius * points / norms
+
+    def _latlon_to_xyz(self, lats_deg, lons_deg):
+        lat = np.radians(lats_deg)
+        lon = np.radians(lons_deg)
+        return self.earth_radius * np.stack([
+            np.cos(lat) * np.cos(lon),
+            np.cos(lat) * np.sin(lon),
+            np.sin(lat),
+        ], axis=-1)
+
+    def _orient_outward(self, mesh):
+        # Flip any triangle whose normal points toward Earth's centre so the
+        # filled continent renders from outside the globe regardless of the
+        # source polygon's winding.
+        mesh = mesh.compute_normals(
+            cell_normals=True, point_normals=False,
+            auto_orient_normals=False, consistent_normals=False,
+            flip_normals=False, inplace=False,
+        )
+        centroids = mesh.cell_centers().points
+        outward = np.einsum("ij,ij->i", centroids, mesh["Normals"]) > 0
+
+        faces = mesh.faces.reshape(-1, 4).copy()
+        inward_idx = np.where(~outward)[0]
+        faces[inward_idx, 1:] = faces[inward_idx, 1:][:, ::-1]
+        return pv.PolyData(mesh.points, faces)
+
+    def _surface_from_latlon(self, latlon):
+        # Triangulate the closed polygon directly in (lon, lat) with
+        # earcut, which handles concavity correctly without a best-fit
+        # plane projection. Then adaptively refine on the sphere so long
+        # thin ear triangles become uniform patches.
+        lats = latlon[:, 0]
+        lons = latlon[:, 1]
+        n = len(lats)
+        if n < 3:
+            return None
+
+        lonlat = np.column_stack([lons, lats]).astype(np.float64)
+        tri_flat = mapbox_earcut.triangulate_float64(lonlat, np.array([n]))
+        tri_indices = np.asarray(tri_flat, dtype=np.int64).reshape(-1, 3)
+        if len(tri_indices) == 0:
+            return None
+
+        points_xyz = self._latlon_to_xyz(lats, lons)
+        faces = np.column_stack([
+            np.full(len(tri_indices), 3, dtype=np.int64),
+            tri_indices,
+        ]).ravel()
+        mesh = pv.PolyData(points_xyz, faces)
+
+        max_edge = self._MAX_EDGE_LEN * self.earth_radius
+        for _ in range(self._ADAPTIVE_PASSES):
+            mesh = mesh.subdivide_adaptive(max_edge_len=max_edge)
+            mesh.points = self._project_to_sphere(mesh.points)
+
+        if mesh.n_cells == 0:
+            return None
+        return self._orient_outward(mesh)
+
     def write_vtp(self, age):
         # reconstructed coastlines using pygplates
         reconstructed_coastlines = self.reconstructed_coastlines(age)
 
-        # Get the exterior points
-        polygons = [
-            np.asarray(
-                [
-                    self.earth_radius * point.to_point_on_sphere().to_xyz_array().flatten()
-                    for sub_polygon in polygon
-                    for point in sub_polygon.get_exterior_points()
-                ]
-            )
-            for polygon in self._wrap_coastlines(reconstructed_coastlines)
-        ]
+        # DateLineWrapper splits antimeridian-crossing coastlines into
+        # multiple closed pieces; each piece is triangulated on its own so
+        # the filled surface never spuriously bridges disjoint parts.
+        surfaces = []
+        for wrapped in self._wrap_coastlines(reconstructed_coastlines):
+            for sub_polygon in wrapped:
+                latlon = np.asarray(
+                    [p.to_lat_lon() for p in sub_polygon.get_exterior_points()]
+                )
+                if len(latlon) < self.minimum_length_of_polygon:
+                    continue
+                surf = self._surface_from_latlon(latlon)
+                if surf is not None:
+                    surfaces.append(surf)
 
-        # Make pyvista.PolyData out of polygons larger than
-        # self.minimum_length_of_polygon
-        polydata_list = [
-            pv.PolyData(
-                polygon, [len(polygon)] + list(range(len(polygon))))
-            for polygon in polygons
-            if len(polygon) > self.minimum_length_of_polygon
-        ]
-
-        # Sum all the polygons and write them out
-        np.sum(polydata_list).save(self.vtp_dir / f"coastlines_{age}.vtp")
+        vtp_filename = self.vtp_dir / f"{self.filename.stem}_{age:g}.vtp"
+        if surfaces:
+            combined = surfaces[0] if len(surfaces) == 1 else np.sum(surfaces)
+            combined.save(vtp_filename)
+            self._vtp_records.append((age, vtp_filename))
+            self._write_pvd()
