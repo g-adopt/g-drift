@@ -90,6 +90,15 @@
   }
 }
 
+/* Thermodynamic gallery: one wide multi-panel figure per row */
+.thermo-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
 .tomography-card {
   border: 1px solid #e0e0e0;
   border-radius: 6px;
