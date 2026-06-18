@@ -180,6 +180,8 @@ docs/data-catalog-generated.md
 docs/data-catalog-incomplete.md
 docs/tomography-gallery-generated.md
 docs/assets/images/tomography/
+docs/thermodynamic-gallery-generated.md
+docs/assets/images/thermodynamic/
 
 # Enriched manifest (for review before committing)
 gdrift/datasets.json.enriched

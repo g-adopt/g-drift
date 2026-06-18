@@ -32,4 +32,8 @@ The metadata for all datasets, including citation information, is maintained in 
 
 ---
 
+--8<-- "thermodynamic-gallery-generated.md"
+
+---
+
 --8<-- "data-catalog-generated.md"

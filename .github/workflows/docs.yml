@@ -96,6 +96,14 @@ jobs:
           MPLBACKEND: Agg
         timeout-minutes: 30
 
+      - name: Generate Thermodynamic Gallery
+        run: |
+          . .venv/bin/activate
+          python scripts/generate_thermodynamic_gallery.py
+        env:
+          MPLBACKEND: Agg
+        timeout-minutes: 30
+
       - name: Verify generated files
         run: |
           test -f docs/data-catalog-generated.md || { echo "FAIL: data-catalog-generated.md not found"; exit 1; }
@@ -103,6 +111,9 @@ jobs:
           test -f docs/tomography-gallery-generated.md || { echo "FAIL: tomography-gallery-generated.md not found"; exit 1; }
           test -d docs/assets/images/tomography || { echo "FAIL: tomography image directory not found"; exit 1; }
           test -f docs/assets/images/tomography/reference_cross_section.png || { echo "FAIL: reference map not found"; exit 1; }
+          test -f docs/thermodynamic-gallery-generated.md || { echo "FAIL: thermodynamic-gallery-generated.md not found"; exit 1; }
+          test -d docs/assets/images/thermodynamic || { echo "FAIL: thermodynamic image directory not found"; exit 1; }
+          test -f docs/assets/images/thermodynamic/SLB_24_pyroliteCFMASNaCr.png || { echo "FAIL: featured SLB_24 figure not found"; exit 1; }
           for demo in mantle_solidus anelasticity_corrections geodynamic_adiabat linearisation tomography_models temperature_to_vs; do
             test -f "docs/assets/images/thumbnails/${demo}.png" || { echo "FAIL: thumbnail ${demo}.png not found"; exit 1; }
           done
