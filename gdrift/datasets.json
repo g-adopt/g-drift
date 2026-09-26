@@ -121,7 +121,7 @@
       "author": "Houser, C., Masters, G., Shearer, P., & Laske, G.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "fd0ef3c7ffd44840a36365bfc81db142-3"
+      "etag": "9e9078e825f58c103696b8ef90ec4a01-3"
     },
     {
       "name": "3d_seismic_HMSL-S06",
@@ -178,7 +178,7 @@
       "author": "Li, C., van der Hilst, R. D., Engdahl, E. R., & Burdick, S.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "fbb792a1523bc0566072c083c370fdd3-11"
+      "etag": "3f8a612524dc175e04a84001e9a93eb4-11"
     },
     {
       "name": "3d_seismic_OJP",
@@ -415,7 +415,7 @@
       "author": "French, S. W., & Romanowicz, B.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "23014705859fed904f8d68eb884ea7c8-35"
+      "etag": "4d7c7fe6cbbee8092533819000a8816d-35"
     },
     {
       "name": "3d_seismic_SEMum",
@@ -1769,7 +1769,7 @@
       "year": 2015,
       "author": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P.",
       "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL. 1-degree resolution, 60 depth levels from surface to CMB.",
-      "etag": "25463af4a6dbf9be3c326b74edc3acec-27"
+      "etag": "7b7c2632e019bfbcc7a4ad3d43d60edc-14"
     },
     {
       "name": "3d_seismic_MITS-18",
