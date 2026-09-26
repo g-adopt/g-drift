@@ -117,11 +117,11 @@
         "vp"
       ],
       "description": "HMSL-P06 P-wave seismic tomography model",
-      "sha256": "87def9731dac27370b6658caa32835577093a8736f6f1938670fa06e63ab30a8",
+      "sha256": "3dd028ac5b9eff70cb63a19e367d6ab168b3a61cb610bb56c5118bfabc2878cf",
       "author": "Houser, C., Masters, G., Shearer, P., & Laske, G.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "fd0ef3c7ffd44840a36365bfc81db142-3"
+      "etag": "9e9078e825f58c103696b8ef90ec4a01-3"
     },
     {
       "name": "3d_seismic_HMSL-S06",
@@ -174,11 +174,11 @@
         "vp"
       ],
       "description": "MITP08 P-wave seismic tomography model",
-      "sha256": "a88cddd79f5e4dce44f249311daf309c094603218d295ec840f7de44a3a9e774",
+      "sha256": "43a9a286fe88aac4b33be26980ade6c68d3e1a0114898c59c815bcdda8cbda92",
       "author": "Li, C., van der Hilst, R. D., Engdahl, E. R., & Burdick, S.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "fbb792a1523bc0566072c083c370fdd3-11"
+      "etag": "3f8a612524dc175e04a84001e9a93eb4-11"
     },
     {
       "name": "3d_seismic_OJP",
@@ -411,11 +411,11 @@
         "vsv"
       ],
       "description": "SEMUCB-WM1 seismic tomography model",
-      "sha256": "d1c8426bd9fffecc7fb942f7886599a966be789c3da392e834b42670ce37afaa",
+      "sha256": "608d4f6e5aa1562d8895a0b9aeb6d6f5ac1bfabb52fc55c9a4d8afa3b4d89e75",
       "author": "French, S. W., & Romanowicz, B.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "23014705859fed904f8d68eb884ea7c8-35"
+      "etag": "4d7c7fe6cbbee8092533819000a8816d-35"
     },
     {
       "name": "3d_seismic_SEMum",
@@ -1758,7 +1758,7 @@
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P. (2015). Evidence for long-lived subduction of an ancient tectonic plate beneath the southern Indian Ocean. Geophysical Research Letters, 42, 9270-9278.",
-      "sha256": "d2711babd980f7dae6c426acf617418922d1ce99c9aa3374da401dc3b662c24d",
+      "sha256": "935ce3edd822cabee6e726fe9e8b67a5bfc1f5fbaa9a85542c7dde606e79577f",
       "fields": [
         "dvp",
         "dvs",
@@ -1769,7 +1769,7 @@
       "year": 2015,
       "author": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P.",
       "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL. 1-degree resolution, 60 depth levels from surface to CMB.",
-      "etag": "25463af4a6dbf9be3c326b74edc3acec-27"
+      "etag": "7b7c2632e019bfbcc7a4ad3d43d60edc-14"
     },
     {
       "name": "3d_seismic_MITS-18",

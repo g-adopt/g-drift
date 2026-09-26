@@ -9,6 +9,16 @@ Uses h5py (not netCDF4 library) since the file is HDF5 under the hood.
 Resamples onto a 65,341-point Fibonacci sphere per depth level using IDW
 interpolation (power=2, k=10 neighbours), consistent with convert_seismic_models.py.
 
+The source stores each boundary as two levels about 0.1 km apart, one level
+for each side of the boundary. At the boundaries from the upper crust down to
+660 km, the source puts the level with the values of the LOWER unit at the
+smaller depth. gdrift interpolates linearly in radius between the two levels
+that bracket a query point, so this order makes the interpolation mix the
+wrong units: for example, the lower-crust values at the Moho are blended with
+the mantle down to 72.5 km. `fix_boundary_order` swaps the depths of the two
+members of these pairs before the conversion. See its docstring for the pairs
+and for the levels above 12.4 km, which stay as they are.
+
 Usage:
     python scripts/convert_llnl_jps.py --source LLNL_G3D_JPS.nc
 """
@@ -33,6 +43,23 @@ NUM_SAMPLES = 65341
 NUM_NEIGHBOURS = 10
 FAR_THRESHOLD = 5.0  # degrees
 
+# Boundary pairs of the source whose two levels are in reversed order: the
+# level with the lower unit's values is at the smaller depth. Each entry holds
+# the two depths in km as the source prints them to four decimals, and the name
+# of the boundary. The stored depths have more digits (12.487752885630353 km),
+# so fix_boundary_order matches them with the tolerance below.
+REVERSED_BOUNDARY_PAIRS_KM = [
+    (12.4878, 12.5878, "upper crust / middle crust"),
+    (18.6298, 18.7298, "middle crust / lower crust"),
+    (26.3947, 26.4947, "Moho"),
+    (415.6032, 415.7032, "410 km discontinuity"),
+    (657.5472, 657.5496, "660 km discontinuity"),
+]
+
+# Matching tolerance for the pair depths, in km (1 m). The two levels at
+# 660 km are 2.4 m apart, so a tolerance of 1 m still separates them.
+PAIR_TOLERANCE_KM = 1e-3
+
 
 def read_source(filepath):
     """Read the LLNL NetCDF4 file via h5py."""
@@ -50,6 +77,92 @@ def read_source(filepath):
     attrs = dict(f.attrs)
     f.close()
     return data, attrs
+
+
+def fix_boundary_order(depth_km, r_m, vp, lat):
+    """Swap the depths of the reversed boundary pairs of the LLNL source.
+
+    For each pair in REVERSED_BOUNDARY_PAIRS_KM the function finds the two
+    source levels and swaps their depth and radius. The field values of each
+    level do not change; only the depth assigned to them changes. After the
+    swap, the level with the upper unit's values is the shallower member of
+    the pair, so the mean Vp increases with depth across each boundary.
+
+    Before a swap the function checks that the shallower member has the larger
+    area-weighted mean Vp, which is the reversed order that the source has.
+    If the check fails, the source is already in order (for example a
+    corrected release of the file) and the function raises, so it can never
+    reverse a correct file.
+
+    The levels above 12.4 km (water, ice, three sediment units and the top of
+    the upper crust) stay as they are. In the source they are a crust of
+    laterally variable thickness put at fixed mean depths, so no order of
+    them is physical, and a sort by velocity would put the ice level (Vp 3.81
+    km/s, Vs 1.94 km/s) below the sediments.
+
+    Parameters
+    ----------
+    depth_km : numpy.ndarray
+        Depth of each source level in km, shape (num_layers,).
+    r_m : numpy.ndarray
+        Radius of each source level in m, shape (num_layers,).
+    vp : numpy.ndarray
+        P-wave speed in km/s, shape (num_layers, num_lat, num_lon).
+    lat : numpy.ndarray
+        Latitudes of the grid in degrees, shape (num_lat,). They give the
+        cos(latitude) weights of the layer means.
+
+    Returns
+    -------
+    depth_fixed, r_fixed : numpy.ndarray
+        Copies of depth_km and r_m with the pairs swapped.
+
+    Raises
+    ------
+    ValueError
+        If a pair depth matches no level or more than one level, or if a pair
+        is not in the reversed order described above.
+    """
+    depth_fixed = np.array(depth_km, dtype=float, copy=True)
+    r_fixed = np.array(r_m, dtype=float, copy=True)
+
+    # Area weights of the regular grid: cos(latitude), the same for every
+    # longitude, broadcast over the (lat, lon) plane of one level.
+    weights = np.cos(np.radians(lat))[:, np.newaxis] * np.ones(vp.shape[2])
+
+    def level_index(depth):
+        """Return the one source level within PAIR_TOLERANCE_KM of depth."""
+        matches = np.flatnonzero(np.abs(depth_km - depth) < PAIR_TOLERANCE_KM)
+        if matches.size != 1:
+            raise ValueError(f"expected one level at {depth} km, found {matches.size}")
+        return int(matches[0])
+
+    def mean_vp(index):
+        """Area-weighted mean Vp of one source level, in km/s."""
+        return float(np.sum(weights * vp[index]) / np.sum(weights))
+
+    for shallow_depth, deep_depth, name in REVERSED_BOUNDARY_PAIRS_KM:
+        i_shallow = level_index(shallow_depth)
+        i_deep = level_index(deep_depth)
+        vp_shallow, vp_deep = mean_vp(i_shallow), mean_vp(i_deep)
+        # The reversed order: the faster (lower) unit sits at the smaller depth.
+        if not vp_shallow > vp_deep:
+            raise ValueError(
+                f"{name}: the level at {depth_km[i_shallow]:.4f} km has mean Vp "
+                f"{vp_shallow:.3f} km/s and the level at {depth_km[i_deep]:.4f} km "
+                f"{vp_deep:.3f} km/s. The pair is not reversed, so the source "
+                "differs from the one this fix is for."
+            )
+        # Swap depth and radius. The radii of the source satisfy
+        # r = 6371 km - depth, so swapping both keeps them consistent.
+        depth_fixed[[i_shallow, i_deep]] = depth_fixed[[i_deep, i_shallow]]
+        r_fixed[[i_shallow, i_deep]] = r_fixed[[i_deep, i_shallow]]
+        print(
+            f"  {name}: Vp {vp_deep:.3f} km/s now at {depth_fixed[i_deep]:.4f} km, "
+            f"Vp {vp_shallow:.3f} km/s now at {depth_fixed[i_shallow]:.4f} km"
+        )
+
+    return depth_fixed, r_fixed
 
 
 def interpolate_field(field_3d, tree, dists, indices, weights, weight_sum,
@@ -83,6 +196,10 @@ def main():
     num_layers = len(src["depth"])
     print(f"  {num_layers} depths, {len(src['lat'])}x{len(src['lon'])} grid")
     print(f"  Depth range: {src['depth'].min():.2f} - {src['depth'].max():.2f} km")
+
+    # Put the members of the reversed boundary pairs in the right order.
+    print("Fixing the order of the boundary pairs ...")
+    src["depth"], src["r"] = fix_boundary_order(src["depth"], src["r"], src["Vp"], src["lat"])
 
     # Generate Fibonacci sphere
     print(f"Generating Fibonacci sphere ({NUM_SAMPLES} points) ...")
@@ -157,7 +274,11 @@ def main():
             f"Converted from authoritative LLNL NetCDF4 source. "
             f"Resampled to Fibonacci sphere ({NUM_SAMPLES} points per layer, "
             f"{NUM_NEIGHBOURS} neighbours, IDW power=2) by Sia Ghelichkhan "
-            f"(siavash.ghelichkhan@anu.edu.au)"
+            f"(siavash.ghelichkhan@anu.edu.au). "
+            "The depths of the two levels of each boundary pair at 12.5, 18.7, 26.4, "
+            "415.7 and 657.5 km are swapped relative to the source, which put the lower "
+            "unit's level above the upper unit's level. The levels above 12.4 km are a "
+            "crust of variable thickness at fixed mean depths and are not located physically."
         )
 
     # Compute SHA256
