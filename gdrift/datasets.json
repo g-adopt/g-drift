@@ -117,7 +117,7 @@
         "vp"
       ],
       "description": "HMSL-P06 P-wave seismic tomography model",
-      "sha256": "87def9731dac27370b6658caa32835577093a8736f6f1938670fa06e63ab30a8",
+      "sha256": "3dd028ac5b9eff70cb63a19e367d6ab168b3a61cb610bb56c5118bfabc2878cf",
       "author": "Houser, C., Masters, G., Shearer, P., & Laske, G.",
       "metadata_source": "web_search",
       "metadata_complete": true,
@@ -174,7 +174,7 @@
         "vp"
       ],
       "description": "MITP08 P-wave seismic tomography model",
-      "sha256": "a88cddd79f5e4dce44f249311daf309c094603218d295ec840f7de44a3a9e774",
+      "sha256": "43a9a286fe88aac4b33be26980ade6c68d3e1a0114898c59c815bcdda8cbda92",
       "author": "Li, C., van der Hilst, R. D., Engdahl, E. R., & Burdick, S.",
       "metadata_source": "web_search",
       "metadata_complete": true,
@@ -411,7 +411,7 @@
         "vsv"
       ],
       "description": "SEMUCB-WM1 seismic tomography model",
-      "sha256": "d1c8426bd9fffecc7fb942f7886599a966be789c3da392e834b42670ce37afaa",
+      "sha256": "608d4f6e5aa1562d8895a0b9aeb6d6f5ac1bfabb52fc55c9a4d8afa3b4d89e75",
       "author": "French, S. W., & Romanowicz, B.",
       "metadata_source": "web_search",
       "metadata_complete": true,

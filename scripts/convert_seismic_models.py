@@ -37,7 +37,6 @@ import warnings
 from pathlib import Path
 
 import h5py
-import netCDF4 as nc
 import numpy as np
 from scipy.spatial import cKDTree
 
@@ -48,6 +47,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from gdrift.utility import fibonacci_sphere, cartesian_to_geodetic
 from gdrift.constants import R_earth
 from gdrift.datasetnames import hash_name
+
+
+def _netcdf4():
+    """Import netCDF4 on first use.
+
+    Only the readers of the source files need netCDF4. The dataset-fix
+    functions of this script (voigt_vs, fill_vs_from_voigt, fix_mitp08_vp) and
+    the tests that import them run without it, because netCDF4 is not a
+    dependency of gdrift.
+    """
+    import netCDF4
+    return netCDF4
+
 
 # ── Canonical field names and which ones get scaled km/s -> m/s ─────────────
 SCALE_TO_MS = {"vs", "vp", "vsh", "vsv", "vpv", "vph"}
@@ -308,7 +320,7 @@ def read_standard_netcdf(filepath):
     attrs : dict
         Global attributes from the NetCDF file.
     """
-    dataset = nc.Dataset(str(filepath), "r", maskandscale=False)
+    dataset = _netcdf4().Dataset(str(filepath), "r", maskandscale=False)
     dataset.set_auto_maskandscale(False)
 
     data = {}
@@ -338,7 +350,7 @@ def read_reveal_netcdf(filepath):
     field_names : list of str
         The canonical field names found (e.g. ['vsv', 'vsh', 'vpv', 'rho']).
     """
-    dataset = nc.Dataset(str(filepath), "r")
+    dataset = _netcdf4().Dataset(str(filepath), "r")
 
     data = {}
     field_names = []
@@ -421,7 +433,7 @@ def read_grd_directory(dirpath):
         raise ValueError(f"No valid depth files found in {dirpath}")
 
     # Read first file to get reference grid
-    first_ds = nc.Dataset(str(depth_file_pairs[0][1]), "r")
+    first_ds = _netcdf4().Dataset(str(depth_file_pairs[0][1]), "r")
     lons, lats = _read_grd_coords(first_ds)
     first_ds.close()
 
@@ -432,7 +444,7 @@ def read_grd_directory(dirpath):
     slices = []
 
     for depth_km, fp in depth_file_pairs:
-        ds = nc.Dataset(str(fp), "r")
+        ds = _netcdf4().Dataset(str(fp), "r")
         z = ds.variables["z"][:]
 
         # Check if this file has a different grid
@@ -625,6 +637,119 @@ def file_hash(filepath):
     return sha256_hash.hexdigest()
 
 
+# ── Corrections of source files ─────────────────────────────────────────────
+
+def fix_mitp08_vp(vp, dvp):
+    """Rebuild the MITP08 P-wave speed with the correct sign of the perturbation.
+
+    Li et al. (2008) publish MITP08 as dVp/Vp in percent relative to ak135.
+    The source collection computes its MITP08_vp.nc as
+    ``vp = (1 - dvp/100) * Vp_ak135(depth)``
+    (src/processingDetails/Create_MITP08_vp.cpp:29 of shuleyu/seismic-tomography-models),
+    so fast regions of dvp are slow in vp. The correct speed is
+    ``vp = (1 + dvp/100) * Vp_ak135(depth)``.
+
+    The function recovers the reference exactly from the two source fields,
+    ``Vp_ak135 = vp / (1 - dvp/100)``, and returns ``Vp_ak135 * (1 + dvp/100)``.
+    The recovery works on the interpolated fields too: both fields use the
+    same neighbours and weights, and Vp_ak135 is constant within a level, so
+    the interpolated vp equals Vp_ak135 * (1 - interpolated dvp / 100).
+
+    Parameters
+    ----------
+    vp : numpy.ndarray
+        P-wave speed of MITP08_vp.nc, any unit (the result has the same unit).
+    dvp : numpy.ndarray
+        Perturbation of MITP08_dvp.nc in percent, same shape as vp.
+
+    Returns
+    -------
+    numpy.ndarray
+        The corrected P-wave speed, same shape and unit as vp.
+    """
+    vp_ak135 = vp / (1.0 - dvp / 100.0)
+    return vp_ak135 * (1.0 + dvp / 100.0)
+
+
+# Largest relative difference between an existing isotropic vs and the Voigt
+# average of vsh and vsv for which fill_vs_from_voigt accepts that the model
+# defines vs as that average. SEMUCB-WM1 matches to 2.8e-6 (0.013 m/s, the
+# float32 rounding of the GRD files).
+VOIGT_MATCH_TOLERANCE = 1e-5
+
+
+def voigt_vs(vsv, vsh):
+    """Isotropic S-wave speed as the Voigt average of vsv and vsh.
+
+    For a transversely isotropic medium, the Voigt average of the shear
+    modulus over all directions gives mu = (2 L + N) / 3 with L = rho vsv^2 and
+    N = rho vsh^2, so the isotropic speed is
+
+        vs = sqrt((2 vsv^2 + vsh^2) / 3).
+
+    This is the definition of the isotropic vs of SEMUCB-WM1 (French and
+    Romanowicz 2014) and of the Voigt-average models of the collections.
+
+    Parameters
+    ----------
+    vsv, vsh : numpy.ndarray
+        Speeds of vertically and horizontally polarised S waves, same unit.
+
+    Returns
+    -------
+    numpy.ndarray
+        Voigt-average isotropic S-wave speed, same unit and shape.
+    """
+    return np.sqrt((2.0 * vsv**2 + vsh**2) / 3.0)
+
+
+def fill_vs_from_voigt(vs, vsh, vsv, tolerance=VOIGT_MATCH_TOLERANCE):
+    """Fill the NaN points of vs with the Voigt average of vsh and vsv.
+
+    A GRD-collection model can have its isotropic component at fewer depths
+    than its anisotropic components. convert_grd_model then leaves vs NaN at
+    the other depths. Where vsh and vsv exist, the Voigt average gives vs, but
+    only if the model defines vs that way. The function checks this on the
+    points where all three fields are finite: if the largest relative
+    difference between vs and voigt_vs(vsv, vsh) is at most tolerance, it fills
+    vs point by point where vs is NaN and vsh, vsv are finite. Otherwise it
+    warns and fills nothing. Points where vs is finite never change.
+
+    Parameters
+    ----------
+    vs, vsh, vsv : numpy.ndarray
+        The three fields of one dataset, same shape and unit.
+    tolerance : float, optional
+        Largest accepted relative difference (default VOIGT_MATCH_TOLERANCE).
+
+    Returns
+    -------
+    filled : numpy.ndarray
+        Copy of vs with the filled points.
+    n_filled : int
+        Number of points filled.
+    max_rel_diff : float
+        Largest relative difference between the existing vs and the Voigt
+        average (NaN if no point has all three fields).
+    """
+    filled = np.array(vs, dtype=float, copy=True)
+    all_finite = np.isfinite(vs) & np.isfinite(vsh) & np.isfinite(vsv)
+    if not all_finite.any():
+        warnings.warn("No point has vs, vsh and vsv; the Voigt definition cannot be checked, vs not filled.")
+        return filled, 0, float("nan")
+    voigt = voigt_vs(vsv[all_finite], vsh[all_finite])
+    max_rel_diff = float(np.max(np.abs(vs[all_finite] - voigt) / np.abs(vs[all_finite])))
+    if max_rel_diff > tolerance:
+        warnings.warn(
+            f"vs differs from the Voigt average of vsh and vsv by up to {max_rel_diff:.2e} "
+            f"(tolerance {tolerance:.0e}); vs not filled."
+        )
+        return filled, 0, max_rel_diff
+    fill = np.isnan(vs) & np.isfinite(vsh) & np.isfinite(vsv)
+    filled[fill] = voigt_vs(vsv[fill], vsh[fill])
+    return filled, int(fill.sum()), max_rel_diff
+
+
 # ── Single-model conversion ────────────────────────────────────────────────
 
 def convert_single_model(model_name, source_dir, output_dir,
@@ -715,6 +840,25 @@ def convert_single_model(model_name, source_dir, output_dir,
 
             data_to_write[field_name] = interpolated
             fields_written.append(field_name)
+
+    # Correct the sign of the perturbation in the MITP08 P-wave speed of the
+    # source collection (see fix_mitp08_vp). dvp stays as it is.
+    if model_name == "MITP08":
+        data_to_write["vp"] = fix_mitp08_vp(data_to_write["vp"], data_to_write["dvp"])
+        all_metadata["comment"] = all_metadata.get("comment", "") + (
+            "\nvp = (1 + dvp/100) Vp_ak135, with Vp_ak135 recovered from the source "
+            "MITP08_vp.nc, which used (1 - dvp/100)."
+        )
+
+    # HMSL-P06 is published as dvp only. The source collection built its vp
+    # from dvp and ak135 and warns that this vp has little meaning, because the
+    # travel times of the inversion had their mean removed (no 1-D reference).
+    # Keep that warning with the dataset.
+    if model_name == "HMSL-P06":
+        all_metadata["comment"] = all_metadata.get("comment", "") + (
+            "\nvp: converted from dvp and ak135 by the source collection, which warns "
+            "that it might be meaningless and must be used with care."
+        )
 
     # Add coordinates
     data_to_write["coordinates"] = coordinates
@@ -866,14 +1010,29 @@ def convert_grd_model(model_name, source_dir, output_dir,
         data_to_write[field_name] = result.ravel()
         fields_written.append(field_name)
 
+    # ── Phase 4b: isotropic vs at the depths of the anisotropic components ──
+    # Where the isotropic component has fewer depths than vsh and vsv, fill
+    # vs with their Voigt average (see fill_vs_from_voigt; it checks that the
+    # model defines vs that way before it fills).
+    voigt_note = ""
+    if {"vs", "vsh", "vsv"} <= set(data_to_write):
+        filled, n_filled, max_rel = fill_vs_from_voigt(
+            data_to_write["vs"], data_to_write["vsh"], data_to_write["vsv"])
+        print(f"  vs: Voigt check max relative difference {max_rel:.2e}, "
+              f"{n_filled} NaN points filled from vsh and vsv")
+        if n_filled:
+            data_to_write["vs"] = filled
+            voigt_note = (" vs at the depths without an isotropic GRD file is the Voigt "
+                          "average sqrt((2 vsv^2 + vsh^2)/3).")
+
     # ── Phase 5: metadata and write ──
     metadata = {
         "comment": (
             "Converted from GRD per-depth files. "
             "Resampled to Fibonacci sphere ({n} points per layer, "
             "{k} neighbours, IDW power=2) by Sia Ghelichkhan "
-            "(siavash.ghelichkhan@anu.edu.au)".format(
-                n=num_samples, k=num_neighbours)
+            "(siavash.ghelichkhan@anu.edu.au).".format(
+                n=num_samples, k=num_neighbours) + voigt_note
         ),
         "velocity_units": "m/s",
         "num_depth_levels": int(num_layers),
