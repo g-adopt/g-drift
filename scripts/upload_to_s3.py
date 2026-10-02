@@ -3,6 +3,10 @@
 
 By default, performs a dry-run showing planned renames. Pass --execute to upload.
 
+WARNING: with --execute and without --no-delete, the script first DELETES every object
+under s3://gadopt/g-drift/ (all datasets), then uploads only the files in gdrift/data-sia/.
+To update one dataset, do not use this script. Follow docs/dataset-releases.md.
+
 Usage:
     python scripts/upload_to_s3.py              # dry-run
     python scripts/upload_to_s3.py --execute    # actually upload
@@ -88,8 +92,10 @@ def main():
         print("DRY RUN — pass --execute to actually upload.")
         return
 
-    # Delete existing objects
+    # Delete existing objects. This removes every dataset on the server, not only the ones
+    # in gdrift/data-sia/ (see the module docstring and docs/dataset-releases.md).
     if not args.no_delete:
+        print("WARNING: deleting EVERY object under s3://gadopt/g-drift/ before the upload.")
         print("Deleting existing objects under s3://gadopt/g-drift/ ...")
         s3cmd("del", "--recursive", "s3://gadopt/g-drift/")
         print()
