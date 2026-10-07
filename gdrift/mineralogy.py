@@ -750,7 +750,13 @@ class ThermodynamicModel(object):
 
     def _find_temperature(self, val, depth, interpolator, bounds):
         def objective(temp):
-            return (interpolator(depth, temp) - val)**2
+            # Squared misfit between the table value at (depth, temp) and the
+            # target value. `ev` evaluates at one point and `.item()` turns
+            # the size-1 result into a Python float: minimize_scalar needs a
+            # scalar objective, and with an array of shape (1, 1) (what
+            # `interpolator(depth, temp)` returns) scipy 1.18 fails inside
+            # the bounded search.
+            return (numpy.asarray(interpolator.ev(depth, temp)).item() - val)**2
 
         result = minimize_scalar(
             objective,
@@ -758,7 +764,7 @@ class ThermodynamicModel(object):
             method='bounded',
             options={'xatol': 1e-2}
         )
-        return result.x if result.success else numpy.NaN
+        return result.x if result.success else numpy.nan
 
 
 def interpolate_table(ox, oy, table_in):
