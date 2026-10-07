@@ -199,10 +199,17 @@ print(f"Queried {len(vsh)} points at {slice_depth / 1e3:.0f} km depth")
 # REVEAL provides anisotropic velocities ($V_{SH}$ and $V_{SV}$). We
 # compute the isotropic Voigt-average shear-wave speed:
 #
-# $$V_S = \sqrt{\frac{2\,V_{SH}^2 + V_{SV}^2}{3}}$$
+# $$V_S = \sqrt{\frac{2\,V_{SV}^2 + V_{SH}^2}{3}}$$
+#
+# With $L = \rho V_{SV}^2$ and $N = \rho V_{SH}^2$, the Voigt average
+# of the shear modulus of a transversely isotropic medium is
+# $\mu = (A + C - 2F + 5N + 6L)/15$. REVEAL gives only the S-wave
+# speeds, so we use the S-wave form $\mu = (2L + N)/3$, which follows
+# from the full form when $A + C - 2F = 4L$ (true for an isotropic
+# medium). This is why $V_{SV}$ has twice the weight of $V_{SH}$.
 
 # +
-vs_isotropic = np.sqrt((2 * vsh**2 + vsv**2) / 3)
+vs_isotropic = np.sqrt((2 * vsv**2 + vsh**2) / 3)
 
 print(f"Vs range at {slice_depth / 1e3:.0f} km: "
       f"{np.nanmin(vs_isotropic):.0f} - {np.nanmax(vs_isotropic):.0f} m/s")

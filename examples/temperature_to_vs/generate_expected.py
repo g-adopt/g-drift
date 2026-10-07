@@ -76,7 +76,8 @@ def main():
     vsh = reveal_data[:, 0]
     vsv = reveal_data[:, 1]
 
-    vs_isotropic = np.sqrt((2 * vsh**2 + vsv**2) / 3)
+    # Voigt average, the same formula as in demo.py.
+    vs_isotropic = np.sqrt((2 * vsv**2 + vsh**2) / 3)
 
     # Step 7: Convert Vs -> T
     valid = np.isfinite(vs_isotropic)
