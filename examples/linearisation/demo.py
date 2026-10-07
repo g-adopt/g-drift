@@ -26,14 +26,16 @@
 # The regularisation algorithm works as follows:
 #
 # 1. Compute the temperature gradient $\partial V / \partial T$ of each
-#    property across the 2D table.
+#    property as the slope between each pair of neighbouring temperature
+#    nodes of the 2D table.
 # 2. Identify *irregular* gradient values that fall outside an acceptable
 #    range (e.g. large positive jumps in $V_s$ that correspond to phase
 #    transitions).
 # 3. Replace irregular gradients with inverse-distance-weighted interpolation
 #    from nearby regular points using a KD-tree.
 # 4. Integrate the smoothed gradient back along the temperature axis to
-#    reconstruct the property field.
+#    reconstruct the property field. Where no gradient was replaced, this
+#    returns the original table exactly.
 # 5. Anchor the reconstructed field to a reference temperature profile so
 #    that properties along the geotherm are preserved exactly.
 #

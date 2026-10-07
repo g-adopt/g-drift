@@ -39,6 +39,7 @@ LinearRectBivariateSpline : Linear (kx=1, ky=1) bivariate spline factory
 
 Examples
 --------
+>>> import numpy as np
 >>> import gdrift
 >>> # Load SLB 2021 pyrolite model
 >>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
@@ -53,9 +54,12 @@ Examples
 >>> # Query arbitrary property (if available in table)
 >>> rho = tm.temperature_to_property("rho", temperature=1600, depth=500e3)
 >>>
->>> # Regularize phase transitions for smooth gradients
->>> tm_smooth = gdrift.regularise_thermodynamic_table(
-...     tm, regular_range={"v_s": (350e3, 750e3)})
+>>> # Regularize phase transitions for smooth gradients. The regularised and
+>>> # raw tables agree at the anchor temperature given by the profile.
+>>> anchor = gdrift.SplineProfile(
+...     depth=np.array([0., 500e3, 2700e3, 2890e3]),
+...     value=np.array([300., 1600., 2600., 3500.]))
+>>> tm_smooth = gdrift.regularise_thermodynamic_table(tm, anchor)
 >>> # Now vs_to_temperature uses smoothed table for inverse
 
 Notes
@@ -750,7 +754,13 @@ class ThermodynamicModel(object):
 
     def _find_temperature(self, val, depth, interpolator, bounds):
         def objective(temp):
-            return (interpolator(depth, temp) - val)**2
+            # Squared misfit between the table value at (depth, temp) and the
+            # target value. `ev` evaluates at one point and `.item()` turns
+            # the size-1 result into a Python float: minimize_scalar needs a
+            # scalar objective, and with an array of shape (1, 1) (what
+            # `interpolator(depth, temp)` returns) scipy 1.18 fails inside
+            # the bounded search.
+            return (numpy.asarray(interpolator.ev(depth, temp)).item() - val)**2
 
         result = minimize_scalar(
             objective,
@@ -758,7 +768,7 @@ class ThermodynamicModel(object):
             method='bounded',
             options={'xatol': 1e-2}
         )
-        return result.x if result.success else numpy.NaN
+        return result.x if result.success else numpy.nan
 
 
 def interpolate_table(ox, oy, table_in):
@@ -860,90 +870,200 @@ def is_either_float_or_array(*args):
 
 
 def derive_then_integrate(table: Table, temperature_profile: AbstractProfile, regular_range: Dict[str, Tuple]) -> np.ndarray:
-    """
-    Derives the temperature gradient, interpolates irregular values, and integrates again to obtain velocity.
-    The output is anchored (= 0.) at around velocity values that are associated at temperature_profile.
-    Args:
-        table (object): An object containing depth and temperature data with methods `get_x()`, `get_y()`, and `get_vals()`.
-        temperature_profile (object): An object with a method `at_depth(depths)` that returns temperature values at given depths.
-        regular_range (dict): A dictionary with keys corresponding to table names and values as tuples indicating the acceptable range for gradients.
-    Returns:
-        np.ndarray: A 2D array representing the integrated velocity values adjusted for the temperature profile.
+    """Replace out-of-range temperature derivatives of a table and integrate them back.
+
+    Each depth row of the table is differentiated along temperature, the
+    derivatives outside `regular_range` are replaced by an inverse-distance
+    mean of accepted neighbours, and the derivatives are integrated back
+    along temperature. The integration constant of each row is chosen such
+    that the returned row is exactly zero at the anchor temperature
+    `temperature_profile.at_depth(depth)` of that row. The caller adds the
+    raw table value at the anchor temperature to obtain the regularised table
+    (see `regularise_thermodynamic_table`).
+
+    The derivatives are the slopes of the cells between two neighbouring
+    temperature nodes, (V[k+1] - V[k]) / (T[k+1] - T[k]). The cumulative sum of
+    these slopes times the cell widths is the exact inverse of the
+    differencing, so a row in which no slope is replaced comes back equal to
+    the raw row (to round-off). Centred differences do not have this
+    property: their cumulative sum gives (V[k] + V[k+1]) / 2, which moves the
+    table by half a temperature step.
+
+    Parameters
+    ----------
+    table : Table
+        Table on a (depth, temperature) grid. `get_x()` returns the depths
+        in metres, `get_y()` the temperatures in kelvin (strictly
+        increasing, uniform spacing not required), `get_vals()` the values
+        with shape (n_depth, n_temperature), and `_name` the key into
+        `regular_range` (for example "v_s", "v_p" or "rho").
+    temperature_profile : AbstractProfile
+        1D profile whose `at_depth(depths)` gives the anchor temperature in
+        kelvin at each table depth, normally the radial mean temperature
+        of the convection model. The anchor temperature is expected to lie
+        inside the temperature range of the table. Outside that range,
+        `numpy.interp` takes the end value of the row and the anchor is not
+        exact.
+    regular_range : dict
+        Maps the table name to a tuple (lower, upper) of accepted values of
+        dV/dT, in units of the table per kelvin. A cell slope is accepted if
+        lower < dV/dT < upper (strict inequalities, so a slope of exactly
+        `upper` is replaced). The default upper bound of 0 removes every
+        cell where the value increases with temperature, which is where a
+        phase transition crosses the temperature axis.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array with shape (n_depth, n_temperature). Each row is the
+        integrated (and where needed corrected) table row minus its value at
+        the anchor temperature, so it is zero at the anchor temperature.
+
+    Raises
+    ------
+    ValueError
+        If no cell slope of the table is inside `regular_range`, because
+        then there is nothing to take replacement values from.
+
+    Notes
+    -----
+    The replacement value for an out-of-range cell is the inverse-distance
+    mean of the 3 nearest accepted cells, found with a KD-tree in the
+    coordinates (depth in metres, cell-centre temperature in kelvin). The
+    two coordinates are not scaled. With table depth spacings of order
+    1 km (1000 "units") and temperature spacings of tens of kelvin, the 3
+    nearest accepted cells are almost always in the same depth row, on
+    either side of the rejected interval along temperature. The replacement
+    is therefore in practice a 1D interpolation of dV/dT along temperature
+    within each depth row. Only a rejected interval that is wider in kelvin
+    than the depth spacing in metres takes neighbours from other rows.
     """
 
-    # Getting the name of the table
+    # Name of the table, used as the key into `regular_range`
     key = table._name
-    # Getting the depths and temperatures
-    depths = table.get_x()
-    temperatures = table.get_y()
 
-    # temperature gradient
-    dT = np.gradient(temperatures)
+    # Grid coordinates: depths in m (rows) and temperatures in K (columns)
+    depths = np.asarray(table.get_x(), dtype=float)
+    temperatures = np.asarray(table.get_y(), dtype=float)
+    values = np.asarray(table.get_vals(), dtype=float)
 
-    # Creating a mesh for the depths and temperatures
-    depths_x, temperatures_x = np.meshgrid(depths, temperatures, indexing="ij")
+    # Width of each temperature cell, that is the interval between two
+    # neighbouring temperature nodes. Shape (n_temperature - 1,).
+    cell_widths = np.diff(temperatures)
 
-    # Getting the gradients
-    dV_dT = np.gradient(table.get_vals(), depths, temperatures, axis=(0, 1))[1]
+    # Temperature at the centre of each cell. The cell slopes below belong to
+    # these positions, and the KD-tree uses them to measure distances.
+    cell_centres = 0.5 * (temperatures[1:] + temperatures[:-1])
 
-    # Finding the regular range of values (No positive jumps, no high negative jumps)
+    # Slope dV/dT of each cell (forward difference between neighbouring nodes).
+    # Shape (n_depth, n_temperature - 1). This is the derivative that the
+    # cumulative sum below inverts exactly.
+    dV_dT = np.diff(values, axis=1) / cell_widths
+
+    # Coordinates (depth, cell-centre temperature) of every cell slope
+    depths_x, cell_centres_x = np.meshgrid(depths, cell_centres, indexing="ij")
+
+    # Accepted slopes: inside the open interval given by regular_range. With
+    # the default upper bound of 0 this rejects every cell where the value
+    # increases with temperature (a phase transition crossing the T axis).
     within_range = np.logical_and(dV_dT < regular_range[key][1], dV_dT > regular_range[key][0])
 
-    # building a tree out of the regular values
-    my_tree = cKDTree(np.column_stack((depths_x[within_range].flatten(), temperatures_x[within_range].flatten())))
+    # Without any accepted slope there is nothing to interpolate from
+    if not within_range.any():
+        raise ValueError(f"No temperature derivative of table '{key}' is inside regular_range {regular_range[key]}.")
 
-    # Finding the closest values to the irregular values
-    distances, inds = my_tree.query(np.column_stack((depths_x[~ within_range].flatten(), temperatures_x[~ within_range].flatten())), k=3)
+    # Replace the rejected slopes, if there are any
+    if not within_range.all():
+        # KD-tree of the accepted slopes in (depth [m], temperature [K]). The
+        # two coordinates are not rescaled; see the Notes in the docstring.
+        my_tree = cKDTree(np.column_stack((depths_x[within_range], cell_centres_x[within_range])))
 
-    # Interpolating the irregular values
-    dV_dT[~within_range] = np.sum(1 / distances * dV_dT[within_range].flatten()[inds], axis=1) / np.sum(1 / distances, axis=1)
+        # The 3 nearest accepted slopes for each rejected slope. The distances
+        # are never zero because the rejected cells are not in the tree.
+        distances, inds = my_tree.query(np.column_stack((depths_x[~within_range], cell_centres_x[~within_range])), k=3)
 
-    # Integrating the derivate again to get the velocity (note that a constant needs to be found)
-    V = np.cumsum(dV_dT * dT, axis=1)
-    # One D profile of vs that best describes the temperature profile
-    t_mean_array = np.asarray([V[i, j] for i, j in enumerate(abs(temperature_profile.at_depth(depths_x) - temperatures).argmin(axis=1))])
+        # Inverse-distance weighted mean of the 3 accepted slopes
+        dV_dT[~within_range] = np.sum(dV_dT[within_range][inds] / distances, axis=1) / np.sum(1 / distances, axis=1)
 
-    # Broadcasting to the correct shape
-    t_mean_array_x, _ = np.meshgrid(t_mean_array, temperatures, indexing="ij")
+    # Integrate the slopes back along temperature. The first node of each row
+    # is set to 0, node k is the sum of slope times width over cells 0..k-1.
+    # If no slope in a row was replaced, this gives V[k] - V[0] exactly (to
+    # round-off), so the regularised table equals the raw table there.
+    V = np.zeros_like(values)
+    V[:, 1:] = np.cumsum(dV_dT * cell_widths, axis=1)
 
-    # Anchoring the V-T curve at each depth for acnhor T to have zero velocity
-    V -= t_mean_array_x
+    # Anchor temperature for each depth row, in K
+    anchor_temperatures = np.broadcast_to(temperature_profile.at_depth(depths), depths.shape)
+
+    # Value of each integrated row at its anchor temperature. Linear
+    # interpolation along T matches the linear (kx=ky=1) interpolation used by
+    # ThermodynamicModel, so V_reg(T_anchor) = V_raw(T_anchor) holds exactly
+    # after `regularise_thermodynamic_table` adds the raw anchor value.
+    anchor_values = np.array([np.interp(t_anchor, temperatures, row) for t_anchor, row in zip(anchor_temperatures, V)])
+
+    # Shift each row so that it is zero at its anchor temperature
+    V -= anchor_values[:, None]
 
     return V
 
 
 def regularise_thermodynamic_table(slb_pyrolite: ThermodynamicModel, temperature_profile: AbstractProfile, regular_range: Dict[str, Tuple] = default_regular_range):
-    """
-    Regularises the thermodynamic table by creating a regularised thermodynamic model that uses precomputed
-    regular tables for S-wave and P-wave speeds.
+    """Return a copy of a thermodynamic model with phase-transition jumps in temperature removed.
 
-    Args:
-        slb_pyrolite (ThermodynamicModel): The original thermodynamic model.
-        temperature_profile (AbstractProfile): The temperature profile to be used for regularisation. This is supposed to
-            be a 1D profile of average temperature profiles.
-        regular_range (Dict[str, Tuple], optional): Dictionary specifying the regularisation range for each
-            parameter. Defaults to `gdrift.mineralogy.default_regular_range`.
+    The density, S-wave and P-wave speed tables are regularised one by one
+    with `derive_then_integrate`. In each depth row, every temperature cell
+    whose slope dV/dT is outside `regular_range` gets a slope interpolated
+    from accepted neighbouring cells, and the row is integrated back along
+    temperature. The integration constant is fixed by the anchor condition
 
-    Returns:
-        RegularisedThermodynamicModel: A regularised thermodynamic model with precomputed tables for S-wave
-        and P-wave speeds.
+        V_reg(depth, T_anchor(depth)) = V_raw(depth, T_anchor(depth)),
+
+    with T_anchor = `temperature_profile.at_depth(depth)`. This holds exactly,
+    also when T_anchor is between two table nodes. In a depth row where no
+    slope is replaced, the regularised row equals the raw row.
+
+    Parameters
+    ----------
+    slb_pyrolite : ThermodynamicModel
+        The thermodynamic model to regularise.
+    temperature_profile : AbstractProfile
+        1D profile of the anchor temperature in kelvin, normally the radial
+        mean temperature of the convection model. At this temperature the
+        regularised and the raw tables agree. Keep it inside the temperature
+        range of the table: outside it, the raw value at the anchor is NaN
+        unless the model was created with `extrapolate=True`.
+    regular_range : dict, optional
+        Maps "rho", "v_s" and "v_p" to a tuple (lower, upper) of accepted
+        values of the temperature derivative of that table. Defaults to
+        `gdrift.mineralogy.default_regular_range`, which accepts every
+        negative derivative.
+
+    Returns
+    -------
+    RegularisedThermodynamicModel
+        A subclass of ThermodynamicModel that returns the regularised density,
+        S-wave and P-wave speed tables.
     """
-    # regular tables are a dictaionary of tables
+    # Regularised tables, keyed by table name ("rho", "v_s", "v_p")
     regular_tables = {}
 
-    # iterating over the tables
+    # Regularise each table together with the function that interpolates the
+    # raw table at a given (temperature, depth)
     for table, convert_T2V in zip([slb_pyrolite._tables["rho"], slb_pyrolite.compute_swave_speed(), slb_pyrolite.compute_pwave_speed()],
                                   [slb_pyrolite.temperature_to_rho, slb_pyrolite.temperature_to_vs, slb_pyrolite.temperature_to_vp]):
-        # Get name for the table
+        # Name for the table
         key = table._name
 
+        # Regularised table minus its value at the anchor temperature (zero at the anchor)
         regular_tables[key] = derive_then_integrate(table, temperature_profile, regular_range)
 
-        # the velocity for the given temperature profile
-        v_average = convert_T2V(temperature=temperature_profile.at_depth(table.get_x()), depth=table.get_x())
+        # Raw table value at the anchor temperature of each depth row. The
+        # model interpolates linearly, so this is the linear interpolation of
+        # the raw row at T_anchor, which matches the anchoring in derive_then_integrate.
+        v_anchor = convert_T2V(temperature=temperature_profile.at_depth(table.get_x()), depth=table.get_x())
 
-        # Subtracting the mean
-        regular_tables[key] += v_average[:, None]
+        # Add the raw anchor value, so that V_reg(T_anchor) = V_raw(T_anchor)
+        regular_tables[key] += v_anchor[:, None]
 
     class RegularisedThermodynamicModel(ThermodynamicModel):
         """
