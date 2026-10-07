@@ -52,6 +52,12 @@ jobs:
         run: |
           . .venv/bin/activate
           pip install -e ".[docs,examples]"
+          # The container already has jupytext in the system site-packages,
+          # so the line above does not install it into the venv, and the
+          # `jupytext` on the PATH then runs with /usr/bin/python3, which
+          # cannot see the kernel installed into .venv below. Install it
+          # into the venv so that `jupytext --execute` uses the venv Python.
+          pip install --ignore-installed --no-deps jupytext
 
       - name: Install Jupyter kernel
         run: |
