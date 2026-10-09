@@ -42,7 +42,8 @@ def generate():
     coords = gdrift.geodetic_to_cartesian(
         lat_grid.ravel(), lon_grid.ravel(), depth_grid.ravel())
     data = seismic.at(["vsh", "vsv"], coords)
-    vs_iso = np.sqrt((2 * data[:, 0]**2 + data[:, 1]**2) / 3)
+    # Voigt average sqrt((2 vsv^2 + vsh^2) / 3); column 0 is vsh, column 1 is vsv.
+    vs_iso = np.sqrt((2 * data[:, 1]**2 + data[:, 0]**2) / 3)
 
     # Convert to temperature
     valid = np.isfinite(vs_iso)

@@ -31,7 +31,7 @@
 # We construct a cubed-sphere mesh, load the REVEAL seismic model,
 # interpolate its anisotropic shear-wave velocities ($V_{SH}$ and
 # $V_{SV}$) onto the mesh, compute the isotropic velocity
-# $V_S = \sqrt{(2 V_{SH}^2 + V_{SV}^2) / 3}$, and convert $V_S$
+# $V_S = \sqrt{(2 V_{SV}^2 + V_{SH}^2) / 3}$, and convert $V_S$
 # to temperature using a regularised SLB_21 thermodynamic model with
 # Cammarano-style anelastic corrections.
 
@@ -185,10 +185,17 @@ vsv.dat.data_with_halos[:] = reveal_data[:, 1]
 # The isotropic shear-wave speed is the Voigt average of the anisotropic
 # components:
 #
-# $$V_S = \sqrt{\frac{2 V_{SH}^2 + V_{SV}^2}{3}}$$
+# $$V_S = \sqrt{\frac{2 V_{SV}^2 + V_{SH}^2}{3}}$$
+#
+# With $L = \rho V_{SV}^2$ and $N = \rho V_{SH}^2$, the Voigt average
+# of the shear modulus of a transversely isotropic medium is
+# $\mu = (A + C - 2F + 5N + 6L)/15$. REVEAL gives only the S-wave
+# speeds, so we use the S-wave form $\mu = (2L + N)/3$, which follows
+# from the full form when $A + C - 2F = 4L$ (true for an isotropic
+# medium). This is why $V_{SV}$ has twice the weight of $V_{SH}$.
 
 # +
-vs.interpolate(sqrt((2 * vsh**2 + vsv**2) / 3))
+vs.interpolate(sqrt((2 * vsv**2 + vsh**2) / 3))
 
 v_ave = Function(Q, name="v_ave")
 averager = LayerAveraging(mesh, quad_degree=6)
