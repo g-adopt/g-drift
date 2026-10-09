@@ -49,7 +49,12 @@ docs = [
     "mkdocs>=1.5",
     "mkdocs-material>=9.0",
     "mkdocstrings[python]>=0.24",
-    "mkdocs-jupyter>=0.24,<0.26",
+    # The 0.26.0 wheel on PyPI does not contain the built notebook assets
+    # (mkdocs_html/assets/index.css and the theme CSS files), so every
+    # notebook page fails with TemplateNotFound. Upstream fixed the release
+    # build in 0.26.1 (danielfrg/mkdocs-jupyter#269), so only 0.26.0 is
+    # excluded.
+    "mkdocs-jupyter>=0.24,!=0.26.0",
 ]
 examples = [
     "matplotlib>=3.5",
