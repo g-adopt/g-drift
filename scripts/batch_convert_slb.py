@@ -82,7 +82,8 @@ def main():
             ref = SLB_REFERENCES[version]
             manifest_entries.append({
                 'name': f"SLB_{version}_{composition}{system.upper()}",
-                'filename': output_file.name,
+                # File name on the server: the content hash
+                'filename': f"{hash_val}.h5",
                 'type': 'THERMODYNAMIC_MODEL',
                 'utility': 'THERMODYNAMIC',
                 'source': ref['citation'],

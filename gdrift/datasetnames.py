@@ -31,7 +31,7 @@ DatasetRegistry : Collection of datasets with filtering and query methods
 
 Key Functions
 -------------
-hash_name : Generate SHA256 hash of dataset name for obfuscated storage
+hash_name : SHA256 of a dataset name (file name used by gdrift 0.1.3 and earlier)
 get_manifest_config : Extract S3/CDN configuration from manifest
 print_datasets_markdown : Generate markdown table of available datasets
 _load_manifest : Internal loader for datasets.json
@@ -58,7 +58,8 @@ Examples
 
 Notes
 -----
-- All 33 datasets in the manifest have real SHA256 hashes
+- Every dataset in the manifest has a SHA256 hash of its content, and its
+  file name on the server is that hash plus ".h5"
 - Dataset names must match the "name" field in datasets.json exactly
 - Unknown dataset names raise ValueError in load_dataset()
 - The manifest ships with the package (no external download needed)
@@ -77,7 +78,13 @@ from pathlib import Path
 
 
 def hash_name(name: str) -> str:
-    """Deterministic SHA-256 hash of a dataset name for obfuscated storage."""
+    """Deterministic SHA-256 hash of a dataset name.
+
+    gdrift 0.1.3 and earlier named each file on the server and in the local
+    cache `hash_name(name) + ".h5"`. Current releases name files after their
+    content (the `filename` field of the manifest). The loader still uses this
+    name to find files in the old cache directory.
+    """
     return hashlib.sha256(name.encode()).hexdigest()
 
 
@@ -174,6 +181,11 @@ class Dataset:
         doi: Optional DOI for the dataset
         year: Optional publication year
         file_hash: Optional SHA256 hash for file integrity verification
+        fields: Optional list of field names in the file
+        regional: Optional flag for regional (not global) models
+        filename: File name on the server and in the cache. It is the SHA256
+            of the file content plus ".h5", so each version of a dataset has
+            its own file name.
     """
     name: str
     dataset_type: DatasetType
@@ -185,6 +197,7 @@ class Dataset:
     file_hash: Optional[str] = None
     fields: Optional[List[str]] = None
     regional: Optional[bool] = None
+    filename: Optional[str] = None
 
     def __post_init__(self):
         """Validate dataset fields after dataclass initialization.
@@ -235,8 +248,21 @@ class Dataset:
         }
 
     def get_filename(self) -> str:
-        """Get the expected filename for this dataset (obfuscated via hash)."""
-        return f"{hash_name(self.name)}.h5"
+        """Get the file name of this dataset on the server and in the cache.
+
+        Returns the `filename` from the manifest. Without one, the name is
+        derived from the content hash in the same way (`<sha256>.h5`).
+
+        Raises
+        ------
+        ValueError
+            If the dataset has neither a file name nor a hash.
+        """
+        if self.filename:
+            return self.filename
+        if self.file_hash:
+            return self.file_hash.split(":", 1)[-1] + ".h5"
+        raise ValueError(f"Dataset {self.name} has no file name and no hash in the manifest")
 
     def has_hash(self) -> bool:
         """Check if this dataset has a hash for integrity verification."""
@@ -390,6 +416,7 @@ def _build_registry_from_manifest() -> List[Dataset]:
             file_hash=f"sha256:{entry['sha256']}" if entry.get("sha256") else None,
             fields=entry.get("fields"),
             regional=entry.get("regional"),
+            filename=entry.get("filename"),
         )
         datasets.append(ds)
     return datasets

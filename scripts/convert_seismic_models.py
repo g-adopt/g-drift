@@ -1104,11 +1104,16 @@ def generate_manifest_entries(results, manifest_path, regional_models=None):
         if dataset_name in existing:
             entry = dict(existing[dataset_name])
             entry["sha256"] = sha
+            # The file name on the server is the content hash, so a new
+            # version gets a new name and older releases keep theirs
+            entry["filename"] = f"{sha}.h5"
+            entry["etag"] = None
             entry["fields"] = fields
         else:
             entry = {
                 "name": dataset_name,
-                "filename": output_path.name,
+                # File name on the server: the content hash
+                "filename": f"{sha}.h5",
                 "type": "TOMOGRAPHY_MODEL",
                 "utility": "SEISMIC_MODEL",
                 "source": "UNKNOWN - please add citation",

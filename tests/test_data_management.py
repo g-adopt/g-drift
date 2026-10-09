@@ -122,11 +122,17 @@ def test_hash_name_deterministic():
     assert hash_name("1d_prem") != hash_name("SLB_16_pyrolite")
 
 
-def test_dataset_get_filename_hashed():
-    """Dataset.get_filename() returns a hashed .h5 filename."""
-    ds = get_dataset_by_name("1d_prem")
-    filename = ds.get_filename()
-    expected = hash_name("1d_prem") + ".h5"
-    assert filename == expected
-    assert filename.endswith(".h5")
-    assert "1d_prem" not in filename
+def test_filenames_are_content_hashes():
+    """Every file name in the manifest is the SHA256 of the file content plus ".h5".
+
+    This is what keeps older releases working after a dataset is fixed: a new
+    version of a file gets a new name, so the file that an older manifest
+    points to is never replaced on the server.
+    """
+    manifest = _load_manifest()
+    for entry in manifest["datasets"]:
+        assert entry["filename"] == entry["sha256"] + ".h5", entry["name"]
+        ds = get_dataset_by_name(entry["name"])
+        assert ds.get_filename() == entry["filename"]
+        # The name-based file names of gdrift 0.1.3 and earlier are not reused
+        assert ds.get_filename() != hash_name(entry["name"]) + ".h5"

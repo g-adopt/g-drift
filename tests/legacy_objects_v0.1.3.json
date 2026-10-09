@@ -1,0 +1,540 @@
+{
+  "description": "Objects on the server that gdrift 0.1.2 and 0.1.3 load (name-based file names). They must never change. Taken from gdrift/datasets.json at tag v0.1.3.",
+  "objects": {
+    "bc052f37f4c9d7e6b0ee7d36f8bfbe910d9d4ec59c1dc142e71e19a453e7f83c.h5": {
+      "dataset": "1d_geodynamic_SLB21_pyroliteCFMAS",
+      "etag": "3b1c965c47502fdb4b0c4255d191f0f1",
+      "sha256": "46fd234ce94146632a397f5e58e82f788a3d58640cabbf1c6f89f8e9baed85e2"
+    },
+    "19deebbc9c97d2acd06630a420d41592430ecd596020d100d3717eb64b0c758c.h5": {
+      "dataset": "1d_prem",
+      "etag": "958457f510f4add65942fa6c234dcdef",
+      "sha256": "15debeaecfef74ba741e079f387152e7a62a3e9c0901ec84006e29fa48a02c1d"
+    },
+    "a541ab455fae93fc8ddaae83f52863c3b7d9b927487f50c523a2cdb1f9ccbafb.h5": {
+      "dataset": "1d_solidus_Andrault_et_al_2011_EPSL",
+      "etag": "ed4286c13340b8fad71f35dba86ddd68",
+      "sha256": "6239ad145f65df2ac666fd62d8f981a2a084d45cad811603589ae9fb87be8ebf"
+    },
+    "d8efb8e03f95c73ecf02e7cdeaa1a68bb316ca9ffe187c70dfde3235b643bc47.h5": {
+      "dataset": "1d_solidus_Fiquet_et_al_2010_SCIENCE",
+      "etag": "524b801869992ede2ae0f0b03b386a25",
+      "sha256": "c0875511dbd104dd6b5f59803d3a5a51b646293f208ae9ff0f7002fec568dc74"
+    },
+    "f9929fed48daca517b10793fcc8b58267b32c63b9dbab64b82ba351bbd6a4dd2.h5": {
+      "dataset": "3d_seismic_GAP",
+      "etag": "697370cb3399d8663e5573d83569945f-4",
+      "sha256": "e3174e81e0d47c89871d3439b06f6b7ec3919b6706bbcb77bd158430262a84ff"
+    },
+    "251b185dbb864313775a82a5c1e1489d1205493ba917619a4a8429e2a6cc39b6.h5": {
+      "dataset": "3d_seismic_GyPSuM",
+      "etag": "bfd83e06954f0545521dbf0f77ef208a-4",
+      "sha256": "a23b2738f2e2f9f2780f0e974413125ac265137f59e9f9be2555a3589f2712ad"
+    },
+    "05bdd9dbd84c0a165929c64aeae95f9c134ec90538cab66f57e3ca4fa4e732fb.h5": {
+      "dataset": "3d_seismic_HMSL-P06",
+      "etag": "9e9078e825f58c103696b8ef90ec4a01-3",
+      "sha256": "3dd028ac5b9eff70cb63a19e367d6ab168b3a61cb610bb56c5118bfabc2878cf"
+    },
+    "63ddd24d21f5b191d54e466e40b8ac5bf4dca8df7f413045302b4fd58a28606c.h5": {
+      "dataset": "3d_seismic_HMSL-S06",
+      "etag": "4a4cf4554e84ff0b0003efe0cb192993-3",
+      "sha256": "b3675e786ac3d6fd11ab203cffd86f778e91a109602bf268dca2a8ede6d39bd4"
+    },
+    "54fe78c414ab8ba3015b369e18f1b4bfd31e42ca87039b33a20e7ca507c0c8cf.h5": {
+      "dataset": "3d_seismic_LLNL-G3Dv3",
+      "etag": "5c807d21c254c91d75b31a9a909722c5-10",
+      "sha256": "4bd4674da226e858110eaa827f923cdbbecf82f39e0089ed4a35c5d362c9dc72"
+    },
+    "b5edcfc1b6304431d3a70c8a539806b20f36eb944362bccbc6ec12513053e77c.h5": {
+      "dataset": "3d_seismic_MITP08",
+      "etag": "3f8a612524dc175e04a84001e9a93eb4-11",
+      "sha256": "43a9a286fe88aac4b33be26980ade6c68d3e1a0114898c59c815bcdda8cbda92"
+    },
+    "fa7b25c7989636a43683965b36471e5522c797daa94b17dcb713438e30128ccc.h5": {
+      "dataset": "3d_seismic_OJP",
+      "etag": "07f48261e498136255f48e98c7d51a55-4",
+      "sha256": "e90fafb45f82df65995f5bfdb8c28368304ef99e48d826db8dff7e337b9656d4"
+    },
+    "247763950257916b66b2b8dc74529a7e74782ff6a74e255f02b07e6ccd9954e0.h5": {
+      "dataset": "3d_seismic_REVEAL",
+      "etag": "af7d570a6bde1d7784bf58f6fbdf1b1a-24",
+      "sha256": "2857f702cacd360f20548dd9cf35ccdfebb95c027b3f8ab6a6870f5691a72224"
+    },
+    "fd7db59e670f918e263da0c4ab23d0b1244b18cd8997e9bffeec938e48fd70c0.h5": {
+      "dataset": "3d_seismic_S20RTS",
+      "etag": "69d4deafeed603cc3dd320eb82cee579",
+      "sha256": "01f7a7b190ddd78913ee6e29b0ec4ded2aec388c148ca9786b9bd3ab313d6b32"
+    },
+    "1df2614c41c257587c624abfa734a48878ab3899a453ab03a037ec181990a1ac.h5": {
+      "dataset": "3d_seismic_S362ANI",
+      "etag": "0cb4825afacc3ab87a172471d68513dc",
+      "sha256": "d18a3fc7c898fca7654a327d64751194a8c0fc5196a065046f1d6528a892c83a"
+    },
+    "505fea03382242a0ad603396bb41d3c30266535958f9f551aafa06d9146e3851.h5": {
+      "dataset": "3d_seismic_S362ANI+M",
+      "etag": "0a0d944ddfaba25f2daca254ff8530ba-5",
+      "sha256": "58bd9d2948c62365227af109dbce0c51760b72cb51a8f490423b74fe78c37e7b"
+    },
+    "0549f1813ca1f4dc6a0b7546898c9208d1b71a9ac2f4f18ac8079e6e970a17af.h5": {
+      "dataset": "3d_seismic_S362WMANI",
+      "etag": "331c8e83982ef48744c33b724be05885",
+      "sha256": "5fe58dc7476500ff2cb4f82f575ac44b4d61bcc46f6e9816e609aee75bc2d4ef"
+    },
+    "14e0d943188826f21462b3dc704dc23d074a1b9bbc8450e5af15ff15ee153deb.h5": {
+      "dataset": "3d_seismic_S40RTS",
+      "etag": "b0654c14064f34aa305f428af4e4325e-36",
+      "sha256": "2697aa38f40078c2713b5889ee42af7535df565ea824dead6dec041ac47d0fe9"
+    },
+    "90db866ca6ca2fc7d1ba930250c1e2f139ad95702094f8c57f50815332546c17.h5": {
+      "dataset": "3d_seismic_SAW24B16",
+      "etag": "f01cf63075c15e24f4869af6ad29398c-5",
+      "sha256": "92d32d48c94b670088ab7af7929d89dd9aafc52808a5d986e64f2760dd189480"
+    },
+    "137a3afe688e4ca157d47bb104dae4284a0a5fe5ffb07f19274b13c70e3a2b5e.h5": {
+      "dataset": "3d_seismic_SAW642AN",
+      "etag": "23805b40329d51d11d78386f18162514-11",
+      "sha256": "2b8e5c6e15977b1bb7b8bcbe903ebb9c32145770059d7f0e768a4202f1820462"
+    },
+    "98049ebc615ba92d1042b4595c20fedaacb06503adafc78cea8216c4178d4bba.h5": {
+      "dataset": "3d_seismic_SAW642ANb",
+      "etag": "6038d5dfaebcc95879e0211215fce35d-11",
+      "sha256": "a36af4245532ca2bfb3a15e75fa4ea83b0bba45f0ff6a72b8534cb96dd1355e3"
+    },
+    "6e43aff6869fda0e26ec084e3012a3b1de2ea461f1fd2c4fd89f53e8b3becbf6.h5": {
+      "dataset": "3d_seismic_SEISGLOB2",
+      "etag": "f9724b7cc4f142eaa2bfe72a9d1d5365-8",
+      "sha256": "bd69efb22ddae5f26d6647356e70b1c2ff5817629aef453ce05995db88e1f628"
+    },
+    "69448c4c43e7d96daad5d7a98c59067c797d845bf332a5016e254da76572586a.h5": {
+      "dataset": "3d_seismic_SEMUCB-WM1",
+      "etag": "4d7c7fe6cbbee8092533819000a8816d-35",
+      "sha256": "608d4f6e5aa1562d8895a0b9aeb6d6f5ac1bfabb52fc55c9a4d8afa3b4d89e75"
+    },
+    "5e1148acfdeb01901a4b926ce35bf513bd782cf191367a0327eedd5e6a7d7a6f.h5": {
+      "dataset": "3d_seismic_SEMum",
+      "etag": "8146179e0d921b2607cc1e5af78d5601-6",
+      "sha256": "2487701d640f5d7c8aff48b326b255a4429e743f7ec4a9ded23770e72b2b4306"
+    },
+    "8a1cb3640e7090dc61a9cebd31f69a6a898ed5e0882c9d88d4956477ffe8c221.h5": {
+      "dataset": "3d_seismic_SGLOBE-rani",
+      "etag": "34f6b7c3b01e9e5bb35c6541c46a4f49-8",
+      "sha256": "6256ac021d5e0189ba2f87271b7223bce39354d0f7d913a3a5b97df7a318fc25"
+    },
+    "c0eb1cd9c37a6b8c08d8f13d5728dc2b7cb45242cff48510fd6ba87738cb169b.h5": {
+      "dataset": "3d_seismic_SP12RTS",
+      "etag": "c004157fc693c53b9afad11627cc1168-22",
+      "sha256": "30af4600a4000b204425c160791c68b4fb183313e7ad3a086f8264abc4576cd2"
+    },
+    "2a4f8b44f56b1060a7980c7aeb5fb03bdbdb68e161e5b9577c3d3eef7c261e0e.h5": {
+      "dataset": "3d_seismic_SPani",
+      "etag": "540ab1ba4f5afa68257185046e25248b-9",
+      "sha256": "c7de72fb194ffe716ddc917a80ea6ef7da60d65e077ef0554b3451fb42015717"
+    },
+    "9a2aab339674795b9f40a35a7b2786c35c9fdbe46abb54e65efe60e81007e262.h5": {
+      "dataset": "3d_seismic_TX2000",
+      "etag": "cbb00219d7e4d5f5e4f36e3c869f87ac-3",
+      "sha256": "9c2849ea71cbc2b91ebb3c83b0caca46108cf57d3d903b88ae3ce6a80eea1c00"
+    },
+    "514541dc5e5e21c7016c6e614daf93aa319eb339707235236e789a705e4e1d4e.h5": {
+      "dataset": "3d_seismic_TX2011",
+      "etag": "f78c920a37a55194bfdb3cd29b0d097f-3",
+      "sha256": "edf47fbe18d803a77c0e2413aa757cb8ecdd5d214a4abba5dbc7cf44d82a397d"
+    },
+    "ef9f342799b0bbb3b287cf56c7701613c483db1f7b6a960b6db409f9afc2697e.h5": {
+      "dataset": "3d_seismic_TX2019slab",
+      "etag": "c618330bcc8fc4ea30ed76701f94e1be-4",
+      "sha256": "fd75b98eac2fed4f8f19f49a772cb753e3a4d8d25161eaed6a03c7fac8b6e205"
+    },
+    "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08.h5": {
+      "dataset": "test",
+      "etag": "5c807d21c254c91d75b31a9a909722c5-10",
+      "sha256": "4bd4674da226e858110eaa827f923cdbbecf82f39e0089ed4a35c5d362c9dc72"
+    },
+    "215c34f54951c46c8073918789b9181b8dc3ae8e9c7268d33e27b7bb023a3082.h5": {
+      "dataset": "SLB_08_bulk-oceanic-crustCFMAS",
+      "etag": "5e5e4dba9aafab19e491acc94a5e5721",
+      "sha256": "0c466e65ef67688abd382b9ada0cc8f9d01a53f274885fda4919136dbb714643"
+    },
+    "a881a7d967db5f050672c03d109d0ca5f6b92de16ba836692a77919ce8a254f2.h5": {
+      "dataset": "SLB_08_bulk-oceanic-crustCFMS",
+      "etag": "69eb352f0881c5bdd3ef7760e214b107",
+      "sha256": "d8fcae1c8d79a6792608d7ef89fc33c8e70f9e4e859103bdb78d9fab21874607"
+    },
+    "a5f6beec8dce29b6b3ce1f740ccaa86eab70a2a2787be73b7dd336ec296a9bb7.h5": {
+      "dataset": "SLB_08_bulk-oceanic-crustFMAS",
+      "etag": "29a86f3de0ac67345960216e4e3e42fa",
+      "sha256": "cb9462c9ce683df2e3661fa0bad026bc7cae64f3ad776301589f588d3c086ee8"
+    },
+    "315b46c67b94be03258c7b6891285ac5346836cd9ab73c835da8239a0f404130.h5": {
+      "dataset": "SLB_08_bulk-oceanic-crustFMS",
+      "etag": "23888fca9f345a871c3aec690eadd054",
+      "sha256": "0d1efcfa2a4ab366d2f9bf802dae199bb3b92e3243826573ddb0f75927af0933"
+    },
+    "b22d2e4858f5367f6de813a4484e2a1838a89eb0f4007d5ebfb3cff8817fd01b.h5": {
+      "dataset": "SLB_08_bulk-oceanic-crustMS",
+      "etag": "09d833af0be86175a5f6394c68ab8592",
+      "sha256": "65f9462556798d7c9ef22634d03ceab7b7777bbd11dd3095cd6687668fc595ee"
+    },
+    "3f8e8d967ae7fbd196cf5aa459cc9bfd16a9c4903ac299c84ea1139f0b78a643.h5": {
+      "dataset": "SLB_08_depleted-mantleCFMAS",
+      "etag": "554fbc19f3c68cb6ed6ed359da9640bf",
+      "sha256": "1aff97aa515f02ef4284bf4b91d96c03bf072e2bcf1081db34758212d10c92c4"
+    },
+    "962e5eac8b3d4672535607646d7a89be47e28df847f9dec3559eab61b5a84bb3.h5": {
+      "dataset": "SLB_08_depleted-mantleCFMS",
+      "etag": "8e29dd299e0a52ffab1ceee0e7a0138e",
+      "sha256": "19e4d007b4b4bacc68673a1e4e71c2280f319380e3421485eb869c18b580aec4"
+    },
+    "ae7ec6a642a31fd777143437c1d319f300d687ca7addf8ac9a025d33b0c4021d.h5": {
+      "dataset": "SLB_08_depleted-mantleFMAS",
+      "etag": "1ec8e1b44ea61f2693878137acbecabf",
+      "sha256": "38cb7897f88f58656e33762d689409731111631eb6f4f04d9d5571a05d4bc3c4"
+    },
+    "4bc52967593bdaf5c9edb8f8562fc8fc7323c88e6bd8f46061a54266f5f984c2.h5": {
+      "dataset": "SLB_08_depleted-mantleFMS",
+      "etag": "523cf6d8ca0e8b29be0967e410a038b9",
+      "sha256": "1341be005c87f640107512f4687e25673df749bc0e5c333e5662055e6a404b29"
+    },
+    "4177b8846c1e4100b5923ba3b21a3fda7cdba13a46bf7e79127cc5e953d5b2c0.h5": {
+      "dataset": "SLB_08_depleted-mantleMS",
+      "etag": "cb029eed4c5e34d0bf902d3bf9c2b117",
+      "sha256": "d188e4d714ce95acd387c22fc69f193e284e58da0a0b6f667badb8713c1cd966"
+    },
+    "7a315d6d4ffdb91f8112e4930fd6753c5ee17fc1c42c2a819fac2ac4e29cdf94.h5": {
+      "dataset": "SLB_08_pyroliteCFMAS",
+      "etag": "0c86e93e66f9f46154b7e36fde43d430",
+      "sha256": "30f333521a81e8e39d3ab726d9dadb05a30c5fa69c0b010fc24d42b2f869c3d8"
+    },
+    "1202ffaf24b3ee93d9bc29729463a9f5823618c14758c77cb36a96b2ffa2ef0d.h5": {
+      "dataset": "SLB_08_pyroliteCFMS",
+      "etag": "7f1ca286b726c0e6225c5254406fb0ca",
+      "sha256": "9f63d0492ea29150593d1d2a7a30efc0e41687d54fc29ccdbec8b173c9bac92e"
+    },
+    "e8752ae2c77336672e30a368d6f09c4609b02a7009ca78b9bcb3c6dc18ad625e.h5": {
+      "dataset": "SLB_08_pyroliteFMAS",
+      "etag": "74e4cc3c8742ad6f7104bd0278836193",
+      "sha256": "b3acac2c508f18fb6fb5c36111d2474e872c8065a96ce8464d097b84dc92e55f"
+    },
+    "60f693cb0be1178971bfbea52deae7b069dead62c6231f6d77f7c102a9e94643.h5": {
+      "dataset": "SLB_08_pyroliteFMS",
+      "etag": "23829e3cc7cf9f7418c13efeff2fa72f",
+      "sha256": "d5d7f806ff80c6a0b3954990ed03daa1b78fdada9ce2bf6aaa34b88c313c6900"
+    },
+    "287cdeed8ae0e300082b7c31b3e6a16b556ea0c8148da7fb6ab927b2ae3ede26.h5": {
+      "dataset": "SLB_08_pyroliteMS",
+      "etag": "806ef5a11a66e750d7fd47a38b9dc345",
+      "sha256": "fc44adadf61fdd9a614920e27fe3c29d5145f188166509887ba9d80c96db7c32"
+    },
+    "90b05688019e398edaa3211606aacef24baf44663d63bd84c1ad8ce3efcbdfae.h5": {
+      "dataset": "SLB_11_bulk-oceanic-crustCFMAS",
+      "etag": "80c566d8ff081886610716eafcdff7c3",
+      "sha256": "1a03ec0f17784860c66f7ae3bdc1a96cb9789ca9582616662e7738725ea0d990"
+    },
+    "084fa8b755a631454390b129b8df49e017aac30ec3b2eabf6141df81f4a40555.h5": {
+      "dataset": "SLB_11_bulk-oceanic-crustCFMS",
+      "etag": "71dbd46caa9fa2f5ba421ade37704b01",
+      "sha256": "d6e93c746a6655da49177c670416a013b23398a780df35450d21d3502a45ecd8"
+    },
+    "b5222244f43f235ba399344b0c769dfd22cc8c7655c09b86a5ca0a57d50e4b45.h5": {
+      "dataset": "SLB_11_bulk-oceanic-crustFMAS",
+      "etag": "fa569e89ffafcd6201944d0d680af2e0",
+      "sha256": "bdea19a7352f981a165524b63975743dcd64bcfd06c5324039884f0a1e5d7634"
+    },
+    "126adeb7d7b22498d27b78c77ba8f13b0b1fdeb3bbfbc3a29f25586b433e39c8.h5": {
+      "dataset": "SLB_11_bulk-oceanic-crustFMS",
+      "etag": "665025b0eb5b9ecaf2d50228c2a6cf9b",
+      "sha256": "f2cf43be3a35d83418092ae30cec6dd7f23c77f3c63bbe68c52641893acc842e"
+    },
+    "c71907c5ee68ca9a4330f941be74e13b21a02ca278c398b729fea5eaaf0f340a.h5": {
+      "dataset": "SLB_11_bulk-oceanic-crustMS",
+      "etag": "bf3f95d1c18b83da7796144601bc67ed",
+      "sha256": "17b18f90e1c0309adb1536ba2fae18c6b717bd53d3c93c1f545d25c57c04fd5b"
+    },
+    "3b592760b006b721b1715ba01982c2e255f271be34eed95433c5043d1ef2117a.h5": {
+      "dataset": "SLB_11_depleted-mantleCFMAS",
+      "etag": "9345f3bd5d860c89861a0942a2d14eb3",
+      "sha256": "76d948b1f1a79a0403f1ce261b32a1d095ff8f45260ec06c058d4f41ee1264c9"
+    },
+    "c0649a1a9e3be95c308d9645a40ab170deea5ade3ede86aadb993d12659c001e.h5": {
+      "dataset": "SLB_11_depleted-mantleCFMS",
+      "etag": "81b294affe82a73cfba80b98b071e8d0",
+      "sha256": "3406b2bd356c6259a5c8d2902af5ceb53c37b5e60458d13b38b8350d44395b7a"
+    },
+    "0ca3fc6d199777a427320fc7c0689d905a598b04c3332a41dc4a7aea757268a4.h5": {
+      "dataset": "SLB_11_depleted-mantleFMAS",
+      "etag": "89340bbf7476278404a00329ef417d2e",
+      "sha256": "7d024377a1336f46d279303a0e298cc1bf516dfe7f6628897a05bfb72bf11da4"
+    },
+    "ddaf25ed26e72c048beb9bbf28b0d9cb11ca277521cb3e318e65138d3eccad4d.h5": {
+      "dataset": "SLB_11_depleted-mantleFMS",
+      "etag": "a6067c348933088b2f7fd33f1b520e45",
+      "sha256": "a77e65f8d3288c6ec1ff6de683b590468da027168ddc0fb61628badf1dc81ce8"
+    },
+    "9eea9a071bddb6a9e484a5b55249cfcde3f975888aa9af749c2cc96889448450.h5": {
+      "dataset": "SLB_11_depleted-mantleMS",
+      "etag": "af2e37c7a83bc9a8138cd4b8452080dc",
+      "sha256": "697a895abb02d17630a4929bf5f3672c34614f404fbf537b54344f8047174a3e"
+    },
+    "c7dfa45c797a1d9e451243e37134e4441cc5eec967e8fb772e773f4f30904c52.h5": {
+      "dataset": "SLB_11_pyroliteCFMAS",
+      "etag": "7f9b38ea962663e222287c0255b56408",
+      "sha256": "cf9767e4f8d2b3c1c5092c9020104f307f26a37bbeef7bcbf95def9a5b8735f9"
+    },
+    "956f6eea66d1f22979a0544d83fc2230cdd282c074d782b06644a9588c59084e.h5": {
+      "dataset": "SLB_11_pyroliteCFMS",
+      "etag": "08d6ebb5b585c0071e24891e96bc2cbf",
+      "sha256": "4876d332f389a6d07aabf7952a4ab6ab6c4d55e7e4a8ca08511853115ee07de8"
+    },
+    "a314bfed7c51d4e417e8f04a241f565ff358849957ede504bc6dfd25c3d778e6.h5": {
+      "dataset": "SLB_11_pyroliteFMAS",
+      "etag": "e6a4192947dde61f6b91b1068b644903",
+      "sha256": "43eb7405c67b22e83fc0ac57047a1643a66769c791db04c5b716c8c571dcc716"
+    },
+    "f50c4f673d481a10c2447a234556f8cee7bdcfad2605d4c6fe78194b02180b2f.h5": {
+      "dataset": "SLB_11_pyroliteFMS",
+      "etag": "b355b04351de9f38db53f8058e85d051",
+      "sha256": "5aca29607a4000f90d71284b5780e45d108b711c3c59cbc0fbc4196e78315342"
+    },
+    "7060604764b2b6776e53fe0e71d7c47cba40dfd8ab72463dce57a2c6e0131c11.h5": {
+      "dataset": "SLB_11_pyroliteMS",
+      "etag": "a84f6f7c818d42dfdf73b714f5ab3cbb",
+      "sha256": "2223c83ff9a1a96685b1a8f548aeb87e6e2929f6cd8cece219fa6a5868b46235"
+    },
+    "d9758c2dd6b669d1d19569faa8f13e372d83d18f121c59e0290381e30218743a.h5": {
+      "dataset": "SLB_21_bulk-oceanic-crustCFMAS",
+      "etag": "bbca76d8808fd8c52601cd9ee879ebb9",
+      "sha256": "feb990a653a3c0fec008669b3c64c43f79e73467df37ef4e0ceb6c2e62aafb5e"
+    },
+    "c1a8d9805f3534dde89d8321fdf53a4efdefc511fe6ae4e57354a235a8db051e.h5": {
+      "dataset": "SLB_21_bulk-oceanic-crustCFMS",
+      "etag": "29b9b0196257223190fc44e9797ec784",
+      "sha256": "56259f390ebbad9691baa95dc8c799d7f1fdd64e8162e9a30774d6944e740158"
+    },
+    "8d63fff93991f51ed16f8701c0365624fe3effc5b3881a06d76c39e951eaaa58.h5": {
+      "dataset": "SLB_21_bulk-oceanic-crustFMAS",
+      "etag": "a6ebada97f894df9dbc85e6071da2145",
+      "sha256": "59f71e2c6ea83fc3600b4340da7778606f6beb00389d36061506262c1c8c0a22"
+    },
+    "4a8ab86f605b6af8aba65aeeb8be344d667cfb411903db9dc2bb7e539e23997e.h5": {
+      "dataset": "SLB_21_bulk-oceanic-crustFMS",
+      "etag": "eb5dad449b559e164dcb44edc4fe7981",
+      "sha256": "4f2e6fa5c6947948f5195865bc5fae39a16949e6c40d0856d52bece75139bade"
+    },
+    "eb4512aec6bba2652055e1ec18381963dbb078a4422c7683b2576e294e03331b.h5": {
+      "dataset": "SLB_21_bulk-oceanic-crustMS",
+      "etag": "3f0bf55b2fd46da7afba33fb6b41510e",
+      "sha256": "5136a24203e3310a8c864e9f3b508ab8ea4ccda86519d33c3e6976ead0102969"
+    },
+    "29f2a36c6960ee4e1f53ac5a0a008500d99978925082f1ed554bbc8909dce73d.h5": {
+      "dataset": "SLB_21_depleted-mantleCFMAS",
+      "etag": "a35e56cb9fd4d9beab04444389170e5d",
+      "sha256": "ede5dfa81ac4f30b65691490dd0ccc24aea42de5e14ae14d91dfaee2296c9f7c"
+    },
+    "cadcfa1d38ed7cb3b5700cbb6af8d90a81d7e2d94754a6be09fb512e6e35bd55.h5": {
+      "dataset": "SLB_21_depleted-mantleCFMS",
+      "etag": "5220c1e4c68446d3f3b4ca8e796d37d2",
+      "sha256": "2a61028077188d14baad80154bbd35e18820633105bb30ea89866cb31c9f8c16"
+    },
+    "444e2d1efb1f662cb7ff018bed855de6843a272ad38d7b641fe57913d961d4f8.h5": {
+      "dataset": "SLB_21_depleted-mantleFMAS",
+      "etag": "ff8be4c589b0c4dcffb804704a277200",
+      "sha256": "01f76c6cd3efaf27cc7857a7fcabe2390127272370d3ce8c9b7793b1b0e6b879"
+    },
+    "0a1aad9a130298c46b031428aff83166c65ff195266ed7a5a4c865d2c1592a17.h5": {
+      "dataset": "SLB_21_depleted-mantleFMS",
+      "etag": "ea6a41052a4aad708c5f47f21872d62d",
+      "sha256": "aa16c697da1d53989ec1a1db434b611894bd878c9e448947722b5335103764be"
+    },
+    "2b891ba8b8cf2b9781681cf0135febad4707d46cdcdda3600c63cee02f8b1c13.h5": {
+      "dataset": "SLB_21_depleted-mantleMS",
+      "etag": "0927c87e065c7c45becc4abfa10dfae3",
+      "sha256": "a4f7905458e2844abfaa29d65618aa539d972bc913fb33d0d0c8eab5ad8b3748"
+    },
+    "68b77447b8bc8b4992f5502da4f92cb19e3bcf486925180452f11bb375f10aea.h5": {
+      "dataset": "SLB_21_pyroliteCFMAS",
+      "etag": "9cade8d80f039d7ea6dcfac9fda05388",
+      "sha256": "7890c7dfae31dab9684247aeea5317a3b95ef5e202ef972abc7ea5b3ea509b4f"
+    },
+    "fdf1d7640efee341db64cfae4ba993d446b0ca8f27be6b8effc3458b51b3539e.h5": {
+      "dataset": "SLB_21_pyroliteCFMS",
+      "etag": "da339d02c144eef6107657b799433a0b",
+      "sha256": "08dde0c005efd925c6cbb178ff5176f8c172b2732c2bcfbbfaba0cfb59ddb9ad"
+    },
+    "c91170d74a089d80416430ca60d1f8bfb739abd333db05fce45b9af4b7d62f47.h5": {
+      "dataset": "SLB_21_pyroliteFMAS",
+      "etag": "89ffaf2722bd07d30afbc62a9f4667c3",
+      "sha256": "19bc79fd2b3e5621c19f91a0b2d2aa2249ffad3cb65bb68593bec46f84d297df"
+    },
+    "8fb6ba7079c80136ce3bd54da2477ab66cbdede48bef4ecf6223500eafcc7237.h5": {
+      "dataset": "SLB_21_pyroliteFMS",
+      "etag": "fb3fb665b272168af05a481d7c515364",
+      "sha256": "81daa5050f2b554eddbba0c13ce8b6fd0fa95885fb80ef95beed93daf36256ed"
+    },
+    "b6129c2df38228a87ac1b6960198cd60daf0c3acb2999e43b3d663555595f959.h5": {
+      "dataset": "SLB_21_pyroliteMS",
+      "etag": "4c3f8d07793046f2aeebc182ef2daa8e",
+      "sha256": "892bfc5ffd9d15ee95813fc1a06def36b45b70d762b11377b6505a452a31f060"
+    },
+    "5c0067ef179dabd7ddace94dcd3c33ea1527890c25851f3af5cd7960b7d62c61.h5": {
+      "dataset": "SLB_24_bulk-oceanic-crustCFMS",
+      "etag": "3514b580869a1ed60ce3c4de0c178348",
+      "sha256": "99bc9dfe7d5992154fadfdd3b2c265802519d8ebb0d09053d060f1d670a817f4"
+    },
+    "9db7bf8cbd594c67936b0e2f2a0e9758720a639d99b2b953637893c5c517aa34.h5": {
+      "dataset": "SLB_24_bulk-oceanic-crustFMS",
+      "etag": "9371c7846c0bfe1cdc1d072c23fd4333",
+      "sha256": "bb6f88086fadc6c39dbc87eddefc0497997c3457b919596f8cbe4ab889c67401"
+    },
+    "a39ac40b900c89a332dd0bf3add2bdb07c9f2d6a7a1588a90f7aa77e0fb1f230.h5": {
+      "dataset": "SLB_24_bulk-oceanic-crustMS",
+      "etag": "63c834d20bd2d4aa1533739b3d969c91",
+      "sha256": "073c48f949959df6485ba798e5cc41d3209a6d996a1544ddda368979e4457824"
+    },
+    "eacdd8095b8c15b13ca5b144bdfe16dfb65f961b63ae1f74176fd9ad5fd17792.h5": {
+      "dataset": "SLB_24_depleted-mantleCFMS",
+      "etag": "9396f57a6dd3b8378bd1e7f7f4f6181e",
+      "sha256": "35e7b86de70887e1181b74e06b75978bdae127aed59b15eed0bdf47f29b590cc"
+    },
+    "a481b4637f8b8e5b48fc3c173b7c7c55932c1401c15b03a4adbf585cf18f8b22.h5": {
+      "dataset": "SLB_24_depleted-mantleFMS",
+      "etag": "2a725311e56bc42ae54c3e73a25dce65",
+      "sha256": "7d7427633832e5bed3033be0d8f13e14e79edb80bcfaa861aa208042c72d9711"
+    },
+    "fa2ada4ad0864d7201bcc79ef79bd3a3abac419183ea69c79ad55942de3eb06b.h5": {
+      "dataset": "SLB_24_depleted-mantleMS",
+      "etag": "3579ded8571de950d6e8915207e24e97",
+      "sha256": "474e68a95e899b0cc9d0834fb181b404843b01bbd2b7b5095a7c4883d23dd790"
+    },
+    "a0170a46aca249d5b0122711d4914714f6d64fc0649164371bbc50b979bbd1c5.h5": {
+      "dataset": "SLB_24_pyroliteCFMS",
+      "etag": "19ff520cd27386810fa78e8b2c0c63dd",
+      "sha256": "95b2202d5682c9b2b89101b66de588fa4e63610e6f7ae22c40b5034ea97dd271"
+    },
+    "8056ff4597792a593050d4cc1a3c98e83a71216bdc88233dd582e79ae7bdd1ed.h5": {
+      "dataset": "SLB_24_pyroliteFMS",
+      "etag": "046455107f06a753d58f5cb8bbdd6905",
+      "sha256": "f25942689353d530fdd23b0ec605af040fe1d2296fa1f255e86973370487ce3d"
+    },
+    "122c48eb02114144f591489bc0a0edf38a675351b817d5dce49bffa0cdee454f.h5": {
+      "dataset": "SLB_24_pyroliteMS",
+      "etag": "7a520737986d585c737628687c03e1bc",
+      "sha256": "b622169b4c3e665fc7c6d3525179a17aa765156b9e491757c9efbb8a3dc68826"
+    },
+    "f716675a015a0821bc8669f8fb4bc62347cd1787324de45b5145f6ac280b40a9.h5": {
+      "dataset": "3d_seismic_3D2015-07Sv",
+      "etag": "e491b8505ddf9a83c07c47695ac90d32-3",
+      "sha256": "ad0eaeb9a44b407e8617806867cbdc7bf96998073770017e632d925792035cc5"
+    },
+    "f8f234d056911d00f9011d3d3be02f282a0f3a87a3672b3fbd194f67dc57bea2.h5": {
+      "dataset": "3d_seismic_AF2019",
+      "etag": "d51036ae64a2c0c0f300203e7b2f325b-6",
+      "sha256": "4767fb09fa9d3ecedf9b88398aa971aaab64557ed716e9bf7ca07335650eacd9"
+    },
+    "fa0f275b775378bd75aed1fffd12ed92a17241f4210d01d094e41217de6d878e.h5": {
+      "dataset": "3d_seismic_ANT-20",
+      "etag": "83b6bef8d89b5a092be5f5ae438e3789-23",
+      "sha256": "c5f1011077df25a29f2003a050611bd59045a8ca254477650d7c3c4f002bc488"
+    },
+    "90debb1c34a4fff958c8cf4568a9af39eed2fdd835490c48c57137e56704f4a1.h5": {
+      "dataset": "3d_seismic_AuSREM",
+      "etag": "04ef7dcc73f248dc035579366a86ae32-2",
+      "sha256": "684e20eaf1cdcdece7bd947dd03a929b86205c5981a8f7b7ed641ac94c1d8b52"
+    },
+    "dd05ee1be592e5d192d3c37546a5d9ff1976111fd7a6f87b661ab64c030e0c37.h5": {
+      "dataset": "3d_seismic_Aus22",
+      "etag": "e61cccd39db67d85d3fe68308d84d52c-8",
+      "sha256": "58b490b5beecaeeed3ca7eaada2691770d8a677b149307d0793b6235c3164343"
+    },
+    "ec984ccc50ce23f050555d8b4edcda034e4be8cb9cbfd1f0e78ed419e829be78.h5": {
+      "dataset": "3d_seismic_CAM2016",
+      "etag": "0c6c2d3ec15f7d84895f9199b7e942cd-5",
+      "sha256": "520679584ead9c1cbb38692e72aa3ce64b1d83147e76f62caecb221ddd57ff2e"
+    },
+    "e72732690c314e0b8aaa52261b0d0ff77277a8d33d1a9564b244b083e1ed2227.h5": {
+      "dataset": "3d_seismic_CSEM-2019",
+      "etag": "04ea396e44cbdb1af32417a8ea19228d-2",
+      "sha256": "7b243fdb2e983da5cd761e275afdbd1fb0bd6891fbd5f6e265154e856251106c"
+    },
+    "5ee9d45b293eda8ab4eb45f1fd8d78e1bb7b692369a1b7d2e721904a360a8fa9.h5": {
+      "dataset": "3d_seismic_DETOX-P02",
+      "etag": "0a66625f80ac5acf454c26813d084a9b-8",
+      "sha256": "49cb37469080f9d51f48d2e132d64364492a41c3bdf7d669e5510f45d52c240a"
+    },
+    "d89d56189dde3cc7ad2c7d48de7c9b3cdacafc81c333f26f65985ee0f23528de.h5": {
+      "dataset": "3d_seismic_F2010-Afr",
+      "etag": "85ff280ba40cb03c39f12e4186fef8cc-2",
+      "sha256": "a93f01c1a410df2bc6fe56f9bc371611f9daf2ac6eb27102627a367e166318dd"
+    },
+    "573ab5c43eee9039721aadbb37264935f6fb63b98c68aa581d6a472cab95e22b.h5": {
+      "dataset": "3d_seismic_FR12",
+      "etag": "55e02b902bcb48cf431ecfd5bdfbda5b-3",
+      "sha256": "2ccb8534028595d8a7c20437f6c7c3ae8460aed4c5c6b35f269e3077ee8c18e0"
+    },
+    "12be91703e4415e63864bce30cc72683021b6a1d0ab8f1622af965b65780c8be.h5": {
+      "dataset": "3d_seismic_LLNL-G3D-JPS",
+      "etag": "7b7c2632e019bfbcc7a4ad3d43d60edc-14",
+      "sha256": "935ce3edd822cabee6e726fe9e8b67a5bfc1f5fbaa9a85542c7dde606e79577f"
+    },
+    "9978c7a8bacf63b310396a7aea227e86e2e9f23b24deb46be16fec2e14c32eb7.h5": {
+      "dataset": "3d_seismic_MITS-18",
+      "etag": "ca30ab9aaa52aeca13b104e733e0e8d9-3",
+      "sha256": "8c19f24731f435615209fe4f23458a4dcf50c289f9d5521c92054492db7ced25"
+    },
+    "df430350d0c7d4e4d44322ff8ad5d9c9b5d33117ae265343fa45908647e7ba17.h5": {
+      "dataset": "3d_seismic_PM13",
+      "etag": "97776c6aa0529a932f8e9cc0a4ff7148-2",
+      "sha256": "167775b61d2525e343d66d57c727f6cfe9e8f0d3668b57d4ec5c61c1c6092051"
+    },
+    "d14459c17e5f0c0cb5ab45275fce7c5061fc2c00631dc75cc83cb607f1d95e25.h5": {
+      "dataset": "3d_seismic_PMEAN",
+      "etag": "58bd325317a2fed222015f863178ed33-10",
+      "sha256": "7549469bde0d2b94a442447719e83f4498f172d3a0bbe0e91b8d7a60adbefd58"
+    },
+    "0238f293e089e89c9919361ae48289521e2fcd0fb54a5a65bb43b959010798c2.h5": {
+      "dataset": "3d_seismic_SA2019",
+      "etag": "99e5b758e1b85ad34947dcae45ca9d49-6",
+      "sha256": "a7e9ce9d4bc8c26e99261740a847e7bebb11aa6c72e812a755803554c9590cb3"
+    },
+    "9ad2ff19e2c42a0ab88d0e75a77455eacc28bf8da835c1f89604b5a5d57bf17f.h5": {
+      "dataset": "3d_seismic_SAVANI",
+      "etag": "6e66680295fb57d00a3aac00007624b7-6",
+      "sha256": "4e59a06aca579cbbf5bfea8b629507b172db22816dfdcd5ddd603d0bdf5d01a9"
+    },
+    "b0f436a274625b2557a3d535e545ad285fd028d6b572486dc89f619c0309ec5e.h5": {
+      "dataset": "3d_seismic_SEMUM2",
+      "etag": "0d0e4b327fa01047e79a2c47b2fc7b3c-58",
+      "sha256": "600e775e619576499bc5f939bd886a0f1a6795c6664e20837d42b6bc657084e7"
+    },
+    "332a193361ff08069768f2d8c2b44f3fba7a5966a1cdf7fca82f562339c15dfa.h5": {
+      "dataset": "3d_seismic_SL2013NA",
+      "etag": "52b87ec6e10c5beb8f934b48e0a4178c-6",
+      "sha256": "280764b233c7a0f7e6e807b4fb03216d36a2164a4090251663f0703aa30bb4cd"
+    },
+    "3cef7fbdbbd585e807803084d82b6a58c8daaa2d60a40614d8162a8b1741efc6.h5": {
+      "dataset": "3d_seismic_SL2013sv",
+      "etag": "7ab0a34375987bf36a8d65a0cfac7cdd-7",
+      "sha256": "089088769b7575172056d1b7a1d0fe4df841033dbaf09b05e6da6aa2c71ad31e"
+    },
+    "b89554c5839eae650a2921519ac54de2c68086caaa0f7366628afcb2da2ca01b.h5": {
+      "dataset": "3d_seismic_SL2013sv-uninterp",
+      "etag": "72db073b1fdccac777b240a96bb4ee4b-4",
+      "sha256": "9827b9e5c5d0f5d3055e80e14c8cce17fbf74f422c73ac180f9c0220f7edde4e"
+    },
+    "b763046c7c0386f88e65acb30e262b931a1839e6d903bf9238652f6c023dc665.h5": {
+      "dataset": "3d_seismic_SMEAN",
+      "etag": "c5b541fa4a3b775d3d9a76eb59272946-14",
+      "sha256": "5dffe48d887f68fc05d38e70d53972ba4fa1dafc40df97809ab604fbd95108d0"
+    },
+    "ae75a9cd4326c70e88887d5539b91bc850a8cc688068dc4c237f29bdc20b2c4c.h5": {
+      "dataset": "3d_seismic_Y14",
+      "etag": "2a0506076a86f984ed6599c87d9e46e6-4",
+      "sha256": "9a4cedbd389bee025de3649803c4195d976af61a9809bd378181d0680750cb26"
+    },
+    "e949e2abb4ed3f97b2b1e4661322bc4200934b0282548cd652f93f2ae95e7f2a.h5": {
+      "dataset": "SLB_24_pyroliteCFMASNaCr",
+      "etag": "0e3ad6e07bfcff99610caa104baa0353-4",
+      "sha256": "b87ce8aafa14b9aa1275084dd19128b44787ea2b69c6d2e9c60f014139574991"
+    }
+  }
+}
