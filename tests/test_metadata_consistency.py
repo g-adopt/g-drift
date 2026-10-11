@@ -29,7 +29,8 @@ def datasets(manifest):
 def test_manifest_structure(manifest):
     """Test that manifest has required top-level fields."""
     assert "version" in manifest, "Manifest must have version field"
-    assert manifest["version"] == 1, "Manifest version must be 1"
+    # Version 2: file names on the server are content hashes (see gdrift/io.py)
+    assert manifest["version"] == 2, "Manifest version must be 2"
 
     assert "s3" in manifest, "Manifest must have S3 configuration"
     assert "endpoint_url" in manifest["s3"]

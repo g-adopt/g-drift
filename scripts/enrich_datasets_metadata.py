@@ -36,6 +36,7 @@ New Fields Added:
     - bulk_composition_mol_pct: composition percentages (if available)
 """
 
+import hashlib
 import json
 import argparse
 import sys
@@ -133,9 +134,14 @@ class HDF5MetadataExtractor:
         if not filename:
             return None
 
-        file_path = self.data_dir / filename
+        # The local file can carry the content name (`filename`) or the
+        # name-based name that the conversion scripts and gdrift 0.1.3 and
+        # earlier use (sha256 of the dataset name plus ".h5")
+        hashed_name = hashlib.sha256(dataset_entry["name"].encode()).hexdigest() + ".h5"
+        file_path = next((self.data_dir / n for n in (filename, hashed_name)
+                          if (self.data_dir / n).exists()), None)
 
-        if not file_path.exists():
+        if file_path is None:
             return None
 
         # Extract all file-level attributes

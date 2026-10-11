@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Upload dataset files from gdrift/data-sia/ to S3 with obfuscated (hashed) filenames.
+"""Upload dataset files from gdrift/data-sia/ to S3 under their content names.
 
-By default, performs a dry-run showing planned renames. Pass --execute to upload.
+By default, performs a dry-run showing the planned uploads. Pass --execute to upload.
 
-WARNING: with --execute and without --no-delete, the script first DELETES every object
-under s3://gadopt/g-drift/ (all datasets), then uploads only the files in gdrift/data-sia/.
-To update one dataset, do not use this script. Follow docs/dataset-releases.md.
+Each file is uploaded as `<sha256 of its content>.h5`, the `filename` that
+datasets.json gives for the dataset. The script never deletes or overwrites a
+file on the server: files that are already there are skipped, because older
+gdrift releases can point to them. Update datasets.json (sha256 and filename)
+before uploading; a file whose sha256 does not match its manifest entry is not
+uploaded. See docs/dataset-releases.md.
 
 Usage:
     python scripts/upload_to_s3.py              # dry-run
@@ -15,22 +18,39 @@ import argparse
 import json
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
-# Reuse the hash_name function from the package
+# Reuse the hashing function from the package
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from gdrift.datasetnames import hash_name  # noqa: E402
+from gdrift.io import file_hash  # noqa: E402
 
 S3CMD_CONFIG = Path.home() / ".s3cfg-gadopt"
 MANIFEST_PATH = Path(__file__).resolve().parent.parent / "gdrift" / "datasets.json"
 DATA_SIA_DIR = Path(__file__).resolve().parent.parent / "gdrift" / "data-sia"
 
 
-def load_manifest_names():
-    """Return set of valid dataset names from the manifest."""
+def load_manifest():
+    """Return the parsed datasets.json manifest."""
     with open(MANIFEST_PATH) as f:
-        manifest = json.load(f)
-    return {entry["name"] for entry in manifest["datasets"]}
+        return json.load(f)
+
+
+def object_exists(manifest, filename):
+    """Return True if an object with this file name exists on the server (unsigned HEAD)."""
+    s3 = manifest["s3"]
+    url = f"{s3['endpoint_url'].rstrip('/')}/{s3['bucket']}/{s3['prefix']}{filename}"
+    try:
+        urllib.request.urlopen(urllib.request.Request(url, method="HEAD"), timeout=60)
+        return True
+    except urllib.error.HTTPError as e:
+        # The server answers 404 for a missing key. Any other error (403,
+        # throttling) is unexpected, and an upload could then overwrite an
+        # existing object, so stop.
+        if e.code == 404:
+            return False
+        raise
 
 
 def s3cmd(*args):
@@ -51,16 +71,12 @@ def main():
         "--execute", action="store_true",
         help="Actually perform the upload (default is dry-run)",
     )
-    parser.add_argument(
-        "--no-delete", action="store_true",
-        help="Skip deleting existing objects before uploading",
-    )
     args = parser.parse_args()
 
     if not DATA_SIA_DIR.exists():
         print(f"ERROR: Source directory {DATA_SIA_DIR} does not exist.")
-        print("Rename gdrift/data/ to gdrift/data-sia/ first:")
-        print("  mv gdrift/data gdrift/data-sia")
+        print("Put the files to upload there, named <dataset name>.h5")
+        print("(the conversion scripts write them there).")
         sys.exit(1)
 
     h5_files = sorted(DATA_SIA_DIR.glob("*.h5"))
@@ -68,53 +84,49 @@ def main():
         print(f"No .h5 files found in {DATA_SIA_DIR}")
         sys.exit(1)
 
-    valid_names = load_manifest_names()
+    manifest = load_manifest()
+    entries = {entry["name"]: entry for entry in manifest["datasets"]}
 
-    # Build upload plan
+    # Build upload plan: only files whose content matches their manifest entry,
+    # under the content name, and only if that name is not on the server yet
     plan = []
     for filepath in h5_files:
         dataset_name = filepath.stem  # strip .h5
-        if dataset_name not in valid_names:
+        entry = entries.get(dataset_name)
+        if entry is None:
             print(f"WARNING: Skipping {filepath.name} — not in datasets.json")
             continue
-        hashed_filename = hash_name(dataset_name) + ".h5"
-        plan.append((filepath, dataset_name, hashed_filename))
+        if file_hash(filepath) != f"sha256:{entry['sha256']}":
+            print(f"WARNING: Skipping {filepath.name} — sha256 differs from datasets.json (update the manifest first)")
+            continue
+        if object_exists(manifest, entry["filename"]):
+            print(f"Skipping {dataset_name} — {entry['filename'][:16]}...h5 is already on the server")
+            continue
+        plan.append((filepath, dataset_name, entry["filename"]))
 
     # Print plan
     print(f"\n{'=' * 72}")
     print(f"Upload plan: {len(plan)} files from {DATA_SIA_DIR}")
     print(f"{'=' * 72}")
-    for filepath, dataset_name, hashed_filename in plan:
-        print(f"  {dataset_name:50s} -> {hashed_filename[:16]}...h5")
+    for filepath, dataset_name, filename in plan:
+        print(f"  {dataset_name:50s} -> {filename[:16]}...h5")
     print(f"{'=' * 72}\n")
 
     if not args.execute:
         print("DRY RUN — pass --execute to actually upload.")
         return
 
-    # Delete existing objects. This removes every dataset on the server, not only the ones
-    # in gdrift/data-sia/ (see the module docstring and docs/dataset-releases.md).
-    if not args.no_delete:
-        print("WARNING: deleting EVERY object under s3://gadopt/g-drift/ before the upload.")
-        print("Deleting existing objects under s3://gadopt/g-drift/ ...")
-        s3cmd("del", "--recursive", "s3://gadopt/g-drift/")
-        print()
-
-    # Upload each file
+    # Upload each file. Nothing on the server is deleted or overwritten.
     s3_prefix = "s3://gadopt/g-drift/"
-    for i, (filepath, dataset_name, hashed_filename) in enumerate(plan, 1):
-        s3_dest = s3_prefix + hashed_filename
-        print(f"[{i}/{len(plan)}] Uploading {dataset_name} -> {hashed_filename[:16]}...h5")
-        result = s3cmd("put", "--acl-public", str(filepath), s3_dest)
+    for i, (filepath, dataset_name, filename) in enumerate(plan, 1):
+        s3_dest = s3_prefix + filename
+        print(f"[{i}/{len(plan)}] Uploading {dataset_name} -> {filename[:16]}...h5")
+        result = s3cmd("put", "--acl-public", "--mime-type=application/x-hdf5", str(filepath), s3_dest)
         if result.returncode != 0:
             print(f"  FAILED to upload {dataset_name}")
             sys.exit(1)
 
-    # Set public ACL on all uploaded files (belt and suspenders)
-    print("\nSetting public-read ACL on all uploaded objects...")
-    s3cmd("setacl", "--acl-public", "--recursive", s3_prefix)
-
-    print(f"\nDone! Uploaded {len(plan)} files (public-read).")
+    print(f"\nDone! Uploaded {len(plan)} files (public-read). Put their ETags into datasets.json.")
 
 
 if __name__ == "__main__":

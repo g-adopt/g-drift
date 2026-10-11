@@ -27,7 +27,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from gdrift.datasetnames import hash_name
-from gdrift.io import path_to_dataset, file_hash
+from gdrift.io import DATA_PATH, file_hash
 
 # Absolute velocity field names (perturbation fields like dvs/dvp are dimensionless)
 ABS_VELOCITY_FIELDS = {"vs", "vp", "vsh", "vsv", "vpv", "vph"}
@@ -84,7 +84,9 @@ def main():
     for ds in sorted(seismic_datasets, key=lambda d: d["name"]):
         name = ds["name"]
         h5name = hash_name(name) + ".h5"
-        h5path = path_to_dataset(h5name)
+        # Name-based files in the package directory (the cache of gdrift 0.1.3
+        # and earlier, and where the developer scripts write)
+        h5path = DATA_PATH / h5name
 
         if not h5path.exists():
             continue
@@ -108,7 +110,11 @@ def main():
         for ds in manifest["datasets"]:
             if ds["name"] in new_hashes:
                 old_hash = ds["sha256"]
-                ds["sha256"] = new_hashes[ds["name"]]
+                # The manifest stores the bare hex digest, and the file name on
+                # the server is that digest plus ".h5"
+                ds["sha256"] = new_hashes[ds["name"]].split(":", 1)[-1]
+                ds["filename"] = ds["sha256"] + ".h5"
+                ds["etag"] = None
                 print(f"\nUpdated {ds['name']}:")
                 print(f"  Old: {old_hash}")
                 print(f"  New: {ds['sha256']}")
@@ -122,8 +128,8 @@ def main():
           f"{len(fixed_models if not args.dry_run else affected)} models.")
 
     if not args.dry_run and fixed_models:
-        print("\nIMPORTANT: You need to re-upload the fixed HDF5 files to "
-              "Digital Ocean Spaces for CI and other users to get the corrected data.")
+        print("\nIMPORTANT: Upload the fixed HDF5 files under their new content names "
+              "(see docs/dataset-releases.md) for CI and other users to get the corrected data.")
 
 
 if __name__ == "__main__":

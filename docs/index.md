@@ -27,6 +27,21 @@ hide:
 pip install gdrift
 ```
 
+Datasets are downloaded on first use and cached in the user cache directory
+(`~/Library/Caches/gdrift` on macOS, `~/.cache/gdrift` on Linux). All datasets together
+need about 6.7 GB. To use a different directory, set `GDRIFT_DATA_DIR`.
+
+On a cluster, put the cache on a large shared file system. Download the datasets that you
+need on a login node before you run a parallel job, for example
+`gdrift.download_all_datasets(["SLB_21_pyroliteCFMAS", "3d_seismic_REVEAL"])`. Without an
+argument, the function downloads all datasets. Compute nodes then read the files from the
+cache and need no internet access.
+
+The cache is never cleaned. A new version of a dataset is a new file, so old versions stay
+until you delete the cache directory. gdrift 0.1.3 and earlier cached the files in
+`gdrift/data/` inside the installed package. gdrift still reads valid files from there, and
+you can delete that directory too.
+
 ```python
 import gdrift
 
