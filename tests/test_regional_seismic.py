@@ -137,7 +137,7 @@ class TestRegistryIntegration:
 
         regional_models = [
             "AF2019", "ANT-20", "AuSREM", "Aus22",
-            "F2010-Afr", "FR12", "MITS-18", "SA2019", "Y14",
+            "F2010-Afr", "FR12", "MITS-18", "SA2019", "SL2013NA", "Y14",
         ]
 
         for name in regional_models:
