@@ -523,7 +523,10 @@ class HirschmannSolidusProfile(AbstractProfile):
         """
         Computes the solidus temperature in Kelvin as a polynomial function of pressure.
 
-        As given by Hirschmann (2000).
+        As given by Hirschmann (2000), paragraph 39: T (C) = a P^2 + b P + c with
+        P in GPa, valid from 0 to 10 GPa. The paper also gives a slightly
+        different "recommended fit" in its Table 2 and abstract
+        (-5.104, 132.899, 1120.661). This code uses the paragraph 39 values.
             pressure (Number): Pressure in Pascals.
         """
         a = -5.904

@@ -17,7 +17,7 @@ registry. As of the current manifest, 25 models are available including:
 - S40RTS (Ritsema et al., 2011) - widely used Vs model
 - GLAD-M25 (Lei et al., 2020) - joint Vs/Vp model
 - SEMUCB-WM1 (French & Romanowicz, 2014) - full mantle Vs
-- SAW642AN (Panning et al., 2010) - azimuthally anisotropic
+- SAW642AN (Panning & Romanowicz, 2006) - radially anisotropic
 - Multiple regional and global P-wave models
 
 Key Classes

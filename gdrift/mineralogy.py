@@ -303,7 +303,7 @@ class ThermodynamicModel(object):
 
     Stixrude, L., & Lithgow-Bertelloni, C. (2021). Thermal expansivity,
     heat capacity and bulk modulus of the mantle. Geophysical Journal
-    International. (In preparation for SLB_21 parameters)
+    International, 228(2), 1119-1149. https://doi.org/10.1093/gji/ggab394
     """
 
     def __init__(self, model: str, composition: str, temps=None, depths=None, extrapolate=False):

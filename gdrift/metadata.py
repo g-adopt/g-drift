@@ -83,7 +83,7 @@ def validate_doi(doi: str) -> bool:
 
     Examples
     --------
-    >>> validate_doi("10.1093/gji/ggaa605")
+    >>> validate_doi("10.1093/gji/ggab394")
     True
     >>> validate_doi("https://doi.org/10.1016/j.epsl.2008.08.012")
     True
@@ -117,8 +117,8 @@ def extract_doi_from_text(text: str) -> Optional[str]:
 
     Examples
     --------
-    >>> extract_doi_from_text("See paper at https://doi.org/10.1093/gji/ggaa605")
-    '10.1093/gji/ggaa605'
+    >>> extract_doi_from_text("See paper at https://doi.org/10.1093/gji/ggab394")
+    '10.1093/gji/ggab394'
     >>> extract_doi_from_text("DOI: 10.1016/j.epsl.2008.08.012 for details")
     '10.1016/j.epsl.2008.08.012'
     """
@@ -158,10 +158,10 @@ def format_citation(dataset_dict: Dict[str, Any]) -> str:
     ...     "author": "Stixrude, L., & Lithgow-Bertelloni, C.",
     ...     "year": 2021,
     ...     "source": "Thermal expansivity...",
-    ...     "doi": "10.1093/gji/ggaa605"
+    ...     "doi": "10.1093/gji/ggab394"
     ... }
     >>> print(format_citation(ds))
-    Stixrude, L., & Lithgow-Bertelloni, C. (2021). Thermal expansivity... DOI: https://doi.org/10.1093/gji/ggaa605
+    Stixrude, L., & Lithgow-Bertelloni, C. (2021). Thermal expansivity... DOI: https://doi.org/10.1093/gji/ggab394
     """
     parts = []
 
@@ -247,7 +247,7 @@ def get_slb_reference(version: str) -> Dict[str, str]:
     Parameters
     ----------
     version : str
-        SLB version: "08", "11", "16", "21", or "24".
+        SLB version: "08", "11", "21", or "24".
 
     Returns
     -------
@@ -258,7 +258,7 @@ def get_slb_reference(version: str) -> Dict[str, str]:
     --------
     >>> ref = get_slb_reference("21")
     >>> print(ref["doi"])
-    10.1093/gji/ggaa605
+    10.1093/gji/ggab394
 
     Raises
     ------
@@ -278,23 +278,17 @@ def get_slb_reference(version: str) -> Dict[str, str]:
             "author": "Stixrude, L., & Lithgow-Bertelloni, C.",
             "citation": "Stixrude, L.; Lithgow-Bertelloni, C. \"Thermodynamics of mantle minerals -- II. Phase equilibria\", Geophysical Journal International, 2011, 184, 1180-1213."
         },
-        "16": {
-            "doi": "10.1093/gji/ggw100",
-            "year": 2016,
-            "author": "Stixrude, L., & Lithgow-Bertelloni, C.",
-            "citation": "Stixrude, L., & Lithgow-Bertelloni, C. (2016). Thermodynamics of mantle minerals-I. Physical properties. Geophysical Journal International, 206(2), 1176-1199."
-        },
         "21": {
-            "doi": "10.1093/gji/ggaa605",
+            "doi": "10.1093/gji/ggab394",
             "year": 2021,
             "author": "Stixrude, L., & Lithgow-Bertelloni, C.",
             "citation": "Stixrude, L.; Lithgow-Bertelloni, C. \"Thermal expansivity, heat capacity and bulk modulus of the mantle\", Geophysical Journal International, 2021, 228, 1119-1149."
         },
         "24": {
-            "doi": "10.1093/gji/ggae178",
+            "doi": "10.1093/gji/ggae126",
             "year": 2024,
             "author": "Stixrude, L., & Lithgow-Bertelloni, C.",
-            "citation": "Stixrude, L.; Lithgow-Bertelloni, C. \"Thermodynamics of mantle minerals -- III. The role of iron\", Geophysical Journal International, 2024, 238, 1056-1079."
+            "citation": "Stixrude, L.; Lithgow-Bertelloni, C. \"Thermodynamics of mantle minerals - III: the role of iron\", Geophysical Journal International, 2024, 237, 1699-1733."
         }
     }
 

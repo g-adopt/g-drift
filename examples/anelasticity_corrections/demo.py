@@ -69,11 +69,13 @@ print(f"Temperature range: {slb_pyrolite.get_temperatures().min():.0f} -- "
 # Cammarano Q-Profiles (Q1--Q6)
 # ------------------------------
 #
-# The Cammarano parameterization provides six Q-profiles that represent
-# different assumptions about grain size and activation energy in the
-# mantle. Q1--Q3 use Cammarano et al. (2003) activation energies, while
-# Q4--Q6 use Stixrude & Lithgow-Bertelloni values. All switch parameters
-# at the 660 km discontinuity between upper and lower mantle.
+# The Cammarano parameterization provides the six Q-profiles of Table 1 in
+# Cammarano et al. (2003). They test a range of the activation parameter
+# $g$: Q1--Q3 use $g$ = 20 (upper mantle) and 10 (lower mantle), Q4--Q6
+# use $g$ = 30 and 15. For each $g$, the paper adjusts $B$ so that $Q$
+# along a 1300 C adiabat agrees with radial seismic attenuation models.
+# All profiles switch parameters at the 660 km discontinuity between upper
+# and lower mantle.
 #
 # We use the `from_q_profile()` factory method to create each model,
 # then apply the anelastic correction with `apply_anelastic_correction()`.

@@ -40,7 +40,7 @@ ENRICHMENT_DATA = {
 
     # ===== GEODYNAMIC PROFILES =====
     "1d_geodynamic_SLB21_pyroliteCFMAS": {
-        "author": "Ghelichkhan, S., Hoggard, M. J., & Austermann, J.",
+        "author": "Ghelichkhan, S.",
         "metadata_source": "hdf5_file",
         "metadata_complete": True,
         "doi": None  # No specific DOI for this derived dataset
@@ -90,8 +90,9 @@ ENRICHMENT_DATA = {
     },
 
     "3d_seismic_OJP": {
-        "doi": "10.1038/s41561-021-00762-9",
-        "author": "Tsekhmistrenko, M., Sigloch, K., Hosseini, K., & Barruol, G.",
+        "doi": "10.1038/s41598-021-99833-5",
+        "author": "Obayashi, M., Yoshimitsu, J., Suetsugu, D., Shiobara, H., Sugioka, H., Ito, A., Isse, T., Ishihara, Y., Tanaka, S., & Tonegawa, T.",
+        "year": 2021,
         "metadata_source": "web_search",
         "metadata_complete": True
     },
@@ -145,9 +146,11 @@ ENRICHMENT_DATA = {
         "metadata_complete": True
     },
 
+    # The file of this dataset holds SAW642ANb (IRIS EMC id SAW642ANb_kmps),
+    # so it is cited to the SAW642ANb paper.
     "3d_seismic_SAW642AN": {
-        "doi": "10.1111/j.1365-246X.2006.03100.x",
-        "author": "Panning, M., & Romanowicz, B.",
+        "doi": "10.1029/2010JB007520",
+        "author": "Panning, M. P., Lekić, V., & Romanowicz, B. A.",
         "metadata_source": "web_search",
         "metadata_complete": True
     },
@@ -167,8 +170,9 @@ ENRICHMENT_DATA = {
     },
 
     "3d_seismic_SEMUCB-WM1": {
-        "doi": "10.1038/nature14876",
+        "doi": "10.1093/gji/ggu334",
         "author": "French, S. W., & Romanowicz, B.",
+        "year": 2014,
         "metadata_source": "web_search",
         "metadata_complete": True
     },
@@ -183,6 +187,7 @@ ENRICHMENT_DATA = {
     "3d_seismic_SGLOBE-rani": {
         "doi": "10.1002/2014JB011824",
         "author": "Chang, S.-J., Ferreira, A. M. G., Ritsema, J., van Heijst, H. J., & Woodhouse, J. H.",
+        "year": 2015,
         "metadata_source": "web_search",
         "metadata_complete": True
     },
@@ -212,7 +217,7 @@ ENRICHMENT_DATA = {
     "3d_seismic_TX2011": {
         "doi": "10.1098/rsta.2002.1077",
         "author": "Grand, S. P.",
-        "year": 2011,
+        "year": 2002,
         "metadata_source": "web_search",
         "metadata_complete": True
     },
@@ -238,7 +243,7 @@ SLB_METADATA = {
 
 def apply_slb_metadata(dataset_name: str, dataset_entry: dict) -> dict:
     """Apply SLB-specific metadata based on version."""
-    # Extract version from name (e.g., SLB_08, SLB_11, SLB_16, SLB_21, SLB_24)
+    # Extract version from name (e.g., SLB_08, SLB_11, SLB_21, SLB_24)
     parts = dataset_name.split("_")
     if len(parts) >= 2:
         version = parts[1]
@@ -251,9 +256,8 @@ def apply_slb_metadata(dataset_name: str, dataset_entry: dict) -> dict:
         slb_dois = {
             "08": "10.1016/j.epsl.2008.08.012",
             "11": "10.1111/j.1365-246X.2010.04890.x",
-            "16": "10.1093/gji/ggw100",
-            "21": "10.1093/gji/ggaa605",
-            "24": "10.1093/gji/ggae178"
+            "21": "10.1093/gji/ggab394",
+            "24": "10.1093/gji/ggae126"
         }
 
         if version in slb_dois:
