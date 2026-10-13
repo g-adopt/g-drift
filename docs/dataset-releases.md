@@ -50,11 +50,12 @@ server and release it, without breaking the other datasets or older releases.
    source.
 2. Put the new sha256 into `datasets.json`, and set `filename` to `<sha256>.h5`. Set `etag`
    to `null`. Run `pytest tests -q -m "not server"` and `flake8 gdrift examples tests`.
-   The tests load the new file from `gdrift/data/`.
-3. Commit on a branch, push, and open a draft pull request.
-4. Make sure that the content name is not on the server yet. `s3cmd put` overwrites an
-   existing object without a warning. An existing object has the same content, because the
-   name is its hash, but its ETag can change.
+   The tests load the new file from `gdrift/data/`. Only
+   `test_every_dataset_has_an_etag` fails, because the new files are not uploaded yet.
+3. Upload the new files before you push. CI starts with an empty cache, so it downloads
+   the new files from the server. First make sure that the content name is not on the server
+   yet. `s3cmd put` overwrites an existing object without a warning. An existing object has
+   the same content, because the name is its hash, but its ETag can change.
 
         curl -sI https://syd1.digitaloceanspaces.com/gadopt/g-drift/<sha256>.h5
 
@@ -62,13 +63,17 @@ server and release it, without breaking the other datasets or older releases.
 
         s3cmd -c ~/.s3cfg-gadopt put --acl-public --mime-type=application/x-hdf5 gdrift/data/<file> s3://gadopt/g-drift/<sha256>.h5
 
-   `scripts/upload_singlepart.py` and `scripts/upload_to_s3.py` do the same for several
-   files. They skip any object that already exists.
-5. Check each new object: ETag from an unsigned `head_object`, and the sha256 of an unsigned
-   download and of a download through the CDN
-   (`https://gadopt.syd1.cdn.digitaloceanspaces.com/g-drift/<sha256>.h5`).
-6. Put the new ETags into `datasets.json`. Run `pytest tests/test_server_hashes.py -m server`.
-   Push, mark the pull request ready, wait for green CI, and merge.
+   For several files, put them in `gdrift/data-sia/<dataset name>.h5` and run
+   `scripts/upload_to_s3.py --execute`. It checks the sha256 of each file against the
+   manifest and skips any object that already exists.
+4. Check each new object: download it through the CDN
+   (`https://gadopt.syd1.cdn.digitaloceanspaces.com/g-drift/<sha256>.h5`) and compare its
+   sha256 with the manifest.
+5. Put the new ETags into `datasets.json` with
+   `scripts/migrate_to_content_names.py --update-etags`. It writes the manifest only if every
+   object exists. Check with `git diff` that only the `etag` lines of the new files change.
+   Run `pytest tests/test_server_hashes.py -m server` and the full test suite.
+6. Commit on a branch, push, open the pull request, wait for green CI, and merge.
 7. Tag the merge commit (`vX.Y.Z`) and push the tag. The publish workflow tests, builds,
    publishes to TestPyPI and PyPI, and creates the GitHub release. Then set the notes with
    `gh release edit` and name every change since the previous tag.

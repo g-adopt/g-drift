@@ -69,7 +69,7 @@
     },
     {
       "name": "3d_seismic_GAP",
-      "filename": "e3174e81e0d47c89871d3439b06f6b7ec3919b6706bbcb77bd158430262a84ff.h5",
+      "filename": "9fcffee1a58c45ff03335ff56b92fc3ec4844be50ae02f318e84d56bcef2f3c5.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Obayashi, M., et al. 'Finite frequency whole mantle P wave tomography: Improvement of subducted slab images.' Geophysical Research Letters 40.21 (2013): 5652-5657.",
@@ -79,11 +79,11 @@
         "dvp"
       ],
       "description": "GAP P-wave seismic tomography model",
-      "sha256": "e3174e81e0d47c89871d3439b06f6b7ec3919b6706bbcb77bd158430262a84ff",
+      "sha256": "9fcffee1a58c45ff03335ff56b92fc3ec4844be50ae02f318e84d56bcef2f3c5",
       "author": "Obayashi, M., Yoshimitsu, J., Nolet, G., Fukao, Y., Shiobara, H., Sugioka, H., Miyamachi, H., & Gao, Y.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "697370cb3399d8663e5573d83569945f-4"
+      "etag": "e1e46a13dd73f1396140d16045d5f063-4"
     },
     {
       "name": "3d_seismic_GyPSuM",
@@ -106,7 +106,7 @@
     },
     {
       "name": "3d_seismic_HMSL-P06",
-      "filename": "3dd028ac5b9eff70cb63a19e367d6ab168b3a61cb610bb56c5118bfabc2878cf.h5",
+      "filename": "23c508afad6bd21ef96532b5af3be1d201c3670e66ed333e160cc803911813ca.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Houser, C., et al. 'Shear and compressional velocity models of the mantle from cluster analysis of long-period waveforms.' Geophysical Journal International 174.1 (2008): 195-212.",
@@ -117,15 +117,15 @@
         "vp"
       ],
       "description": "HMSL-P06 P-wave seismic tomography model",
-      "sha256": "3dd028ac5b9eff70cb63a19e367d6ab168b3a61cb610bb56c5118bfabc2878cf",
+      "sha256": "23c508afad6bd21ef96532b5af3be1d201c3670e66ed333e160cc803911813ca",
       "author": "Houser, C., Masters, G., Shearer, P., & Laske, G.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "9e9078e825f58c103696b8ef90ec4a01-3"
+      "etag": "2b5a646dc99af16dbc0ba6428300b7fc-3"
     },
     {
       "name": "3d_seismic_HMSL-S06",
-      "filename": "b3675e786ac3d6fd11ab203cffd86f778e91a109602bf268dca2a8ede6d39bd4.h5",
+      "filename": "0e43888d9b19e647ab328a89ebc1a2939b4759c3e435236094410958e36f4c82.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Houser, C., et al. 'Shear and compressional velocity models of the mantle from cluster analysis of long-period waveforms.' Geophysical Journal International 174.1 (2008): 195-212.",
@@ -136,15 +136,15 @@
         "vs"
       ],
       "description": "HMSL-S06 S-wave seismic tomography model",
-      "sha256": "b3675e786ac3d6fd11ab203cffd86f778e91a109602bf268dca2a8ede6d39bd4",
+      "sha256": "0e43888d9b19e647ab328a89ebc1a2939b4759c3e435236094410958e36f4c82",
       "author": "Houser, C., Masters, G., Shearer, P., & Laske, G.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "4a4cf4554e84ff0b0003efe0cb192993-3"
+      "etag": "5731f53f093a6b9ffb7af30af7e2915e-3"
     },
     {
       "name": "3d_seismic_LLNL-G3Dv3",
-      "filename": "4bd4674da226e858110eaa827f923cdbbecf82f39e0089ed4a35c5d362c9dc72.h5",
+      "filename": "fc4cc870bfa4628e321a13b03ddaddd4cd32f941fb6b21e4fcc822820fcc993b.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Simmons, N. A., et al. 'LLNL-G3Dv3: Global P wave tomography model for improved regional and teleseismic travel time prediction.' Journal of Geophysical Research: Solid Earth 117.B10 (2012).",
@@ -155,15 +155,15 @@
         "vp"
       ],
       "description": "LLNL-G3Dv3 global P-wave tomography model",
-      "sha256": "4bd4674da226e858110eaa827f923cdbbecf82f39e0089ed4a35c5d362c9dc72",
+      "sha256": "fc4cc870bfa4628e321a13b03ddaddd4cd32f941fb6b21e4fcc822820fcc993b",
       "author": "Simmons, N. A., Myers, S. C., Johannesson, G., & Matzel, E.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "5c807d21c254c91d75b31a9a909722c5-10"
+      "etag": "0bbb1bc0557315fe178bf6136558745c-10"
     },
     {
       "name": "3d_seismic_MITP08",
-      "filename": "43a9a286fe88aac4b33be26980ade6c68d3e1a0114898c59c815bcdda8cbda92.h5",
+      "filename": "a746c93e873a336100f3f6b33df4969eb20eab1b79b7f2c2c78b08c37761100d.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Li, C., et al. 'A new global model for P wave speed variations in Earth's mantle.' Geochemistry, Geophysics, Geosystems 9.5 (2008).",
@@ -174,15 +174,15 @@
         "vp"
       ],
       "description": "MITP08 P-wave seismic tomography model",
-      "sha256": "43a9a286fe88aac4b33be26980ade6c68d3e1a0114898c59c815bcdda8cbda92",
+      "sha256": "a746c93e873a336100f3f6b33df4969eb20eab1b79b7f2c2c78b08c37761100d",
       "author": "Li, C., van der Hilst, R. D., Engdahl, E. R., & Burdick, S.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "3f8a612524dc175e04a84001e9a93eb4-11"
+      "etag": "f6a418cdece3d5f76b77803f1f077006-11"
     },
     {
       "name": "3d_seismic_OJP",
-      "filename": "e90fafb45f82df65995f5bfdb8c28368304ef99e48d826db8dff7e337b9656d4.h5",
+      "filename": "f51963f26bb786bf9c493f504dacbd8cde2446710f36528adb5e6fd7cfc90edc.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Obayashi, M., et al. 'Interrelation of the stagnant slab, Ontong Java Plateau, and intraplate volcanism as inferred from seismic tomography.' Scientific Reports 11 (2021): 20966.",
@@ -192,11 +192,11 @@
         "dvp"
       ],
       "description": "OJP seismic tomography model",
-      "sha256": "e90fafb45f82df65995f5bfdb8c28368304ef99e48d826db8dff7e337b9656d4",
+      "sha256": "f51963f26bb786bf9c493f504dacbd8cde2446710f36528adb5e6fd7cfc90edc",
       "author": "Obayashi, M., Yoshimitsu, J., Suetsugu, D., Shiobara, H., Sugioka, H., Ito, A., Isse, T., Ishihara, Y., Tanaka, S., & Tonegawa, T.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "07f48261e498136255f48e98c7d51a55-4"
+      "etag": "62acc60ba49da65e645b511897606980-4"
     },
     {
       "name": "3d_seismic_REVEAL",
@@ -261,7 +261,7 @@
     },
     {
       "name": "3d_seismic_S362ANI+M",
-      "filename": "58bd9d2948c62365227af109dbce0c51760b72cb51a8f490423b74fe78c37e7b.h5",
+      "filename": "4955a205dcdb02117b1836afd91fab1f29c56e53ac309b4eb8ce532d66f08ba7.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Moulik, P., and G. Ekstrom. 'An anisotropic shear velocity model of the Earth's mantle using normal modes, body waves, surface waves and long-period waveforms.' Geophysical Journal International 199.3 (2014): 1713-1738.",
@@ -273,11 +273,11 @@
         "vsv"
       ],
       "description": "S362ANI+M anisotropic seismic tomography model",
-      "sha256": "58bd9d2948c62365227af109dbce0c51760b72cb51a8f490423b74fe78c37e7b",
+      "sha256": "4955a205dcdb02117b1836afd91fab1f29c56e53ac309b4eb8ce532d66f08ba7",
       "author": "Moulik, P., & Ekstr\u00f6m, G.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "0a0d944ddfaba25f2daca254ff8530ba-5"
+      "etag": "2a27161e8698a8fad8b439a9e931a990-5"
     },
     {
       "name": "3d_seismic_S362WMANI",
@@ -321,7 +321,7 @@
     },
     {
       "name": "3d_seismic_SAW24B16",
-      "filename": "92d32d48c94b670088ab7af7929d89dd9aafc52808a5d986e64f2760dd189480.h5",
+      "filename": "3a46131584290d7b677b8deebf5d64c8dc93226c116f2bc31e7e5d0850bd3074.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Megnin, C., and B. Romanowicz. 'The three-dimensional shear velocity structure of the mantle from the inversion of body, surface and higher-mode waveforms.' Geophysical Journal International 143.3 (2000): 709-728.",
@@ -331,15 +331,15 @@
         "vs"
       ],
       "description": "SAW24B16 seismic tomography model",
-      "sha256": "92d32d48c94b670088ab7af7929d89dd9aafc52808a5d986e64f2760dd189480",
+      "sha256": "3a46131584290d7b677b8deebf5d64c8dc93226c116f2bc31e7e5d0850bd3074",
       "author": "M\u00e9gnin, C., & Romanowicz, B.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "f01cf63075c15e24f4869af6ad29398c-5"
+      "etag": "29160d08bae7725e8106af7a9eda6d23-5"
     },
     {
       "name": "3d_seismic_SAW642AN",
-      "filename": "2b8e5c6e15977b1bb7b8bcbe903ebb9c32145770059d7f0e768a4202f1820462.h5",
+      "filename": "d30d7ead08b2572125d5eff29dcabe3958e30117af033526b0221bb5f2d40380.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Panning, M. P., et al. 'Importance of crustal corrections in the development of a new global model of radial anisotropy.' Journal of Geophysical Research: Solid Earth 115.B12 (2010).",
@@ -352,15 +352,15 @@
         "vs"
       ],
       "description": "SAW642AN seismic tomography model. The file holds the SAW642ANb version of the model (IRIS EMC id SAW642ANb_kmps), so it is cited to the SAW642ANb paper.",
-      "sha256": "2b8e5c6e15977b1bb7b8bcbe903ebb9c32145770059d7f0e768a4202f1820462",
+      "sha256": "d30d7ead08b2572125d5eff29dcabe3958e30117af033526b0221bb5f2d40380",
       "author": "Panning, M., Leki\u0107, V., & Romanowicz, B. A.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "23805b40329d51d11d78386f18162514-11"
+      "etag": "f54d79b87d9a9440164e748900587a85-11"
     },
     {
       "name": "3d_seismic_SAW642ANb",
-      "filename": "a36af4245532ca2bfb3a15e75fa4ea83b0bba45f0ff6a72b8534cb96dd1355e3.h5",
+      "filename": "fc1bb34d486a7f3743add985c6037ab58fab5ed7a49392e0220917755b01c2b7.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Panning, M. P., et al. 'Importance of crustal corrections in the development of a new global model of radial anisotropy.' Journal of Geophysical Research: Solid Earth 115.B12 (2010).",
@@ -373,15 +373,15 @@
         "vs"
       ],
       "description": "SAW642ANb seismic tomography model",
-      "sha256": "a36af4245532ca2bfb3a15e75fa4ea83b0bba45f0ff6a72b8534cb96dd1355e3",
+      "sha256": "fc1bb34d486a7f3743add985c6037ab58fab5ed7a49392e0220917755b01c2b7",
       "author": "Panning, M., Leki\u0107, V., & Romanowicz, B. A.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "6038d5dfaebcc95879e0211215fce35d-11"
+      "etag": "c281b1e9cfad1bf52cf1ed9d33bb72cf-11"
     },
     {
       "name": "3d_seismic_SEISGLOB2",
-      "filename": "bd69efb22ddae5f26d6647356e70b1c2ff5817629aef453ce05995db88e1f628.h5",
+      "filename": "788c6e9bc0ac0861c297ec12ca68e5190ab99d5fadd6e35032f606e98f849e21.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Durand, S., et al. 'Confirmation of a change in the global shear velocity pattern at around 1000 km depth.' Geophysical Journal International 211.3 (2017): 1628-1639.",
@@ -391,11 +391,11 @@
         "dvs"
       ],
       "description": "SEISGLOB2 seismic tomography model",
-      "sha256": "bd69efb22ddae5f26d6647356e70b1c2ff5817629aef453ce05995db88e1f628",
+      "sha256": "788c6e9bc0ac0861c297ec12ca68e5190ab99d5fadd6e35032f606e98f849e21",
       "author": "Durand, S., Debayle, E., Ricard, Y., Zaroli, C., & Lambotte, S.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "f9724b7cc4f142eaa2bfe72a9d1d5365-8"
+      "etag": "2be358d0a91f6035a179fd209068d6ca-8"
     },
     {
       "name": "3d_seismic_SEMUCB-WM1",
@@ -419,7 +419,7 @@
     },
     {
       "name": "3d_seismic_SEMum",
-      "filename": "2487701d640f5d7c8aff48b326b255a4429e743f7ec4a9ded23770e72b2b4306.h5",
+      "filename": "3214f1787e1db968ee80fe95cee7c73f91a456988305437fa47fb9758ec8aaeb.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Lekic, V., and B. Romanowicz. 'Inferring upper-mantle structure by full waveform tomography with the spectral element method.' Geophysical Journal International 185.2 (2011): 799-831.",
@@ -430,15 +430,15 @@
         "xi"
       ],
       "description": "SEMum seismic tomography model",
-      "sha256": "2487701d640f5d7c8aff48b326b255a4429e743f7ec4a9ded23770e72b2b4306",
+      "sha256": "3214f1787e1db968ee80fe95cee7c73f91a456988305437fa47fb9758ec8aaeb",
       "author": "Leki\u0107, V., & Romanowicz, B.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "8146179e0d921b2607cc1e5af78d5601-6"
+      "etag": "0f7075d0273050d2ae2ed7beb129fcb9-6"
     },
     {
       "name": "3d_seismic_SGLOBE-rani",
-      "filename": "6256ac021d5e0189ba2f87271b7223bce39354d0f7d913a3a5b97df7a318fc25.h5",
+      "filename": "fa5a0eb838fab8a529b47731ebf5ae4b47935ac44048bf2e565f60e48a26ce10.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Chang, S.-J., et al. 'Joint inversion for global isotropic and radially anisotropic mantle structure including crustal thickness perturbations.' Journal of Geophysical Research: Solid Earth 120.6 (2015): 4278-4300.",
@@ -450,15 +450,15 @@
         "vsv"
       ],
       "description": "SGLOBE-rani radially anisotropic seismic tomography model",
-      "sha256": "6256ac021d5e0189ba2f87271b7223bce39354d0f7d913a3a5b97df7a318fc25",
+      "sha256": "fa5a0eb838fab8a529b47731ebf5ae4b47935ac44048bf2e565f60e48a26ce10",
       "author": "Chang, S.-J., Ferreira, A. M. G., Ritsema, J., van Heijst, H. J., & Woodhouse, J. H.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "34f6b7c3b01e9e5bb35c6541c46a4f49-8"
+      "etag": "fc703f4e89ceb81fe5bd3905a2f9d2dd-8"
     },
     {
       "name": "3d_seismic_SP12RTS",
-      "filename": "30af4600a4000b204425c160791c68b4fb183313e7ad3a086f8264abc4576cd2.h5",
+      "filename": "f6e82d9862141061ee8120b04b2cb7f2c3109459f254a175f95c61c3d13e8ddb.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Koelemeijer, P., et al. 'SP12RTS: a degree-12 model of shear- and compressional-wave velocity for Earth's mantle.' Geophysical Journal International 204.2 (2016): 1024-1039.",
@@ -469,15 +469,15 @@
         "dvs"
       ],
       "description": "SP12RTS degree-12 shear and compressional wave velocity model",
-      "sha256": "30af4600a4000b204425c160791c68b4fb183313e7ad3a086f8264abc4576cd2",
+      "sha256": "f6e82d9862141061ee8120b04b2cb7f2c3109459f254a175f95c61c3d13e8ddb",
       "author": "Koelemeijer, P., Ritsema, J., Deuss, A., & van Heijst, H.-J.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "c004157fc693c53b9afad11627cc1168-22"
+      "etag": "fa8380acfa3a6945e8538109f9820034-22"
     },
     {
       "name": "3d_seismic_SPani",
-      "filename": "c7de72fb194ffe716ddc917a80ea6ef7da60d65e077ef0554b3451fb42015717.h5",
+      "filename": "756f3da79c8f8b1ccd058e030775e32f300a52de9a44e00425b58b8a57c6fc90.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Tesoniero, A., et al. 'Hydration of marginal basins and compositional variations within the continental lithospheric mantle inferred from a new global model of shear and compressional velocity.' Journal of Geophysical Research: Solid Earth 120.11 (2015): 7789-7813.",
@@ -492,15 +492,15 @@
         "vsv"
       ],
       "description": "SPani seismic tomography model",
-      "sha256": "c7de72fb194ffe716ddc917a80ea6ef7da60d65e077ef0554b3451fb42015717",
+      "sha256": "756f3da79c8f8b1ccd058e030775e32f300a52de9a44e00425b58b8a57c6fc90",
       "author": "Tesoniero, A., Auer, L., Boschi, L., & Cammarano, F.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "540ab1ba4f5afa68257185046e25248b-9"
+      "etag": "6ce75b864285838809e558c65ac77ce1-9"
     },
     {
       "name": "3d_seismic_TX2000",
-      "filename": "9c2849ea71cbc2b91ebb3c83b0caca46108cf57d3d903b88ae3ce6a80eea1c00.h5",
+      "filename": "fcf07867902b236e64d6e715de0ef1c38169d3e7114f283ee5910a55988b1d89.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Grand, S. P. 'Mantle shear-wave tomography and the fate of subducted slabs.' Philosophical Transactions of the Royal Society of London A 360.1800 (2002): 2475-2491.",
@@ -510,11 +510,11 @@
         "dvs"
       ],
       "description": "TX2000 seismic tomography model",
-      "sha256": "9c2849ea71cbc2b91ebb3c83b0caca46108cf57d3d903b88ae3ce6a80eea1c00",
+      "sha256": "fcf07867902b236e64d6e715de0ef1c38169d3e7114f283ee5910a55988b1d89",
       "author": "Grand, S. P.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "cbb00219d7e4d5f5e4f36e3c869f87ac-3"
+      "etag": "40ebc7bce6a1b538269da34903b2f4ea-3"
     },
     {
       "name": "3d_seismic_TX2011",
@@ -536,7 +536,7 @@
     },
     {
       "name": "3d_seismic_TX2019slab",
-      "filename": "fd75b98eac2fed4f8f19f49a772cb753e3a4d8d25161eaed6a03c7fac8b6e205.h5",
+      "filename": "d8115ac85b62986714fd12d5a60289ac9b7f5fc208f28c0c3f790d01df106908.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Lu, C., et al. 'TX2019slab: A new P and S tomography model incorporating subducting slabs.' Journal of Geophysical Research: Solid Earth 124.11 (2019): 11549-11567.",
@@ -547,11 +547,11 @@
         "dvs"
       ],
       "description": "TX2019slab P and S tomography model incorporating subducting slabs",
-      "sha256": "fd75b98eac2fed4f8f19f49a772cb753e3a4d8d25161eaed6a03c7fac8b6e205",
+      "sha256": "d8115ac85b62986714fd12d5a60289ac9b7f5fc208f28c0c3f790d01df106908",
       "author": "Lu, C., Grand, S. P., Lai, H., & Garnero, E. J.",
       "metadata_source": "web_search",
       "metadata_complete": true,
-      "etag": "c618330bcc8fc4ea30ed76701f94e1be-4"
+      "etag": "2944a8f71df5011f5db9d0d014343c58-4"
     },
     {
       "name": "test",
@@ -1754,11 +1754,11 @@
     },
     {
       "name": "3d_seismic_LLNL-G3D-JPS",
-      "filename": "935ce3edd822cabee6e726fe9e8b67a5bfc1f5fbaa9a85542c7dde606e79577f.h5",
+      "filename": "6aa7085712f2b3c4b83b0212accb21e30de93d6f1642f6d5322f1b826f12345d.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P. (2015). Evidence for long-lived subduction of an ancient tectonic plate beneath the southern Indian Ocean. Geophysical Research Letters, 42, 9270-9278.",
-      "sha256": "935ce3edd822cabee6e726fe9e8b67a5bfc1f5fbaa9a85542c7dde606e79577f",
+      "sha256": "6aa7085712f2b3c4b83b0212accb21e30de93d6f1642f6d5322f1b826f12345d",
       "fields": [
         "dvp",
         "dvs",
@@ -1768,8 +1768,8 @@
       "doi": "10.1002/2015GL066237",
       "year": 2015,
       "author": "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P.",
-      "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL. 1-degree resolution, 60 depth levels from surface to CMB.",
-      "etag": "7b7c2632e019bfbcc7a4ad3d43d60edc-14"
+      "description": "Global joint P- and S-wave tomography model of the whole mantle from LLNL. 1-degree resolution, 59 depth levels from 3.2 km (sea water) to the CMB.",
+      "etag": "f71e8523e04d7846e65ec8a942aa203f-14"
     },
     {
       "name": "3d_seismic_MITS-18",
@@ -1804,11 +1804,11 @@
     },
     {
       "name": "3d_seismic_PMEAN",
-      "filename": "7549469bde0d2b94a442447719e83f4498f172d3a0bbe0e91b8d7a60adbefd58.h5",
+      "filename": "c6876c735dc44d3c32bf9e00edd1596a14a09fdca0c7271910bb28b1915de9ce.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Becker, T. W., & Boschi, L. (2002). A comparison of tomographic and geodynamic mantle models. Geochemistry, Geophysics, Geosystems, 3(1), 1003.",
-      "sha256": "7549469bde0d2b94a442447719e83f4498f172d3a0bbe0e91b8d7a60adbefd58",
+      "sha256": "c6876c735dc44d3c32bf9e00edd1596a14a09fdca0c7271910bb28b1915de9ce",
       "fields": [
         "vp",
         "vph",
@@ -1817,7 +1817,7 @@
       "doi": "10.1029/2001GC000168",
       "year": 2002,
       "description": "Composite global mean P-wave mantle tomography model constructed by averaging existing tomographic models.",
-      "etag": "58bd325317a2fed222015f863178ed33-10"
+      "etag": "2b367e96870c3d983b705f8eb2c09398-10"
     },
     {
       "name": "3d_seismic_SA2019",
@@ -1854,11 +1854,11 @@
     },
     {
       "name": "3d_seismic_SEMUM2",
-      "filename": "600e775e619576499bc5f939bd886a0f1a6795c6664e20837d42b6bc657084e7.h5",
+      "filename": "41e2706ee043a912c6ccc0006dce5c0b5e4eb04eaf568ac94909e7f4eabd03b0.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "French, S. W., Lekic, V., & Romanowicz, B. (2013). Waveform tomography reveals channeled flow at the base of the oceanic asthenosphere. Science, 342(6155), 227-230.",
-      "sha256": "600e775e619576499bc5f939bd886a0f1a6795c6664e20837d42b6bc657084e7",
+      "sha256": "41e2706ee043a912c6ccc0006dce5c0b5e4eb04eaf568ac94909e7f4eabd03b0",
       "fields": [
         "vs",
         "vsh",
@@ -1867,22 +1867,23 @@
       "doi": "10.1126/science.1241514",
       "year": 2013,
       "description": "Global radially anisotropic shear-velocity model of the upper mantle from spectral-element waveform tomography.",
-      "etag": "0d0e4b327fa01047e79a2c47b2fc7b3c-58"
+      "etag": "7dd6536d62b05e3e51796a14c335d7a4-31"
     },
     {
       "name": "3d_seismic_SL2013NA",
-      "filename": "280764b233c7a0f7e6e807b4fb03216d36a2164a4090251663f0703aa30bb4cd.h5",
+      "filename": "82d891b8787bc5b2cf372e69af6f7638a9280b2d44217a5e92224f90c8903b27.h5",
       "type": "TOMOGRAPHY_MODEL",
       "utility": "SEISMIC_MODEL",
       "source": "Schaeffer, A. J., & Lebedev, S. (2014). Imaging the North American continent using waveform inversion of global and USArray data. Earth and Planetary Science Letters, 402, 26-41.",
-      "sha256": "280764b233c7a0f7e6e807b4fb03216d36a2164a4090251663f0703aa30bb4cd",
+      "sha256": "82d891b8787bc5b2cf372e69af6f7638a9280b2d44217a5e92224f90c8903b27",
       "fields": [
         "vsv"
       ],
       "doi": "10.1016/j.epsl.2014.05.014",
       "year": 2014,
       "description": "Upper-mantle shear-wave speed model focused on North America from multimode waveform inversion.",
-      "etag": "52b87ec6e10c5beb8f934b48e0a4178c-6"
+      "etag": "d85837a8dea08eb6e29bd7c57b11411d-4",
+      "regional": true
     },
     {
       "name": "3d_seismic_SL2013sv",

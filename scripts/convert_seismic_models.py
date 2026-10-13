@@ -304,7 +304,7 @@ GRD_MODEL_REGISTRY = {
 # Models that cover only a geographic sub-region
 GRD_REGIONAL_MODELS = {
     "AF2019", "ANT-20", "AuSREM", "Aus22", "F2010-Afr",
-    "FR12", "MITS-18", "SA2019", "Y14",
+    "FR12", "MITS-18", "SA2019", "SL2013NA", "Y14",
 }
 
 
@@ -871,7 +871,10 @@ def convert_single_model(model_name, source_dir, output_dir,
             n=num_samples, k=num_neighbours)
     )
     all_metadata["velocity_units"] = "m/s"
-    all_metadata["perturbation_units"] = "fractional (model-dependent)"
+    # Perturbations of this collection are in percent; the attribute is
+    # written only for files that have a perturbation field
+    if any(k in data_to_write for k in ("dvs", "dvp")):
+        all_metadata["perturbation_units"] = "percent"
 
     # Write output
     dataset_name = f"3d_seismic_{model_name}"
