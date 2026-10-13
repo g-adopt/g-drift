@@ -109,7 +109,7 @@ NEW_MODEL_METADATA = {
     },
     "3d_seismic_SL2013NA": {
         "source": "Schaeffer, A. J., & Lebedev, S. (2014). Imaging the North American continent using waveform inversion of global and USArray data. Earth and Planetary Science Letters, 402, 26-41.",
-        "doi": "10.1016/j.epsl.2014.06.014",
+        "doi": "10.1016/j.epsl.2014.05.014",
         "year": 2014,
         "description": "Upper-mantle shear-wave speed model focused on North America from multimode waveform inversion.",
     },

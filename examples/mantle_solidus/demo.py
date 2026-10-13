@@ -94,9 +94,10 @@ print(f"Composite solidus spans: {d_min / 1e3:.0f} km to {d_max / 1e3:.0f} km")
 # Visualisation
 # -------------
 #
-# We plot all four solidus profiles to compare them. The composite profile
-# (Ghelichkhan et al.) shows the smooth transition between upper and lower
-# mantle solidus temperatures.
+# We plot all four solidus profiles to compare them. The composite profile,
+# the solidus used by Ghelichkhan, Bunge & Oeser (2021, Geophysical Journal
+# International 226, 1432-1460), shows the smooth transition between upper
+# and lower mantle solidus temperatures.
 
 # + tags=["active-ipynb"]
 # %matplotlib inline

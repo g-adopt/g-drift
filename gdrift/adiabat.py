@@ -24,7 +24,8 @@ Examples
 References
 ----------
 Stixrude, L., & Lithgow-Bertelloni, C. (2021). Thermal expansivity, heat
-capacity and bulk modulus of the mantle. Geophysical Journal International.
+capacity and bulk modulus of the mantle. Geophysical Journal International,
+228(2), 1119-1149. https://doi.org/10.1093/gji/ggab394
 """
 
 import numpy as np

@@ -52,20 +52,42 @@ Notes
 -----
 - Anelastic corrections typically reduce Vs by 1-3% in the mantle
 - Corrections are largest at high temperatures (near solidus)
-- Q-profiles (Q1-Q6) represent different assumptions about grain size,
-  water content, and attenuation mechanisms
+- The Cammarano Q-profiles Q1-Q6 differ in the dimensionless activation
+  parameter g (20/10 for Q1-Q3, 30/15 for Q4-Q6, upper/lower mantle) and in
+  the pre-exponential factor B, which Cammarano et al. (2003) adjusted so that
+  Q_S along a 1300 C adiabat fits radial seismic attenuation models
 - Cammarano Q3 and Goes Q1 are commonly used in geodynamic studies
 - The correction assumes a reference frequency of 1 Hz for seismic waves
 
 References
 ----------
+Anderson, D. L., & Hart, R. S. (1978). Q of the Earth. Journal of
+Geophysical Research, 83(B12), 5869-5882.
+https://doi.org/10.1029/JB083iB12p05869
+
 Cammarano, F., Goes, S., Vacher, P., & Giardini, D. (2003). Inferring
 upper-mantle temperatures from seismic velocities. Physics of the Earth
 and Planetary Interiors, 138(3-4), 197-222.
+https://doi.org/10.1016/S0031-9201(03)00156-0
+
+Durek, J. J., & Ekström, G. (1996). A radial model of anelasticity
+consistent with long-period surface-wave attenuation. Bulletin of the
+Seismological Society of America, 86(1A), 144-158.
+https://doi.org/10.1785/BSSA08601A0144
+
+Ghelichkhan, S., Bunge, H.-P., & Oeser, J. (2021). Global mantle flow
+retrodictions for the early Cenozoic using an adjoint method: evolving
+dynamic topographies, deep mantle structures, flow trajectories and
+sublithospheric stresses. Geophysical Journal International, 226(2),
+1432-1460. https://doi.org/10.1093/gji/ggab108
 
 Goes, S., Govers, R., & Vacher, P. (2000). Shallow mantle temperatures
 under Europe from P and S wave tomography. Journal of Geophysical Research,
-105(B5), 11153-11169.
+105(B5), 11153-11169. https://doi.org/10.1029/1999JB900300
+
+Stixrude, L., & Lithgow-Bertelloni, C. (2005). Mineralogy and elasticity of
+the oceanic upper mantle: Origin of the low-velocity zone. Journal of
+Geophysical Research, 110, B03204. https://doi.org/10.1029/2004JB002965
 
 See Also
 --------
@@ -123,8 +145,12 @@ class BaseAnelasticityModel(ABC):
 
     @staticmethod
     def build_ghelichkhan_solidus() -> SplineProfile:
-        """Construct the composite Ghelichkhan et al. (2021) solidus by combining
+        """Construct the composite solidus of Ghelichkhan et al. (2021) by combining
         Hirschmann (shallow) + Andrault (deep) profiles.
+
+        Ghelichkhan, Bunge & Oeser (2021, GJI 226, 1432-1460) use this solidus:
+        the Hirschmann (2000) peridotite solidus down to 10 GPa, continued by the
+        Andrault et al. (2011) chondritic-mantle solidus in the lower mantle.
 
         Returns:
             SplineProfile: The composite solidus profile, extrapolated and extended to 3000 km.
@@ -160,7 +186,13 @@ class BaseAnelasticityModel(ABC):
 
 class CammaranoAnelasticityModel(BaseAnelasticityModel):
     """
-    A specific implementation of an anelasticity model following the approach by Cammarano et al.
+    Anelasticity model that follows the homologous temperature approach of Cammarano et al. (2003).
+
+    The shear quality factor is Q_S = B * omega^a * exp(a * g * T_m / T), where
+    T_m is the solidus (melting) temperature at the given depth. Cammarano et al.
+    (2003) assume a constant bulk quality factor Q_K of 1000 in the upper mantle
+    and 10,000 in the lower mantle. The default `Q_bulk` here is 10,000 at all
+    depths, which is higher than the paper value in the upper mantle.
     """
 
     def __init__(
@@ -205,24 +237,30 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
         frequency exponent, and T_solidus is the solidus temperature at the
         given depth.
 
-        Q-profiles represent different assumptions about grain size, water
-        content, and attenuation mechanisms in the mantle:
+        All six profiles and their values are from Table 1 of Cammarano et al.
+        (2003). B is in s^a.
 
-        ======= ============= ============= ======================================
-        Profile B (UM / LM)   g (UM / LM)   Physical Interpretation
-        ======= ============= ============= ======================================
-        Q1      0.5 / 10      20 / 10       Fine grain size, low water content
-        Q2      0.8 / 15      20 / 10       Medium grain size
-        Q3      1.1 / 20      20 / 10       Coarse grain, higher water content
-        Q4      0.035 / 2.25  30 / 15       SLB activation energy, fine grain
-        Q5      0.056 / 3.6   30 / 15       SLB activation energy, medium grain
-        Q6      0.077 / 4.95  30 / 15       SLB activation energy, coarse grain
-        ======= ============= ============= ======================================
+        ======= ============= =============
+        Profile B (UM / LM)   g (UM / LM)
+        ======= ============= =============
+        Q1      0.5 / 10      20 / 10
+        Q2      0.8 / 15      20 / 10
+        Q3      1.1 / 20      20 / 10
+        Q4      0.035 / 2.25  30 / 15
+        Q5      0.056 / 3.6   30 / 15
+        Q6      0.077 / 4.95  30 / 15
+        ======= ============= =============
 
         UM = upper mantle (< 660 km), LM = lower mantle (>= 660 km).
-        Q1-Q3 use Cammarano et al. (2003) activation energy parameterization.
-        Q4-Q6 use Stixrude & Lithgow-Bertelloni activation energy values.
-        All profiles use a = 0.2 (frequency exponent) and omega = 1.0 Hz.
+        The profiles test a range of g. Cammarano et al. (2003) take g of about
+        30 for olivine in the uppermost mantle (Karato, 1993) and g = 10-20 as
+        more appropriate for the lower mantle (Karato & Karki, 2001). Higher g
+        increases the temperature and pressure dependence of Q_S. For each g,
+        B was adjusted so that Q_S along a reference adiabat with a 1300 C
+        potential temperature agrees with radial seismic attenuation models.
+        All profiles use a = 0.2 (frequency exponent) and omega = 1.0 Hz, as in
+        the paper. The paper puts the upper/lower mantle jump in Q_S at the
+        ringwoodite-perovskite transition, which is 660 km here.
 
         Args:
             q_profile (str): One of "Q1" through "Q6".
@@ -297,7 +335,7 @@ class CammaranoAnelasticityModel(BaseAnelasticityModel):
 
 
 class GoesAnelasticityModel(BaseAnelasticityModel):
-    """Anelasticity model following Goes et al. (2000, JGR).
+    """Anelasticity model following Goes et al. (2000, JGR, Appendix A).
 
     Uses activation energy and activation volume to compute the shear quality
     factor Q_mu via:
@@ -308,7 +346,7 @@ class GoesAnelasticityModel(BaseAnelasticityModel):
     V* is activation volume (m^3/mol), P is pressure from PREM, R is the
     gas constant, and T is temperature (K).
 
-    This model was calibrated for the upper mantle (50-200 km depth). Below
+    Goes et al. (2000) apply it to upper-mantle temperatures at 50-200 km depth. Below
     660 km depth, Q is set to a very large value (effectively no attenuation).
     """
 
@@ -324,7 +362,9 @@ class GoesAnelasticityModel(BaseAnelasticityModel):
             V_star (float): Activation volume in m^3/mol.
             a (float): Frequency exponent.
             omega (float): Seismic frequency in Hz (default 1.0).
-            Q_bulk (float): Constant bulk Q (default 1000, Durek & Ekstrom 1996).
+            Q_bulk (float): Constant bulk Q (default 1000). Goes et al. (2000) take
+                Q_K = 1000 as a round value of the upper-mantle Q_K = 943 of model
+                QL6 (Durek & Ekström, 1996).
             max_depth (float): Depth below which Q is set very high (default 660e3 m).
         """
         self.A = A
@@ -433,7 +473,7 @@ def apply_anelastic_correction(
     Apply anelastic corrections to seismic velocity data using the provided "anelastic_model"
     within the low attenuation limit. The corrections are based on the equation:
         $1 - \frac{V(anelastic)}{V(elastic)} = \frac{1}{2} \cot(\frac{\alpha \pi}{2}) Q^{-1}$
-    as described by Stixrude & Lithgow-Bertelloni (doi:10.1029/2004JB002965, Eq-10).
+    as described by Stixrude & Lithgow-Bertelloni (2005, JGR, doi:10.1029/2004JB002965, Eq. 10).
 
         thermo_model (ThermodynamicModel): The thermodynamic model containing temperature and depth data.
 
@@ -446,7 +486,7 @@ def apply_anelastic_correction(
 
     The `compute_swave_speed` method applies the anelastic correction to the shear wave speed using the provided
     anelastic model. The `compute_pwave_speed` method applies the anelastic correction to the compressional wave speed
-    using the quality factor derived from the equations provided by Don L. Anderson & R. S. Hart (1978, PEPI eq 1-3).
+    using the quality factor derived from the equations provided by Don L. Anderson & R. S. Hart (1978, JGR, eqs 1-3).
 
     The corrections are applied by meshing the depths and temperatures from the thermodynamic model and computing the
     quality factor matrices for shear and bulk moduli. The corrected seismic velocities are then calculated and returned
@@ -501,11 +541,14 @@ def apply_anelastic_correction(
             This method replaces the original `compute_pwave_speed` function by incorporating
             the anelastic effect on compressional wave speed. The quality factor for the
             P - wave speed is derived from the equations provided by Don L. Anderson & R. S. Hart
-            (1978, PEPI eq 1 - 3):
+            (1978, JGR 83, 5869-5882, eqs 1 - 3):
 
                 Q_s = Q_{\\mu}
                 \frac{1}{Q_p} = \frac{L}{Q_\\mu} + \frac{(1-L)}{Q_K}
-                Q_K = \frac{(1-L) Q_\\mu}{Q_s / Q_p - 1}
+
+            Solving the second equation for the bulk quality factor gives
+            Q_K = (1 - L) Q_mu / (Q_mu / Q_p - L). The code uses the second
+            equation directly and does not need this form.
 
             where (L = \frac{4}{3} \\left( \frac{\beta}{\alpha} \right)^2 \\), and (\\beta)
             and (\\alpha) are the shear and compressional wave velocities, respectively.

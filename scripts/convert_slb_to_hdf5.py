@@ -59,15 +59,15 @@ SLB_REFERENCES = {
     },
     '21': {
         'citation': 'Stixrude, L.; Lithgow-Bertelloni, C. "Thermal expansivity, heat capacity and bulk modulus of the mantle", Geophysical Journal International, 2021, 228, 1119-1149.',
-        'doi': '10.1093/gji/ggaa605',
+        'doi': '10.1093/gji/ggab394',
         'year': 2021,
         'solution_phases': 15,
         'total_endmembers': 51,
         'landau_wrapped': 17,
     },
     '24': {
-        'citation': 'Stixrude, L.; Lithgow-Bertelloni, C. "Thermodynamics of mantle minerals -- III. The role of iron", Geophysical Journal International, 2024 (in press).',
-        'doi': None,
+        'citation': 'Stixrude, L.; Lithgow-Bertelloni, C. "Thermodynamics of mantle minerals - III: the role of iron", Geophysical Journal International, 2024, 237, 1699-1733.',
+        'doi': '10.1093/gji/ggae126',
         'year': 2024,
         'solution_phases': 15,
         'total_endmembers': 74,

@@ -262,3 +262,36 @@ def test_enrichment_fields_consistency(datasets):
 if __name__ == "__main__":
     # Run tests with pytest
     pytest.main([__file__, "-v", "--tb=short"])
+
+
+# DOI of the paper that each SLB version is cited to. These were checked
+# against Crossref: the authors, title, journal, volume and pages of each DOI
+# match the citation text in datasets.json and gdrift.metadata.
+SLB_DOIS = {
+    "08": "10.1016/j.epsl.2008.08.012",       # Xu et al. (2008), EPSL 275, 70-79
+    "11": "10.1111/j.1365-246X.2010.04890.x",  # SLB (2011), GJI 184, 1180-1213
+    "21": "10.1093/gji/ggab394",               # SLB (2021), GJI 228, 1119-1149
+    "24": "10.1093/gji/ggae126",               # SLB (2024), GJI 237, 1699-1733
+}
+
+
+def test_slb_datasets_cite_the_correct_doi(datasets):
+    """Every SLB table in the manifest carries the DOI of its own SLB paper."""
+    for dataset in datasets:
+        match = re.match(r"SLB_(\d\d)_", dataset["name"])
+        if match is None:
+            continue
+        assert dataset.get("doi") == SLB_DOIS[match.group(1)], (
+            f"{dataset['name']}: doi {dataset.get('doi')!r}, expected {SLB_DOIS[match.group(1)]}"
+        )
+
+
+def test_slb_reference_matches_manifest_dois():
+    """gdrift.metadata.get_slb_reference gives the same DOI as the manifest, for every version."""
+    from gdrift.metadata import get_slb_reference
+
+    for version, doi in SLB_DOIS.items():
+        assert get_slb_reference(version)["doi"] == doi
+    # There is no SLB database version "16".
+    with pytest.raises(ValueError):
+        get_slb_reference("16")
