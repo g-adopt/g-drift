@@ -20,7 +20,7 @@
       "author": "Ghelichkhan, S.",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "28abbb1afa5a2111a9113846e994b994"
     },
     {
       "name": "1d_prem",
@@ -1154,7 +1154,7 @@
       "chemical_system": "CFMAS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "3cf1269828b6eb81df93ea716d348a61"
     },
     {
       "name": "SLB_21_bulk-oceanic-crustCFMS",
@@ -1173,7 +1173,7 @@
       "chemical_system": "CFMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "2ca87f3d4eab51b638f6197b43f1eab0"
     },
     {
       "name": "SLB_21_bulk-oceanic-crustFMAS",
@@ -1192,7 +1192,7 @@
       "chemical_system": "FMAS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "217c5743cdc8be6e142020ad6020ccce"
     },
     {
       "name": "SLB_21_bulk-oceanic-crustFMS",
@@ -1211,7 +1211,7 @@
       "chemical_system": "FMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "f97427de53a52b5c356fb979e974b1bf"
     },
     {
       "name": "SLB_21_bulk-oceanic-crustMS",
@@ -1230,7 +1230,7 @@
       "chemical_system": "MS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "08c085b77b87766009d5d4ffbe4678de"
     },
     {
       "name": "SLB_21_depleted-mantleCFMAS",
@@ -1249,7 +1249,7 @@
       "chemical_system": "CFMAS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "f9037043005a89529d8faf1a31733d66"
     },
     {
       "name": "SLB_21_depleted-mantleCFMS",
@@ -1268,7 +1268,7 @@
       "chemical_system": "CFMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "11736fb522d185bf7c5f6454af923c88"
     },
     {
       "name": "SLB_21_depleted-mantleFMAS",
@@ -1287,7 +1287,7 @@
       "chemical_system": "FMAS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "bf44e5d642249bb67959a3a39ca56f98"
     },
     {
       "name": "SLB_21_depleted-mantleFMS",
@@ -1306,7 +1306,7 @@
       "chemical_system": "FMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "0a692f5cecb652e346508e441fce7893"
     },
     {
       "name": "SLB_21_depleted-mantleMS",
@@ -1325,7 +1325,7 @@
       "chemical_system": "MS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "76eab1be5fb14651e980a9edebe19f77"
     },
     {
       "name": "SLB_21_pyroliteCFMAS",
@@ -1344,7 +1344,7 @@
       "chemical_system": "CFMAS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "27ff89bcce5eea7b7c48cfdd48b7b3d5"
     },
     {
       "name": "SLB_21_pyroliteCFMS",
@@ -1363,7 +1363,7 @@
       "chemical_system": "CFMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "db3e67cc181cc96c10c938c97f0faa33"
     },
     {
       "name": "SLB_21_pyroliteFMAS",
@@ -1382,7 +1382,7 @@
       "chemical_system": "FMAS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "d79881f3734a1826309cb5a90501bb04"
     },
     {
       "name": "SLB_21_pyroliteFMS",
@@ -1401,7 +1401,7 @@
       "chemical_system": "FMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "f2e39e8c9789ed2ede5e87ce0869dc38"
     },
     {
       "name": "SLB_21_pyroliteMS",
@@ -1420,7 +1420,7 @@
       "chemical_system": "MS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "c7fa685857b54f236d0db59807318054"
     },
     {
       "name": "SLB_24_bulk-oceanic-crustCFMS",
@@ -1439,7 +1439,7 @@
       "chemical_system": "CFMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "ff38651f67fe01ddcc58db97b79c186f"
     },
     {
       "name": "SLB_24_bulk-oceanic-crustFMS",
@@ -1458,7 +1458,7 @@
       "chemical_system": "FMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "191140fc99e91d252efd6318003470e1"
     },
     {
       "name": "SLB_24_bulk-oceanic-crustMS",
@@ -1477,7 +1477,7 @@
       "chemical_system": "MS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "a3cce51b1b21159923a76454844074d9"
     },
     {
       "name": "SLB_24_depleted-mantleCFMS",
@@ -1496,7 +1496,7 @@
       "chemical_system": "CFMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "e5d35b53b641224f1ef2d66e66286997"
     },
     {
       "name": "SLB_24_depleted-mantleFMS",
@@ -1515,7 +1515,7 @@
       "chemical_system": "FMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "1efbe6a0c075b026df625a5d140d8400"
     },
     {
       "name": "SLB_24_depleted-mantleMS",
@@ -1534,7 +1534,7 @@
       "chemical_system": "MS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "63f8683bf7d1d609650cd2a0ca1ccbb0"
     },
     {
       "name": "SLB_24_pyroliteCFMS",
@@ -1553,7 +1553,7 @@
       "chemical_system": "CFMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "ccb9f92de9ea4964efc576b0bf007913"
     },
     {
       "name": "SLB_24_pyroliteFMS",
@@ -1572,7 +1572,7 @@
       "chemical_system": "FMS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "84de56d6926fe7e9978cdf17c5eef2c9"
     },
     {
       "name": "SLB_24_pyroliteMS",
@@ -1591,7 +1591,7 @@
       "chemical_system": "MS",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "0361c34a820a9c9974829e67f21364d5"
     },
     {
       "name": "3d_seismic_3D2015-07Sv",
@@ -1963,7 +1963,7 @@
       "chemical_system": "CFMASNaCr",
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
-      "etag": null
+      "etag": "a218f87add30b79ba11f60a9de03351e-2"
     }
   ]
 }
