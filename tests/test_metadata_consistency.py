@@ -26,6 +26,18 @@ def datasets(manifest):
     return manifest["datasets"]
 
 
+def test_every_dataset_has_an_etag(manifest):
+    """Every dataset in the manifest has the ETag of its file on the server.
+
+    A new or changed dataset gets `etag: null` until its file is uploaded and
+    the ETag is written into the manifest (docs/dataset-releases.md). This
+    test fails until then, so a release cannot point to a file that is not on
+    the server. tests/test_server_hashes.py compares the ETags with the server.
+    """
+    missing = [d["name"] for d in manifest["datasets"] if not d.get("etag")]
+    assert not missing, f"Datasets without an ETag (not uploaded yet?): {missing}"
+
+
 def test_manifest_structure(manifest):
     """Test that manifest has required top-level fields."""
     assert "version" in manifest, "Manifest must have version field"
