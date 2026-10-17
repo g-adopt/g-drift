@@ -59,7 +59,6 @@ gdrift.load_dataset : Download and cache HDF5 datasets
 """
 
 from .earthmodel3d import EarthModel3D
-from .io import load_dataset
 from .datasetnames import DATASET_REGISTRY, DatasetType
 
 AVAILABLE_SEISMIC_MODELS = [
@@ -111,6 +110,17 @@ class SeismicModel(EarthModel3D):
         # Load the model data
         self._load_fields(labels=labels)
 
+    @classmethod
+    def from_dataset(cls, model_name, nearest_neighbours=8, default_max_distance=200e3, labels=None):
+        """Load a seismic model by name; the same as ``SeismicModel(model_name, ...)``.
+
+        `EarthModel3D.from_dataset` loads "3d_earthmodel_" datasets. This
+        override keeps the method meaningful on the subclass, where it loads
+        "3d_seismic_" datasets through the constructor.
+        """
+        return cls(model_name, nearest_neighbours=nearest_neighbours,
+                   default_max_distance=default_max_distance, labels=labels or [])
+
     def _load_fields(self, labels=[]):
         """
         Load fields from the seismic model dataset.
@@ -120,28 +130,6 @@ class SeismicModel(EarthModel3D):
         labels : list
             Specific labels to load. If empty, loads all available fields.
         """
-        raw_model = load_dataset(f"3d_seismic_{self.model_name}")
-
-        if len(labels) > 0:
-            for label in labels:
-                if label not in raw_model.keys():
-                    raise ValueError(f"{label} not present in tomography model: {self.model_name}")
-
-        if "coordinates" not in labels and len(labels) > 0:
-            labels += ["coordinates"]
-
-        # Load specified fields or all fields
-        if len(labels) > 0:
-            # Load only specified labels plus coordinates
-            for key in labels:
-                if key == "coordinates":
-                    self.set_coordinates(raw_model[key])
-                else:
-                    self.add_quantity(key, raw_model[key])
-        else:
-            # Load all fields
-            for key in raw_model.keys():
-                if key == "coordinates":
-                    self.set_coordinates(raw_model[key])
-                else:
-                    self.add_quantity(key, raw_model[key])
+        # The file layout is the same as for every gridded 3D dataset, so the
+        # reading is done by EarthModel3D; only the registry prefix differs.
+        self._load_dataset_fields(f"3d_seismic_{self.model_name}", labels=labels)

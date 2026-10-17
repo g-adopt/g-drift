@@ -62,7 +62,8 @@ def test_dataset_entries_have_required_fields(datasets):
             "SOLIDUS_PROFILE",
             "GEODYNAMIC_PROFILE",
             "THERMODYNAMIC_MODEL",
-            "TOMOGRAPHY_MODEL"
+            "TOMOGRAPHY_MODEL",
+            "EARTH_MODEL_3D",
         ]
         assert dataset["type"] in valid_types, f"Invalid type for {dataset['name']}: {dataset['type']}"
 
@@ -217,6 +218,22 @@ def test_seismic_models_are_tomography_type(datasets):
         if dataset["name"].startswith("3d_seismic_"):
             assert dataset["type"] == "TOMOGRAPHY_MODEL", \
                 f"Seismic model {dataset['name']} must have TOMOGRAPHY_MODEL type"
+
+
+def test_earthmodel3d_datasets_have_their_own_type(datasets):
+    """3d_earthmodel_* datasets, and only they, have the EARTH_MODEL_3D type and loader.
+
+    EarthModel3D.from_dataset builds its list of models from the type and
+    strips the prefix from the name, so the two must agree.
+    """
+    for dataset in datasets:
+        is_prefixed = dataset["name"].startswith("3d_earthmodel_")
+        is_typed = dataset["type"] == "EARTH_MODEL_3D"
+        assert is_prefixed == is_typed, (
+            f"{dataset['name']}: the 3d_earthmodel_ prefix and the EARTH_MODEL_3D type must go together")
+        if is_typed:
+            assert dataset.get("utility") == "EARTH_MODEL_3D", dataset["name"]
+            assert dataset.get("fields"), f"{dataset['name']} must list its fields"
 
 
 def test_prem_has_correct_metadata(datasets):

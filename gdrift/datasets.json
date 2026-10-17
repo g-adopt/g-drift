@@ -1964,6 +1964,24 @@
       "metadata_source": "hdf5_file",
       "metadata_complete": true,
       "etag": "a218f87add30b79ba11f60a9de03351e-2"
+    },
+    {
+      "name": "3d_earthmodel_Lloyd_et_al_2024_GJI",
+      "filename": "c329b44207ad72fd17ee1cb8615eab8ccf2891ca91eae3d82d43bb6ed8eb77a8.h5",
+      "type": "EARTH_MODEL_3D",
+      "utility": "EARTH_MODEL_3D",
+      "source": "Lloyd, A. J., Crawford, O., Al-Attar, D., Austermann, J., Hoggard, M. J., Richards, F. D., & Syvret, F. (2024). GIA imaging of 3-D mantle viscosity based on palaeo sea level observations - Part I: Sensitivity kernels for an Earth with laterally varying viscosity. Geophysical Journal International, 236(2), 1139-1171.",
+      "doi": "10.1093/gji/ggad455",
+      "year": 2024,
+      "fields": [
+        "log10_viscosity"
+      ],
+      "description": "Global 3D mantle viscosity (log10 Pa s) inferred from the shear-wave speeds of GLAD-M25, not inverted from GIA data. Above 400 km it uses the calibration of Richards et al. (2020), below 400 km the approach of Austermann et al. (2021). Mean viscosity is 5e20 Pa s in the sublithospheric upper mantle and 5e21 Pa s in the lower mantle. Lithosphere values above 1e30 Pa s are kept as published.",
+      "author": "Lloyd, A. J., Crawford, O., Al-Attar, D., Austermann, J., Hoggard, M. J., Richards, F. D., & Syvret, F.",
+      "sha256": "c329b44207ad72fd17ee1cb8615eab8ccf2891ca91eae3d82d43bb6ed8eb77a8",
+      "metadata_source": "web_search",
+      "metadata_complete": true,
+      "etag": null
     }
   ]
 }

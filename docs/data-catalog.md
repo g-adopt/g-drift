@@ -16,6 +16,9 @@ thermo = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 
 # Seismic tomography model
 seismic = gdrift.SeismicModel("3d_seismic_S40RTS")
+
+# 3D model that is not seismic (here mantle viscosity, in log10(Pa s))
+viscosity = gdrift.EarthModel3D.from_dataset("Lloyd_et_al_2024_GJI")
 ```
 
 ## Citations

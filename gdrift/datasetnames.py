@@ -112,6 +112,11 @@ class DatasetType(Enum):
     TOMOGRAPHY_MODEL : str
         3D seismic tomography models with velocity perturbations
         (e.g., S40RTS, GLAD-M25, SEMUCB-WM1).
+    EARTH_MODEL_3D : str
+        3D models of a mantle property that is not a seismic wave speed
+        (e.g., the viscosity model of Lloyd et al., 2024). Their dataset
+        names start with "3d_earthmodel_", and they load through
+        `EarthModel3D.from_dataset`.
 
     Examples
     --------
@@ -125,6 +130,7 @@ class DatasetType(Enum):
     GEODYNAMIC_PROFILE = "1d Geodynamic Profile"
     THERMODYNAMIC_MODEL = "Thermodynamic Model of Mantle Rocks"
     TOMOGRAPHY_MODEL = "Seismic Tomography Model"
+    EARTH_MODEL_3D = "3d Earth Model"
 
 
 class UtilityClass(Enum):
@@ -148,6 +154,9 @@ class UtilityClass(Enum):
     SEISMIC_MODEL : str
         "SeismicModel" - Loader for 3D seismic tomography models
         (requires model name argument).
+    EARTH_MODEL_3D : str
+        "EarthModel3D" - Loader for 3D models that are not seismic
+        tomography, through `EarthModel3D.from_dataset(<model name>)`.
 
     Examples
     --------
@@ -165,6 +174,7 @@ class UtilityClass(Enum):
     PREM = "PreliminaryRefEarthModel"
     THERMODYNAMIC = "ThermodynamicModel"
     SEISMIC_MODEL = "SeismicModel"
+    EARTH_MODEL_3D = "EarthModel3D"
 
 
 @dataclass

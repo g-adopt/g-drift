@@ -70,13 +70,14 @@ See Also
 print_datasets_markdown : List all registered datasets
 DATASET_REGISTRY : Registry of available datasets with metadata
 AVAILABLE_SEISMIC_MODELS : List of 25 seismic tomography models
+AVAILABLE_EARTH_MODELS_3D : List of 3D models that are not seismic tomography
 """
 
 from .adiabat import compute_adiabat, prem_gravity_profile
 from .anelasticity import CammaranoAnelasticityModel, GoesAnelasticityModel, apply_anelastic_correction
 from .constants import R_earth, R_cmb
 from .datasetnames import print_datasets_markdown, DATASET_REGISTRY
-from .earthmodel3d import EarthModel3D
+from .earthmodel3d import EarthModel3D, AVAILABLE_EARTH_MODELS_3D
 from .io import load_dataset, create_dataset_file, download_all_datasets
 from .mineralogy import ThermodynamicModel, compute_pwave_speed, compute_swave_speed, regularise_thermodynamic_table
 from .profile import PreliminaryRefEarthModel, RadialEarthModelFromFile, HirschmannSolidus, SplineProfile
@@ -105,6 +106,7 @@ __all__ = [
     "R_cmb",
     "print_datasets_markdown",
     "EarthModel3D",
+    "AVAILABLE_EARTH_MODELS_3D",
     "load_dataset",
     "create_dataset_file",
     "download_all_datasets",

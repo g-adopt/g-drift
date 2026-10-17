@@ -200,7 +200,8 @@ class DatasetCatalogGenerator:
             "SOLIDUS_PROFILE",
             "GEODYNAMIC_PROFILE",
             "THERMODYNAMIC_MODEL",
-            "TOMOGRAPHY_MODEL"
+            "TOMOGRAPHY_MODEL",
+            "EARTH_MODEL_3D",
         ]
 
         type_names = {
@@ -208,7 +209,8 @@ class DatasetCatalogGenerator:
             "SOLIDUS_PROFILE": "Solidus Temperature Profiles",
             "GEODYNAMIC_PROFILE": "Geodynamic Profiles",
             "THERMODYNAMIC_MODEL": "Thermodynamic Models",
-            "TOMOGRAPHY_MODEL": "Seismic Tomography Models"
+            "TOMOGRAPHY_MODEL": "Seismic Tomography Models",
+            "EARTH_MODEL_3D": "3D Earth Models (not seismic)",
         }
 
         for dtype in type_order:
@@ -250,7 +252,13 @@ class DatasetCatalogGenerator:
                     lines.append("")
 
                 # Usage
-                if dataset.get("utility"):
+                if dataset.get("utility") == "EARTH_MODEL_3D":
+                    # These load through a class method and take the name
+                    # without the "3d_earthmodel_" prefix
+                    short = dataset["name"].replace("3d_earthmodel_", "", 1)
+                    lines.append(f"**Usage:** `gdrift.EarthModel3D.from_dataset(\"{short}\")`")
+                    lines.append("")
+                elif dataset.get("utility"):
                     utility = dataset["utility"]
                     lines.append(f"**Usage:** `gdrift.{utility}(\"{dataset['name']}\")`")
                     lines.append("")
