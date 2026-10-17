@@ -117,6 +117,23 @@ class SeismicModel(EarthModel3D):
         `EarthModel3D.from_dataset` loads "3d_earthmodel_" datasets. This
         override keeps the method meaningful on the subclass, where it loads
         "3d_seismic_" datasets through the constructor.
+
+        Parameters
+        ----------
+        model_name : str
+            Name without the "3d_seismic_" prefix, one of
+            `AVAILABLE_SEISMIC_MODELS`.
+        nearest_neighbours : int, optional
+            Number of neighbours for the interpolation. Default is 8.
+        default_max_distance : float, optional
+            Distance in metres beyond which a query returns NaN. Default is 200e3.
+        labels : list of str, optional
+            Load only these quantities. Default is all quantities.
+
+        Returns
+        -------
+        SeismicModel
+            The loaded model.
         """
         return cls(model_name, nearest_neighbours=nearest_neighbours,
                    default_max_distance=default_max_distance, labels=labels or [])

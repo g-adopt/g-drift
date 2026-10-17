@@ -548,7 +548,7 @@ def download_all_datasets(datasets=None):
 
     Args:
         datasets (list of str, optional): Dataset names to download.
-            If None, downloads every registered dataset (about 6.7 GB).
+            If None, downloads every registered dataset (about 7.7 GB).
 
     Returns:
         list of str: Names of the datasets that could not be downloaded

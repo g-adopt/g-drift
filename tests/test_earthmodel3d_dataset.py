@@ -213,8 +213,12 @@ def test_read_and_resample_synthetic_source(tmp_path, monkeypatch):
     # West of 170 E, each layer is _plane + depth/1000 at the lattice points.
     # The last cell (170 to 180 E) is excluded because the +180 column holds
     # the values of -180 there, and at 50 km also the extra seam offset.
+    # Latitude and longitude of the lattice computed here from first
+    # principles (z is the polar axis), not with gdrift.cartesian_to_geodetic,
+    # so that a convention error in that function cannot cancel out
     unit = fibonacci_sphere(400)
-    fib_lat, fib_lon, _ = gdrift.cartesian_to_geodetic(*unit.T)
+    fib_lat = np.degrees(np.arcsin(unit[:, 2]))
+    fib_lon = np.degrees(np.arctan2(unit[:, 1], unit[:, 0]))
     layers = resampled.reshape(depth.size, 400)
     ok = fib_lon < 170.0
     for k, dk in enumerate(depth):
@@ -223,6 +227,27 @@ def test_read_and_resample_synthetic_source(tmp_path, monkeypatch):
 
     # The summary check passes on a correct resampling
     convert.check_against_source(coordinates, resampled, d, la, lo, values)
+
+
+def test_each_side_of_the_seam_uses_its_own_column():
+    """Just west of +180 the +180 column is used, just east of -180 the -180 column.
+
+    The published file has different values in the two columns above 80 km,
+    and the conversion keeps both, so each side must read only its own column.
+    """
+    lat = np.arange(-90.0, 90.1, 0.5)
+    lon = np.arange(-180.0, 180.1, 0.5)
+    grid = np.zeros((lat.size, lon.size))
+    grid[:, 0] = 1.0   # the -180 column
+    grid[:, -1] = 5.0  # the +180 column, different on purpose
+
+    i0, j0, w = convert.bilinear_weights(lat, lon, np.array([10.2, 10.2]), np.array([179.8, -179.8]))
+    corners = np.column_stack([grid[i0, j0], grid[i0 + 1, j0], grid[i0, j0 + 1], grid[i0 + 1, j0 + 1]])
+    value = np.sum(corners * w, axis=1)
+    # 179.8 is 0.6 of the way from 179.5 to 180 (value 0 to 5); -179.8 is
+    # 0.4 of the way from -180 to -179.5 (value 1 to 0)
+    np.testing.assert_allclose(value, [0.6 * 5.0, 0.6 * 1.0], atol=1e-12)
+    assert j0[0] == lon.size - 2 and j0[1] == 0
 
 
 def test_read_source_refuses_a_seam_below_200_km(tmp_path, monkeypatch):

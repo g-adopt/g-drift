@@ -29,7 +29,7 @@ pip install gdrift
 
 Datasets are downloaded on first use and cached in the user cache directory
 (`~/Library/Caches/gdrift` on macOS, `~/.cache/gdrift` on Linux). All datasets together
-need about 6.7 GB. To use a different directory, set `GDRIFT_DATA_DIR`.
+need about 7.7 GB. To use a different directory, set `GDRIFT_DATA_DIR`.
 
 On a cluster, put the cache on a large shared file system. Download the datasets that you
 need on a login node before you run a parallel job, for example
@@ -47,7 +47,7 @@ import gdrift
 
 prem = gdrift.PreliminaryRefEarthModel()
 thermo = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
-seismic = gdrift.SeismicModel("3d_seismic_S40RTS")
+seismic = gdrift.SeismicModel("S40RTS")
 ```
 
 !!! info "Zenodo Archival & Dataset Contributions"

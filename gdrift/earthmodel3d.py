@@ -255,6 +255,12 @@ class EarthModel3D(AbstractEarthModel):
             Distance in metres beyond which a query returns NaN. Default is
             200e3, which is more than twice the lateral spacing of the
             65,341-point layers that the gridded datasets use (about 88 km).
+            Within this distance above the top layer or below the bottom
+            layer, a query returns the value of that layer (no
+            extrapolation). For the viscosity model of Lloyd et al. (2024),
+            this means that points up to 200 km above the surface get the
+            crust value, and points up to 200 km below 2891 km get the value
+            of the deepest layer.
         labels : list of str, optional
             Load only these quantities. Default is all quantities.
 
@@ -275,6 +281,11 @@ class EarthModel3D(AbstractEarthModel):
         orders of magnitude is therefore stored as its log10 (for example
         "log10_viscosity" in log10(Pa s)), and the caller converts the
         interpolated value back with ``10 ** value`` if needed.
+
+        The lateral resolution is that of the stored layers (65,341 points,
+        about 88 km apart), which can be coarser than the original model.
+        The description of each dataset in the registry says how it was
+        resampled.
         """
         if model_name not in AVAILABLE_EARTH_MODELS_3D:
             raise ValueError(

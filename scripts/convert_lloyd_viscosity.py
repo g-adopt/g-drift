@@ -6,8 +6,15 @@ The model is the "3-D viscosity inference" of Lloyd et al. (2024), GJI 236,
 authors convert the shear-wave speeds of GLAD-M25 to temperature and then to
 steady-state diffusion-creep viscosity: above 400 km with the calibration of
 Richards et al. (2020), below 400 km with the approach of Austermann et al.
-(2021). The model is scaled to mean viscosities of 5e20 Pa s in the
-sublithospheric upper mantle and 5e21 Pa s in the lower mantle.
+(2021). The volume average of log10 viscosity is set to log10(5e20) from
+the base of the lithosphere (the 1175 C isotherm) to 670 km, and to
+log10(5e21) from 670 to 2891 km. The crust has one constant value,
+1.5e26 Pa s (log10 26.178).
+
+The file is the unmodified initial inference, shown in Fig. S2 of the paper.
+The paper's GIA simulations use a filtered version with a lower bound of
+2e19 Pa s (Fig. 2), derived from this file. That filtered version is not
+published and is not this dataset.
 
 Source file
 -----------
@@ -39,9 +46,11 @@ between grid points would be dominated by the largest neighbour. gdrift
 interpolates the stored field directly, so the stored field must be the one
 that is safe to interpolate.
 
-The values above 1e30 Pa s in the lithosphere (12 to about 150 km depth) are
-kept as published. GIA treats these cells as elastic. A user who needs a cap
-can clip the interpolated log10 values.
+Values above 1e30 Pa s are kept as published. They occur in the cratonic
+lithosphere from 12 km down to 195 km depth (up to 1e39.08 Pa s), and in a
+small region of the lowermost mantle beneath Central America (about 9 to 19 N,
+94 to 84 W) at 2750 and 2800 km depth (up to 1e35.19 Pa s). A user who needs
+a cap can clip the interpolated log10 values.
 
 Resampling
 ----------
@@ -51,7 +60,10 @@ to the log10 values. This is exact at grid nodes, has no problem at the
 date line (the source includes both -180 and +180), and does not need the
 neighbour search in degree space that scripts/convert_seismic_models.py uses
 for irregular sources. No interpolation is done in depth: the output keeps
-the 201 source depths.
+the 201 source depths. The lateral resolution of the output is that of the
+65,341-point lattice (about 88 km between points), coarser than the 0.5 degree
+source (about 55 km at the equator). Sharp lateral contrasts in the top 80 km
+are smoothed most.
 
 Usage
 -----
@@ -121,12 +133,26 @@ CITATION = (
 )
 DOI = "10.1093/gji/ggad455"
 
+# Citation in the manifest, in the style of most other entries ("Author, et al.
+# 'Title.' Journal vol.issue (year): pages."). The full author list is in the
+# "author" field of the manifest and in the model_reference attribute.
+SOURCE = (
+    "Lloyd, A. J., et al. 'GIA imaging of 3-D mantle viscosity based on palaeo sea level "
+    "observations - Part I: Sensitivity kernels for an Earth with laterally varying "
+    "viscosity.' Geophysical Journal International 236.2 (2024): 1139-1171."
+)
+
 DESCRIPTION = (
     "Global 3D mantle viscosity (log10 Pa s) inferred from the shear-wave speeds of "
-    "GLAD-M25, not inverted from GIA data. Above 400 km it uses the calibration of "
-    "Richards et al. (2020), below 400 km the approach of Austermann et al. (2021). "
-    "Mean viscosity is 5e20 Pa s in the sublithospheric upper mantle and 5e21 Pa s "
-    "in the lower mantle. Lithosphere values above 1e30 Pa s are kept as published."
+    "GLAD-M25, not inverted from GIA data. This is the unmodified initial inference "
+    "(Fig. S2 of the paper), not the filtered and bounded model of the paper's GIA "
+    "simulations. Above 400 km it uses the calibration of Richards et al. (2020), "
+    "below 400 km the approach of Austermann et al. (2021). The volume average of "
+    "log10 viscosity is log10(5e20) from the base of the lithosphere to 670 km and "
+    "log10(5e21) below; the crust is a constant 1.5e26 Pa s. Values above 1e30 Pa s, "
+    "in cratonic lithosphere down to 195 km and beneath Central America at 2750-2800 km, "
+    "are kept as published. Resampled to the 65,341-point layers of the seismic models "
+    "(about 88 km spacing), coarser than the 0.5 degree source."
 )
 
 
@@ -203,14 +229,15 @@ def read_source(path):
     assert lon[0] == -180.0 and lon[-1] == 180.0, (lon[0], lon[-1])
     assert np.all(np.isfinite(log10eta)), "the source contains NaN or inf"
     # -180 and +180 are the same meridian. In the published file the two
-    # columns are identical below about 180 km, but differ in the crust and
-    # lithosphere (up to 6 log10 units at 21 km, mean 0.003), where the
-    # authors assign crustal and lithospheric viscosities per grid column.
+    # columns are identical below 80 km, but differ in the crust and
+    # lithosphere (up to 6 log10 units at 21 km, mean 0.003 over all depths),
+    # where the authors assign crustal and lithospheric viscosities per grid
+    # column.
     # The file is converted as published: the bilinear interpolation uses the
     # -180 column for longitudes just east of -180 and the +180 column for
     # longitudes just west of +180, so each side keeps its own values. The
     # check below makes sure that the difference stays confined to the top
-    # 200 km, which is what the published file shows.
+    # 200 km, with a margin over the 80 km of the published file.
     seam = np.abs(log10eta[:, :, 0] - log10eta[:, :, -1])
     assert seam[depth_km >= 200.0].max() == 0.0, "columns at -180 and +180 differ below 200 km"
     print(f"Columns at -180 and +180 differ above 200 km: max {seam.max():.2f}, "
@@ -327,7 +354,10 @@ def build_file(path, coordinates, values, n_depth):
         "licence": "CC BY 4.0 (open-access article and supporting information)",
         "note": (
             "Not an inversion of GIA data: viscosity inferred from GLAD-M25 shear-wave "
-            "speeds. Values above 1e30 Pa s in the lithosphere are kept as published."
+            "speeds. This is the unmodified initial inference (Fig. S2 of the paper), not "
+            "the filtered and bounded model used in the paper's GIA simulations. Values "
+            "above 1e30 Pa s, in cratonic lithosphere down to 195 km and beneath Central "
+            "America at 2750-2800 km depth, are kept as published."
         ),
     }
     with h5py.File(path, "w") as f:
@@ -340,9 +370,23 @@ def build_file(path, coordinates, values, n_depth):
 def check_against_source(coordinates, values, depth_km, lat, lon, log10eta):
     """Compare the resampled field with the source and print a summary.
 
-    Checks that the values stay inside the range of each source layer
-    (bilinear interpolation cannot overshoot) and that the mean of each
-    layer agrees with an area-weighted mean of the source layer.
+    Checks that the radii of each layer equal its source depth, that the
+    values stay inside the range of each source layer (bilinear
+    interpolation cannot overshoot), and prints the largest difference
+    between the mean of each layer and the area-weighted (cos latitude) mean
+    of the source layer.
+
+    Parameters
+    ----------
+    coordinates, values : ndarray
+        As returned by `resample`.
+    depth_km, lat, lon, log10eta : ndarray
+        As returned by `read_source`.
+
+    Raises
+    ------
+    AssertionError
+        If a radius or a value is outside the source.
     """
     n = NUM_POINTS_PER_LAYER
     n_depth = depth_km.size
@@ -368,13 +412,25 @@ def check_against_source(coordinates, values, depth_km, lat, lon, log10eta):
 
 
 def manifest_entry(sha):
-    """Return the manifest entry for the new file."""
+    """Return the manifest entry for the new file.
+
+    Parameters
+    ----------
+    sha : str
+        sha256 of the output file (hex digits, without the "sha256:" prefix).
+
+    Returns
+    -------
+    dict
+        Entry for the "datasets" list of datasets.json. The etag is None
+        until the file is uploaded (docs/dataset-releases.md).
+    """
     return {
         "name": DATASET_NAME,
         "filename": f"{sha}.h5",
         "type": "EARTH_MODEL_3D",
         "utility": "EARTH_MODEL_3D",
-        "source": CITATION,
+        "source": SOURCE,
         "doi": DOI,
         "year": 2024,
         "fields": [FIELD_NAME],
