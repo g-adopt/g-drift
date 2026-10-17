@@ -6,15 +6,16 @@ The model is the "3-D viscosity inference" of Lloyd et al. (2024), GJI 236,
 authors convert the shear-wave speeds of GLAD-M25 to temperature and then to
 steady-state diffusion-creep viscosity: above 400 km with the calibration of
 Richards et al. (2020), below 400 km with the approach of Austermann et al.
-(2021). The volume average of log10 viscosity is set to log10(5e20) from
-the base of the lithosphere (the 1175 C isotherm) to 670 km, and to
-log10(5e21) from 670 to 2891 km. The crust has one constant value,
+(2021). The authors set the volume average of log10 viscosity to about
+log10(5e20) from the base of the lithosphere (the 1175 C isotherm) to 670 km,
+and to about log10(5e21) from 670 to 2891 km (the published file gives 21.66
+for the second, against log10(5e21) = 21.70). The crust has one constant value,
 1.5e26 Pa s (log10 26.178).
 
 The file is the unmodified initial inference, shown in Fig. S2 of the paper.
 The paper's GIA simulations use a filtered version with a lower bound of
-2e19 Pa s (Fig. 2), derived from this file. That filtered version is not
-published and is not this dataset.
+2e19 Pa s (Fig. 2), derived from this file. That filtered version is not in
+the supporting information and is not this dataset.
 
 Source file
 -----------
@@ -147,9 +148,9 @@ DESCRIPTION = (
     "GLAD-M25, not inverted from GIA data. This is the unmodified initial inference "
     "(Fig. S2 of the paper), not the filtered and bounded model of the paper's GIA "
     "simulations. Above 400 km it uses the calibration of Richards et al. (2020), "
-    "below 400 km the approach of Austermann et al. (2021). The volume average of "
-    "log10 viscosity is log10(5e20) from the base of the lithosphere to 670 km and "
-    "log10(5e21) below; the crust is a constant 1.5e26 Pa s. Values above 1e30 Pa s, "
+    "below 400 km the approach of Austermann et al. (2021). The authors set the volume "
+    "average of log10 viscosity to about log10(5e20) from the base of the lithosphere to "
+    "670 km and about log10(5e21) below; the crust is a constant 1.5e26 Pa s. Values above 1e30 Pa s, "
     "in cratonic lithosphere down to 195 km and beneath Central America at 2750-2800 km, "
     "are kept as published. Resampled to the 65,341-point layers of the seismic models "
     "(about 88 km spacing), coarser than the 0.5 degree source."
