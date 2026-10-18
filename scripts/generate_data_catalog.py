@@ -33,7 +33,65 @@ from collections import defaultdict
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from gdrift.metadata import format_citation, validate_doi
+from gdrift.metadata import validate_doi
+from gdrift.earthmodel3d import EARTH_MODEL_3D_PREFIX
+from gdrift.profile import PreliminaryRefEarthModel
+from gdrift.seismic import SEISMIC_MODEL_PREFIX
+
+
+def usage_line(dataset: Dict[str, Any]) -> str:
+    """Return the Python call that loads a dataset, for the catalog.
+
+    The `utility` field of the manifest holds the key of a
+    `gdrift.datasetnames.UtilityClass` member (for example "SEISMIC_MODEL"),
+    which is not the name of a gdrift class. Each loader also takes its own
+    form of the name, so the call is built per loader:
+
+    - RADIAL_EARTH_MODEL: `RadialEarthModelFromFile` takes the full name.
+    - PREM: `PreliminaryRefEarthModel` takes no argument and always loads
+      "1d_prem", so it is the call only for that entry. Any other entry with
+      this loader gets `RadialEarthModelFromFile("<name>")`, the class that
+      PreliminaryRefEarthModel extends.
+    - THERMODYNAMIC: `ThermodynamicModel` takes the database version and the
+      composition, which are the parts of the name before and after the
+      second underscore ("SLB_21_pyroliteCFMAS" gives "SLB_21" and
+      "pyroliteCFMAS").
+    - SEISMIC_MODEL: `SeismicModel` takes the name without "3d_seismic_".
+    - EARTH_MODEL_3D: `EarthModel3D.from_dataset` takes the name without
+      "3d_earthmodel_".
+
+    Parameters
+    ----------
+    dataset : dict
+        One entry of the "datasets" list of datasets.json.
+
+    Returns
+    -------
+    str
+        The call, for example 'gdrift.SeismicModel("S40RTS")', or an empty
+        string if the entry has no loader or an unknown one.
+    """
+    name = dataset["name"]
+    utility = dataset.get("utility")
+    # 1-D radial profiles (solidus, adiabats): the full registry name
+    if utility == "RADIAL_EARTH_MODEL":
+        return f'gdrift.RadialEarthModelFromFile("{name}")'
+    # PREM: the class has the dataset name built in
+    if utility == "PREM":
+        if name == PreliminaryRefEarthModel.PREM_FILENAME:
+            return "gdrift.PreliminaryRefEarthModel()"
+        return f'gdrift.RadialEarthModelFromFile("{name}")'
+    # Thermodynamic tables: "SLB_21_pyroliteCFMAS" -> ("SLB_21", "pyroliteCFMAS")
+    if utility == "THERMODYNAMIC":
+        family, version, composition = name.split("_", 2)
+        return f'gdrift.ThermodynamicModel("{family}_{version}", "{composition}")'
+    # Seismic tomography: the name without its registry prefix
+    if utility == "SEISMIC_MODEL":
+        return f'gdrift.SeismicModel("{name.removeprefix(SEISMIC_MODEL_PREFIX)}")'
+    # 3-D models that are not seismic: a class method, name without its prefix
+    if utility == "EARTH_MODEL_3D":
+        return f'gdrift.EarthModel3D.from_dataset("{name.removeprefix(EARTH_MODEL_3D_PREFIX)}")'
+    return ""
 
 
 class DatasetCatalogGenerator:
@@ -251,16 +309,10 @@ class DatasetCatalogGenerator:
                         lines.append(f"**Chemical System:** {dataset['chemical_system']}")
                     lines.append("")
 
-                # Usage
-                if dataset.get("utility") == "EARTH_MODEL_3D":
-                    # These load through a class method and take the name
-                    # without the "3d_earthmodel_" prefix
-                    short = dataset["name"].replace("3d_earthmodel_", "", 1)
-                    lines.append(f"**Usage:** `gdrift.EarthModel3D.from_dataset(\"{short}\")`")
-                    lines.append("")
-                elif dataset.get("utility"):
-                    utility = dataset["utility"]
-                    lines.append(f"**Usage:** `gdrift.{utility}(\"{dataset['name']}\")`")
+                # Usage: the call that loads this dataset
+                usage = usage_line(dataset)
+                if usage:
+                    lines.append(f"**Usage:** `{usage}`")
                     lines.append("")
 
                 lines.append("---")

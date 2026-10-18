@@ -50,13 +50,13 @@ Examples
 >>> rho_profile = prem.get_profile("density")
 >>> density_at_670km = rho_profile.at_depth(670e3)
 >>>
->>> # Load thermodynamic lookup table
->>> tm = gdrift.ThermodynamicModel("SLB_21_pyroliteCFMAS")
+>>> # Load thermodynamic lookup table (database version, composition)
+>>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 >>> vs = tm.temperature_to_vs(temperature=1600, depth=500e3)
 >>>
->>> # Load seismic tomography
->>> s40rts = gdrift.SeismicModel("3d_seismic_s40rts")
->>> dvs = s40rts.at(lat=45, lon=0, depth=1000e3, quantity="dvs")
+>>> # Load seismic tomography (name without the "3d_seismic_" prefix)
+>>> s40rts = gdrift.SeismicModel("S40RTS")
+>>> vs = s40rts.at("vs", gdrift.geodetic_to_cartesian(45.0, 0.0, 1000e3))
 
 Notes
 -----

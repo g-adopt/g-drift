@@ -97,7 +97,7 @@ EARTH_MODEL_3D_PREFIX = "3d_earthmodel_"
 # tomography, derived from the registry in the same way as
 # AVAILABLE_SEISMIC_MODELS in seismic.py.
 AVAILABLE_EARTH_MODELS_3D = [
-    ds.name.replace(EARTH_MODEL_3D_PREFIX, "", 1)
+    ds.name.removeprefix(EARTH_MODEL_3D_PREFIX)
     for ds in DATASET_REGISTRY.filter_by_type(DatasetType.EARTH_MODEL_3D)
 ]
 

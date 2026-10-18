@@ -31,7 +31,7 @@ Examples
 --------
 >>> import gdrift
 >>> # Load elastic thermodynamic model
->>> tm = gdrift.ThermodynamicModel("SLB_21_pyroliteCFMAS")
+>>> tm = gdrift.ThermodynamicModel("SLB_21", "pyroliteCFMAS")
 >>>
 >>> # Create Cammarano Q3 anelasticity model
 >>> anelastic = gdrift.CammaranoAnelasticityModel.from_q_profile("Q3")
