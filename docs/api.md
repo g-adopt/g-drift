@@ -49,6 +49,34 @@ See the [Data Catalog](data-catalog.md) for descriptions and citations.
 
 ---
 
+## 3D Earth Models (not seismic)
+
+3D models of a mantle property that is not a seismic wave speed, for example the mantle
+viscosity of Lloyd et al. (2024), load directly into an `EarthModel3D`. Their names in the
+registry start with `3d_earthmodel_`. Give the name without this prefix:
+
+```python
+import gdrift
+
+visc = gdrift.EarthModel3D.from_dataset("Lloyd_et_al_2024_GJI")
+xyz = gdrift.geodetic_to_cartesian(-75.0, -100.0, 200e3)  # lat, lon (degrees), depth (m)
+log10_eta = visc.at("log10_viscosity", xyz)  # log10(Pa s)
+```
+
+A field that spans many orders of magnitude is stored and interpolated as its log10, and the
+name of the field says so. The list of these models is exposed as
+`gdrift.AVAILABLE_EARTH_MODELS_3D`.
+
+### EarthModel3D
+
+::: gdrift.earthmodel3d.EarthModel3D
+    options:
+      members:
+        - from_dataset
+        - at
+
+---
+
 ## Thermodynamics
 
 ### ThermodynamicModel

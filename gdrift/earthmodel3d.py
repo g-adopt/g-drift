@@ -23,6 +23,11 @@ utility function.
 Subclasses (e.g., `SeismicModel` in seismic.py) extend `EarthModel3D` to
 provide domain-specific loading and validation logic.
 
+Datasets of 3D models that are not seismic tomography (for example mantle
+viscosity) are named "3d_earthmodel_<model>" in the dataset registry and load
+directly into an `EarthModel3D` with `EarthModel3D.from_dataset("<model>")`.
+`AVAILABLE_EARTH_MODELS_3D` lists their names without the prefix.
+
 Class Hierarchy
 ---------------
 AbstractEarthModel (ABC)
@@ -38,6 +43,7 @@ Key Methods
 EarthModel3D.set_coordinates : Define the 3D grid coordinates
 EarthModel3D.add_quantity : Add a named quantity field to the model
 EarthModel3D.at : Query quantities at arbitrary spatial locations
+EarthModel3D.from_dataset : Load a "3d_earthmodel_" dataset from the registry
 
 Examples
 --------
@@ -57,6 +63,11 @@ Examples
 >>> model.add_quantity("dvs", dv, "velocity perturbation")
 >>> # Query at a specific location
 >>> value = model.at(x=0.1, y=0.2, z=-0.3, quantity="dvs", kernel="idw")
+>>>
+>>> # Load the 3D viscosity model of Lloyd et al. (2024) from the registry
+>>> visc = gdrift.EarthModel3D.from_dataset("Lloyd_et_al_2024_GJI")
+>>> xyz = gdrift.geodetic_to_cartesian(-75.0, -100.0, 200e3)  # lat, lon (degrees), depth (m)
+>>> log10_eta = visc.at("log10_viscosity", xyz)
 
 Notes
 -----
@@ -75,6 +86,20 @@ from typing import List, Union
 import numpy as np
 from scipy.spatial import cKDTree
 from .utility import enlist, interpolate_to_points, create_labeled_array
+from .io import load_dataset
+from .datasetnames import DATASET_REGISTRY, DatasetType
+
+# Prefix of the registry names of the 3D datasets that load through
+# EarthModel3D.from_dataset. Users give the name without it.
+EARTH_MODEL_3D_PREFIX = "3d_earthmodel_"
+
+# Names (without the prefix) of all 3D datasets that are not seismic
+# tomography, derived from the registry in the same way as
+# AVAILABLE_SEISMIC_MODELS in seismic.py.
+AVAILABLE_EARTH_MODELS_3D = [
+    ds.name.replace(EARTH_MODEL_3D_PREFIX, "", 1)
+    for ds in DATASET_REGISTRY.filter_by_type(DatasetType.EARTH_MODEL_3D)
+]
 
 
 class AbstractEarthModel(ABC):
@@ -209,6 +234,100 @@ class EarthModel3D(AbstractEarthModel):
         self._unit_tree = None
         self._layer_radii_sorted = None
         self._layer_sort_idx = None
+
+    @classmethod
+    def from_dataset(cls, model_name, nearest_neighbours=8, default_max_distance=200e3, labels=None):
+        """Load a 3D model that is not seismic tomography from the dataset registry.
+
+        The dataset is "3d_earthmodel_<model_name>" in gdrift/datasets.json.
+        It is downloaded on first use and checked against its sha256, as all
+        other datasets. All arrays in the file other than "coordinates"
+        become quantities of the model.
+
+        Parameters
+        ----------
+        model_name : str
+            Name without the "3d_earthmodel_" prefix, one of
+            `AVAILABLE_EARTH_MODELS_3D` (e.g. "Lloyd_et_al_2024_GJI").
+        nearest_neighbours : int, optional
+            Number of neighbours for the interpolation. Default is 8.
+        default_max_distance : float, optional
+            Distance in metres beyond which a query returns NaN. Default is
+            200e3, which is more than twice the lateral spacing of the
+            65,341-point layers that the gridded datasets use (about 88 km).
+            Within this distance above the top layer or below the bottom
+            layer, a query returns the value of that layer (no
+            extrapolation). For the viscosity model of Lloyd et al. (2024),
+            this means that points up to 200 km above the surface get the
+            crust value, and points up to 200 km below 2891 km get the value
+            of the deepest layer.
+        labels : list of str, optional
+            Load only these quantities. Default is all quantities.
+
+        Returns
+        -------
+        EarthModel3D
+            The model with its coordinates and quantities set.
+
+        Raises
+        ------
+        ValueError
+            If `model_name` is not in `AVAILABLE_EARTH_MODELS_3D`, or a label
+            is not in the file.
+
+        Notes
+        -----
+        The fields are interpolated as stored. A field that spans many
+        orders of magnitude is therefore stored as its log10 (for example
+        "log10_viscosity" in log10(Pa s)), and the caller converts the
+        interpolated value back with ``10 ** value`` if needed.
+
+        The lateral resolution is that of the stored layers (65,341 points,
+        about 88 km apart), which can be coarser than the original model.
+        The description of each dataset in the registry says how it was
+        resampled.
+        """
+        if model_name not in AVAILABLE_EARTH_MODELS_3D:
+            raise ValueError(
+                f"Model '{model_name}' not found in available 3D Earth models. "
+                f"Choose from: {', '.join(AVAILABLE_EARTH_MODELS_3D)}")
+        model = cls(nearest_neighbours=nearest_neighbours, default_max_distance=default_max_distance)
+        model._load_dataset_fields(f"{EARTH_MODEL_3D_PREFIX}{model_name}", labels=labels)
+        return model
+
+    def _load_dataset_fields(self, dataset_name, labels=None):
+        """Read a flat dataset file into the coordinates and quantities of this model.
+
+        The file must contain "coordinates", an (N, 3) array of Cartesian
+        positions in metres, and one (N,) array per quantity. This is the
+        layout of the seismic models and of the "3d_earthmodel_" datasets.
+
+        Parameters
+        ----------
+        dataset_name : str
+            Full registry name of the dataset, prefix included.
+        labels : list of str, optional
+            Load only these quantities. Default is all quantities. The list
+            given by the caller is not changed.
+
+        Raises
+        ------
+        ValueError
+            If a label is not in the file.
+        """
+        raw_model = load_dataset(dataset_name)
+
+        # Work on a copy so that the caller's list does not grow
+        wanted = list(labels) if labels else list(raw_model.keys())
+        for label in wanted:
+            if label not in raw_model:
+                raise ValueError(f"{label} not present in dataset: {dataset_name}")
+
+        # The coordinates are always needed, whatever quantities are asked for
+        self.set_coordinates(raw_model["coordinates"])
+        for key in wanted:
+            if key != "coordinates":
+                self.add_quantity(key, raw_model[key])
 
     def set_coordinates(self, *args, max_distance=200e3):
         """
