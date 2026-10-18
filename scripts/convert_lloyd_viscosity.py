@@ -99,7 +99,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 from gdrift.constants import R_earth  # noqa: E402
 from gdrift.io import file_hash  # noqa: E402
-from gdrift.utility import cartesian_to_geodetic, fibonacci_sphere  # noqa: E402
+from gdrift.utility import cartesian_to_geodetic, fibonacci_sphere, regular_grid_bilinear_weights  # noqa: E402
 
 MANIFEST_PATH = REPO / "gdrift" / "datasets.json"
 DATA_SIA_DIR = REPO / "gdrift" / "data-sia"
@@ -246,47 +246,6 @@ def read_source(path):
     return depth_km, lat, lon, log10eta
 
 
-def bilinear_weights(lat, lon, query_lat, query_lon):
-    """Bilinear interpolation indices and weights on a regular lat-lon grid.
-
-    The same indices and weights apply to every depth layer, so they are
-    computed once.
-
-    Parameters
-    ----------
-    lat, lon : ndarray
-        Increasing, evenly spaced grid axes in degrees.
-    query_lat, query_lon : ndarray, shape (n,)
-        Query points in degrees, inside the grid.
-
-    Returns
-    -------
-    i0, j0 : ndarray of int, shape (n,)
-        Index of the grid cell (lower-left corner) of each query point.
-    weights : ndarray, shape (n, 4)
-        Weights of the corners (i0, j0), (i0+1, j0), (i0, j0+1), (i0+1, j0+1).
-        Each row sums to 1.
-    """
-    dlat = lat[1] - lat[0]
-    dlon = lon[1] - lon[0]
-    # Fractional grid index of each query point
-    fi = (query_lat - lat[0]) / dlat
-    fj = (query_lon - lon[0]) / dlon
-    # Lower corner. Clip so that a point on the last grid line uses the last
-    # cell with a fractional offset of 1 instead of reading past the end.
-    i0 = np.clip(np.floor(fi).astype(int), 0, lat.size - 2)
-    j0 = np.clip(np.floor(fj).astype(int), 0, lon.size - 2)
-    ti = fi - i0
-    tj = fj - j0
-    weights = np.column_stack([
-        (1 - ti) * (1 - tj),
-        ti * (1 - tj),
-        (1 - ti) * tj,
-        ti * tj,
-    ])
-    return i0, j0, weights
-
-
 def resample(depth_km, lat, lon, log10eta):
     """Resample the source grid onto the Fibonacci lattice of each depth.
 
@@ -308,7 +267,7 @@ def resample(depth_km, lat, lon, log10eta):
     # meaningless for unit vectors and is discarded.
     fib_lat, fib_lon, _ = cartesian_to_geodetic(unit[:, 0], unit[:, 1], unit[:, 2])
 
-    i0, j0, w = bilinear_weights(lat, lon, fib_lat, fib_lon)
+    i0, j0, w = regular_grid_bilinear_weights(lat, lon, fib_lat, fib_lon)
     # Corner values for all layers at once: shape (n_depth, n_points, 4)
     corners = np.stack([
         log10eta[:, i0, j0],

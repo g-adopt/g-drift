@@ -1,10 +1,10 @@
 """Three-dimensional seismic tomography models with spatial interpolation.
 
-This module provides access to 25 global seismic tomography models covering
-both shear wave (Vs) and compressional wave (Vp) velocity perturbations
-throughout the mantle. Models are loaded from HDF5 datasets stored on remote
-S3-compatible storage and interpolated using KD-tree nearest-neighbor search
-with configurable kernels.
+This module provides access to the global and regional seismic tomography
+models of the dataset registry, with shear-wave (Vs) and compressional-wave
+(Vp) speeds or their perturbations throughout the mantle. Models are loaded
+from HDF5 datasets stored on remote S3-compatible storage and interpolated
+using KD-tree nearest-neighbor search with configurable kernels.
 
 Seismic tomography models represent the 3D distribution of velocity anomalies
 (dVs, dVp) relative to a 1D reference model. These perturbations are interpreted
@@ -13,9 +13,9 @@ as thermal and compositional heterogeneity in mantle convection studies.
 Available Models
 ----------------
 The module dynamically constructs `AVAILABLE_SEISMIC_MODELS` from the dataset
-registry. As of the current manifest, 25 models are available including:
+registry. The models include:
 - S40RTS (Ritsema et al., 2011) - widely used Vs model
-- GLAD-M25 (Lei et al., 2020) - joint Vs/Vp model
+- GLAD-M35 (Cui et al., 2024) - joint Vs/Vp adjoint model with uncertainties
 - SEMUCB-WM1 (French & Romanowicz, 2014) - full mantle Vs
 - SAW642AN (Panning & Romanowicz, 2006) - radially anisotropic
 - Multiple regional and global P-wave models

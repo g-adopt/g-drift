@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate tomography gallery images and markdown for the data catalog page.
 
-For each of the 47 seismic tomography models available in gdrift, this script:
+For each seismic tomography model available in gdrift, this script:
 1. Classifies the model as global or regional based on lat/lon extent
 2. Groups models by field category (dvs, dvp, vs, vp, vsv, etc.)
 3. Generates a wedge cross-section plot (global) or depth-slice map (regional)
@@ -55,6 +55,11 @@ FIELD_ORDER = ["dvs", "dvp", "vs", "vp", "vsv", "vsh", "vpv", "vph"]
 
 # Perturbation fields (already relative to a 1D model, no subtraction needed)
 PERTURBATION_FIELDS = {"dvs", "dvp"}
+
+# Fields that are not plotted. The gallery shows every other field as its
+# departure from the depth mean, which has no meaning for a standard
+# deviation (GLAD-M35 std_vs and std_vp).
+SKIPPED_FIELDS = {"std_vs", "std_vp"}
 
 
 def classify_model(model):
@@ -362,7 +367,7 @@ def generate_gallery():
             regional_data = make_regional_coords(lat_range, lon_range, depth_range)
 
         for field in model.available_fields.keys():
-            if field == "coordinates":
+            if field == "coordinates" or field in SKIPPED_FIELDS:
                 continue
             safe_name = sanitize_filename(model_name)
             png_name = f"{safe_name}_{field}.png"

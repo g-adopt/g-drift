@@ -1982,6 +1982,32 @@
       "metadata_source": "web_search",
       "metadata_complete": true,
       "etag": "40cb8c677aa0e63ed7df2a7ecf663484-27"
+    },
+    {
+      "name": "3d_seismic_GLAD-M35",
+      "filename": "bb883b89bae2e513b7320d7da846c4a1321bfc56fe59d9d6b7d34c1b742638a0.h5",
+      "type": "TOMOGRAPHY_MODEL",
+      "utility": "SEISMIC_MODEL",
+      "source": "Cui, C., et al. 'GLAD-M35: a joint P and S global tomographic model with uncertainty quantification.' Geophysical Journal International 239.1 (2024): 478-502.",
+      "doi": "10.1093/gji/ggae270",
+      "year": 2024,
+      "fields": [
+        "vs",
+        "vsh",
+        "vsv",
+        "vp",
+        "vph",
+        "vpv",
+        "eta",
+        "std_vs",
+        "std_vp"
+      ],
+      "description": "GLAD-M35 global adjoint tomography model (successor of GLAD-M25): joint P and S, radially anisotropic in the upper mantle, with standard deviations of Vs and Vp as given by EMC (std_vp is NaN at 10-40 km and 2870-2890 km, where the source has only zeros). From the EarthScope EMC grid r0.1 (doi:10.17611/dp/emc.2024.gladm35.1; 1 degree, 10-2890 km). vs and vp are sqrt((2 vsv^2 + vsh^2)/3) and sqrt((vpv^2 + 4 vph^2)/5), the Voigt forms without eta.",
+      "author": "Cui, C., Lei, W., Liu, Q., Peter, D., Bozda\u011f, E., Tromp, J., Hill, J., Podhorszki, N., & Pugmire, D.",
+      "sha256": "bb883b89bae2e513b7320d7da846c4a1321bfc56fe59d9d6b7d34c1b742638a0",
+      "metadata_source": "web_search",
+      "metadata_complete": true,
+      "etag": "40d8b7df07b5786c954a713d663fe84a-47"
     }
   ]
 }
