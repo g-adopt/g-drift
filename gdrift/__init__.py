@@ -69,7 +69,7 @@ See Also
 --------
 print_datasets_markdown : List all registered datasets
 DATASET_REGISTRY : Registry of available datasets with metadata
-AVAILABLE_SEISMIC_MODELS : List of 25 seismic tomography models
+AVAILABLE_SEISMIC_MODELS : List of seismic tomography models
 AVAILABLE_EARTH_MODELS_3D : List of 3D models that are not seismic tomography
 """
 

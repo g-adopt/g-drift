@@ -1982,6 +1982,32 @@
       "metadata_source": "web_search",
       "metadata_complete": true,
       "etag": "40cb8c677aa0e63ed7df2a7ecf663484-27"
+    },
+    {
+      "name": "3d_seismic_GLAD-M35",
+      "filename": "b69f03d546713de999f6e774dde97e1b5a9419593c6c761986f3d336d00e1a0f.h5",
+      "type": "TOMOGRAPHY_MODEL",
+      "utility": "SEISMIC_MODEL",
+      "source": "Cui, C., et al. 'GLAD-M35: a joint P and S global tomographic model with uncertainty quantification.' Geophysical Journal International 239.1 (2024): 478-502.",
+      "doi": "10.1093/gji/ggae270",
+      "year": 2024,
+      "fields": [
+        "vs",
+        "vsh",
+        "vsv",
+        "vp",
+        "vph",
+        "vpv",
+        "eta",
+        "std_vs",
+        "std_vp"
+      ],
+      "description": "GLAD-M35 global adjoint tomography model (successor of GLAD-M25): joint P and S, radially anisotropic in the upper mantle, with standard deviations of Vs and Vp. From the EarthScope EMC grid (r0.1, 1 degree, 10-2890 km). vs and vp are the Voigt averages sqrt((2 vsv^2 + vsh^2)/3) and sqrt((vpv^2 + 4 vph^2)/5).",
+      "author": "Cui, C., Lei, W., Liu, Q., Peter, D., Bozda\u011f, E., Tromp, J., Hill, J., Podhorszki, N., & Pugmire, D.",
+      "sha256": "b69f03d546713de999f6e774dde97e1b5a9419593c6c761986f3d336d00e1a0f",
+      "metadata_source": "web_search",
+      "metadata_complete": true,
+      "etag": null
     }
   ]
 }

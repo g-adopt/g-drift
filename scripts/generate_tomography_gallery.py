@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate tomography gallery images and markdown for the data catalog page.
 
-For each of the 47 seismic tomography models available in gdrift, this script:
+For each seismic tomography model available in gdrift, this script:
 1. Classifies the model as global or regional based on lat/lon extent
 2. Groups models by field category (dvs, dvp, vs, vp, vsv, etc.)
 3. Generates a wedge cross-section plot (global) or depth-slice map (regional)

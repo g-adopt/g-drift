@@ -160,7 +160,7 @@ class TestRegistryIntegration:
                     f"{dataset_name} should not be regional, got {ds.regional}")
 
     def test_total_seismic_model_count(self):
-        """After integration, we should have 47 seismic models."""
+        """The registry has 48 seismic models (47 plus GLAD-M35)."""
         from gdrift.seismic import AVAILABLE_SEISMIC_MODELS
-        assert len(AVAILABLE_SEISMIC_MODELS) == 47, (
-            f"Expected 47 seismic models, got {len(AVAILABLE_SEISMIC_MODELS)}")
+        assert len(AVAILABLE_SEISMIC_MODELS) == 48, (
+            f"Expected 48 seismic models, got {len(AVAILABLE_SEISMIC_MODELS)}")
