@@ -34,7 +34,8 @@ std_vp is exactly 0 at every node of the 10, 20, 30 and 40 km layers and of
 the 2870, 2880 and 2890 km layers, where std_vs is not. There 0 marks
 missing values. The script sets these layers of std_vp to NaN, the marker
 for missing values in the other gdrift datasets. Through SeismicModel,
-std_vp is therefore NaN shallower than 50 km and deeper than 2860 km.
+std_vp is therefore NaN shallower than 50 km and from 2860 km down (a
+query exactly at 2860 km mixes in the NaN layer below it).
 
 Output
 ------
@@ -78,6 +79,13 @@ shuffle filter. Without compression the file would be 1.13 GB, more than
 twice the largest other dataset; with it, about 740 MB. h5py decompresses
 on read, so the loader needs no change. Reading the whole file takes about
 1.3 s instead of 0.1 s.
+
+The compressed bytes depend on the HDF5 and zlib libraries, so the sha256 of
+the output is reproducible only with the same h5py, HDF5 and zlib. The
+released file was written with h5py 3.16.0, HDF5 2.0.0 and zlib 1.2.12. A
+rebuild with other versions gives the same decoded arrays and attributes
+but a different sha256; compare such a rebuild with the released file by
+content, not by sha256. Any HDF5 version reads the file.
 
 Resampling
 ----------
@@ -198,7 +206,8 @@ def read_source(path):
     lat, lon : numpy.ndarray
         Grid axes in degrees, increasing, from -90 to 90 and -180 to 180.
     fields : dict of numpy.ndarray, shape (n_depth, n_lat, n_lon)
-        The source fields in SOURCE_FIELDS, as float64, in source units.
+        The source fields in SOURCE_FIELDS, as float64, in source units. The
+        layers of std_vp that are 0 at every node are NaN.
 
     Raises
     ------
@@ -403,7 +412,8 @@ def build_file(path, coordinates, out, n_depth):
     # Lossless compression (see "Storage" in the module docstring). gzip and
     # shuffle are built into every HDF5 library, so any h5py can read the
     # file. Chunks of one depth layer keep the chunking deterministic, so the
-    # sha256 of the output is reproducible.
+    # sha256 of the output is reproducible with the same h5py, HDF5 and zlib
+    # (see "Storage" for the versions of the released file).
     compression = {"compression": "gzip", "compression_opts": 4, "shuffle": True}
     layer = NUM_POINTS_PER_LAYER
     with h5py.File(path, "w") as f:
