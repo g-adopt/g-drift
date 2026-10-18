@@ -2,9 +2,9 @@
 
 This module provides access to the global and regional seismic tomography
 models of the dataset registry, with shear-wave (Vs) and compressional-wave
-(Vp) speeds or their perturbations throughout the mantle. Models are loaded from HDF5 datasets stored on remote
-S3-compatible storage and interpolated using KD-tree nearest-neighbor search
-with configurable kernels.
+(Vp) speeds or their perturbations throughout the mantle. Models are loaded
+from HDF5 datasets stored on remote S3-compatible storage and interpolated
+using KD-tree nearest-neighbor search with configurable kernels.
 
 Seismic tomography models represent the 3D distribution of velocity anomalies
 (dVs, dVp) relative to a 1D reference model. These perturbations are interpreted

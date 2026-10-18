@@ -25,7 +25,16 @@ The file has, on 289 depths from 10 to 2890 km every 10 km, latitudes -90 to
 
 - vpv, vph, vsv, vsh in km/s,
 - eta (dimensionless),
-- std_vp, std_vs: standard deviations of the P- and S-wave speeds, in km/s.
+- std_vp, std_vs: standard deviations of the P- and S-wave speeds, in km/s,
+  as given by EMC. In the upper mantle the inversion parameters are vsv, vsh,
+  the bulk sound speed and eta, so it is not stated which S-wave speed
+  std_vs refers to there.
+
+std_vp is exactly 0 at every node of the 10, 20, 30 and 40 km layers and of
+the 2870, 2880 and 2890 km layers, where std_vs is not. There 0 marks
+missing values. The script sets these layers of std_vp to NaN, the marker
+for missing values in the other gdrift datasets. Through SeismicModel,
+std_vp is therefore NaN shallower than 50 km and deeper than 2860 km.
 
 Output
 ------
@@ -35,27 +44,40 @@ One flat HDF5 file in the layout of the other gdrift seismic models:
   Fibonacci lattice of the other seismic models, repeated on each of the 289
   source depths, shallowest layer first.
 - `vsv`, `vsh`, `vpv`, `vph`, `std_vs`, `std_vp` in m/s, `eta` without unit.
-
-The fields are stored as float32, the precision of the source file. The
-other seismic datasets store float64, but here float64 would add about
-680 MB (18.9 million points times nine fields) without adding information.
-The coordinates stay float64, because EarthModel3D finds the depth layers
-from the differences of the radii between consecutive points, which must be
-close to zero within a layer. The loader and the interpolation work in
-float64 whatever the stored type.
 - `vs` and `vp`: isotropic speeds in m/s, computed from the resampled
-  components with the Voigt forms that the other gdrift seismic datasets use
-  for vs (see scripts/convert_seismic_models.py, `voigt_vs`):
+  components:
 
       vs = sqrt((2 vsv^2 + vsh^2) / 3)
       vp = sqrt((vpv^2 + 4 vph^2) / 5)
 
-  These are the S- and P-wave forms of the Voigt average for a transversely
-  isotropic medium used by Panning and Romanowicz (2006) and French and
-  Romanowicz (2014). They do not include eta. Below the upper mantle
-  vsv = vsh and vpv = vph, so vs and vp equal the components there.
-  Computing them after the resampling makes the stored vs and vp exactly the
-  Voigt averages of the stored components at every point.
+  vs is the definition that the other gdrift seismic datasets use (see
+  scripts/convert_seismic_models.py, `voigt_vs`). Both are the S- and P-wave
+  forms of the Voigt average for a transversely isotropic medium used by
+  Panning and Romanowicz (2006). They equal the full Voigt averages of the
+  elastic tensor only for eta = 1 (and, for vs, vph = vpv). With the eta of
+  GLAD-M35, the full Voigt averages differ from these forms by up to 29 m/s
+  for vs and up to 54 m/s for vp; between 20 and 150 km depth the vp
+  difference is systematic, about 30-40 m/s RMS (0.5 %). The simple forms
+  are kept so that vs means the same in every gdrift seismic dataset. The
+  paper does not define isotropic speeds. The model is isotropic
+  (vsv = vsh, vpv = vph) from 780 km down; between 660 and 780 km the
+  components still differ by up to 45 m/s. Computing vs and vp after the
+  resampling makes them exactly the averages of the stored components.
+
+Storage
+-------
+The fields are stored as float32, the precision of the source file; the
+other seismic datasets store float64. The coordinates stay float64, because
+EarthModel3D finds the depth layers from the differences of the radii
+between consecutive points, which must be close to zero within a layer. The
+arrays in `SeismicModel.available_fields` keep the stored float32 type;
+`SeismicModel.at` returns float64.
+
+All arrays are compressed losslessly with gzip (level 4) after the HDF5
+shuffle filter. Without compression the file would be 1.13 GB, more than
+twice the largest other dataset; with it, about 740 MB. h5py decompresses
+on read, so the loader needs no change. Reading the whole file takes about
+1.3 s instead of 0.1 s.
 
 Resampling
 ----------
@@ -63,15 +85,17 @@ The source grid is regular, so the script uses bilinear interpolation in
 (latitude, longitude) on each depth layer (gdrift.utility.
 regular_grid_bilinear_weights). No interpolation is done in depth: the output
 keeps the 289 source depths. The output lattice has about 88 km between
-points, finer than the 1 degree source (about 111 km at the equator), so the
-resampling does not lose lateral resolution.
+points. The 1 degree source has 111 km between nodes in latitude everywhere
+and in longitude at the equator, so near the equator the lattice is finer
+than the source. Towards the poles the source nodes get closer in longitude
+than the lattice points, and some lateral detail there is smoothed.
 
 The columns at -180 and +180 longitude of the published file are not
-identical (they differ by up to 0.08 km/s in vsv), because the EMC grid
-samples the original model separately at the two longitudes. The bilinear
-interpolation uses the -180 column for longitudes just east of -180 and the
-+180 column for longitudes just west of +180, so the file is converted as
-published.
+identical: they differ by more than 0.1 m/s in about a quarter of the
+(depth, latitude) pairs, by up to 0.08 km/s in vsv (at 20 km depth). The
+bilinear interpolation uses the -180 column for longitudes just east of -180
+and the +180 column for longitudes just west of +180, so the file is
+converted as published and a small step remains at the date line.
 
 Usage
 -----
@@ -142,9 +166,11 @@ EMC_DOI = "10.17611/dp/emc.2024.gladm35.1"
 
 DESCRIPTION = (
     "GLAD-M35 global adjoint tomography model (successor of GLAD-M25): joint P and S, "
-    "radially anisotropic in the upper mantle, with standard deviations of Vs and Vp. "
-    "From the EarthScope EMC grid (r0.1, 1 degree, 10-2890 km). vs and vp are the Voigt "
-    "averages sqrt((2 vsv^2 + vsh^2)/3) and sqrt((vpv^2 + 4 vph^2)/5)."
+    "radially anisotropic in the upper mantle, with standard deviations of Vs and Vp as "
+    "given by EMC (std_vp is NaN at 10-40 km and 2870-2890 km, where the source has only "
+    "zeros). From the EarthScope EMC grid r0.1 (doi:10.17611/dp/emc.2024.gladm35.1; 1 "
+    "degree, 10-2890 km). vs and vp are sqrt((2 vsv^2 + vsh^2)/3) and "
+    "sqrt((vpv^2 + 4 vph^2)/5), the Voigt forms without eta."
 )
 
 
@@ -209,6 +235,13 @@ def read_source(path):
     for name in ("vsv", "vsh", "vpv", "vph"):
         assert 1.0 < fields[name].min() and fields[name].max() < 15.0, name
     assert fields["std_vs"].min() >= 0 and fields["std_vp"].min() >= 0
+
+    # Layers of std_vp that are exactly 0 everywhere hold no value (see the
+    # module docstring). Mark them as missing. Only whole layers are changed:
+    # a zero at a single node would be kept.
+    missing = np.all(fields["std_vp"] == 0.0, axis=(1, 2))
+    fields["std_vp"][missing] = np.nan
+    print(f"std_vp set to NaN at depths {depth_km[missing].tolist()} km (all zeros in the source)")
 
     # Report how much the columns at -180 and +180 differ (see the module
     # docstring); both are kept as published
@@ -311,11 +344,20 @@ def check_against_source(coordinates, out, depth_km, lat, fields):
     for name in SOURCE_FIELDS:
         scale = 1e3 if name in SPEED_FIELDS else 1.0
         layers = out[name].reshape(n_depth, n) / scale
-        src = fields[name][:, :, :-1]  # drop the +180 column, which repeats -180
-        assert np.all(layers.min(axis=1) >= src.min(axis=(1, 2)) - 1e-9), name
-        assert np.all(layers.max(axis=1) <= src.max(axis=(1, 2)) + 1e-9), name
-        src_mean = np.sum(src * wlat, axis=(1, 2)) / np.sum(wlat * np.ones(src.shape[2]))
-        worst[name] = np.abs(layers.mean(axis=1) - src_mean).max()
+        src = fields[name]
+        # Bounds over the full grid, both seam columns included, because the
+        # interpolation uses both. Layers that are entirely NaN (std_vp) are
+        # skipped, and must be entirely NaN in the output too.
+        valid = ~np.all(np.isnan(src), axis=(1, 2))
+        assert np.all(np.isnan(layers[~valid])), name
+        assert not np.any(np.isnan(layers[valid])), name
+        assert np.all(layers[valid].min(axis=1) >= src[valid].min(axis=(1, 2)) - 1e-9), name
+        assert np.all(layers[valid].max(axis=1) <= src[valid].max(axis=(1, 2)) + 1e-9), name
+        # For the mean, drop the +180 column so that the meridian is not
+        # counted twice
+        inner = src[valid][:, :, :-1]
+        src_mean = np.sum(inner * wlat, axis=(1, 2)) / np.sum(wlat * np.ones(inner.shape[2]))
+        worst[name] = np.abs(layers[valid].mean(axis=1) - src_mean).max()
 
     # Voigt averages lie between the two components they average
     for iso, (a, b) in (("vs", ("vsv", "vsh")), ("vp", ("vpv", "vph"))):
@@ -351,15 +393,24 @@ def build_file(path, coordinates, out, n_depth):
         "source_sha256": SOURCE_SHA256,
         "note": (
             "std_vs and std_vp are the standard deviations of the S- and P-wave speeds "
-            "estimated by Cui et al. (2024) from the BFGS update history, in m/s. eta has "
-            "no unit."
+            "estimated by Cui et al. (2024) from the BFGS update history, as given by EMC, "
+            "in m/s. std_vp is NaN at 10-40 km and 2870-2890 km, where the source has only "
+            "zeros. vs and vp use the Voigt forms without eta (exact for eta = 1); with "
+            "the eta of the model the full Voigt averages differ by up to 29 m/s (vs) and "
+            "54 m/s (vp). eta has no unit."
         ),
     }
+    # Lossless compression (see "Storage" in the module docstring). gzip and
+    # shuffle are built into every HDF5 library, so any h5py can read the
+    # file. Chunks of one depth layer keep the chunking deterministic, so the
+    # sha256 of the output is reproducible.
+    compression = {"compression": "gzip", "compression_opts": 4, "shuffle": True}
+    layer = NUM_POINTS_PER_LAYER
     with h5py.File(path, "w") as f:
-        f.create_dataset("coordinates", data=coordinates)
+        f.create_dataset("coordinates", data=coordinates, chunks=(layer, 3), **compression)
         for name, values in out.items():
             # float32: the precision of the source (see the module docstring)
-            f.create_dataset(name, data=values.astype(np.float32))
+            f.create_dataset(name, data=values.astype(np.float32), chunks=(layer,), **compression)
         for key, value in attrs.items():
             f.attrs[key] = value
 

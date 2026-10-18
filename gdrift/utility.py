@@ -418,9 +418,11 @@ def regular_grid_bilinear_weights(lat, lon, query_lat, query_lon):
     the Fibonacci layers of the gdrift datasets. The same indices and weights
     apply to every depth layer, so they are computed once per model.
 
-    The grid must cover the queried points: no wrap-around in longitude is
-    done. Published global grids that include both -180 and +180 (or 0 and
-    360) satisfy this. A point on the last grid line uses the last cell with a
+    The grid must contain every query point: no wrap-around in longitude is
+    done, and a point outside the grid raises a ValueError. Query longitudes
+    from `cartesian_to_geodetic` lie in [-180, 180], so a global grid must
+    run from -180 to +180 with both ends included; a 0 to 360 grid must be
+    converted first. A point on the last grid line uses the last cell with a
     fractional offset of 1, so no index runs past the end of the grid.
 
     Parameters
@@ -437,7 +439,12 @@ def regular_grid_bilinear_weights(lat, lon, query_lat, query_lon):
         cell that contains each query point.
     weights : numpy.ndarray, shape (n, 4)
         Weights of the corners (i0, j0), (i0+1, j0), (i0, j0+1), (i0+1, j0+1),
-        in that order. Each row sums to 1.
+        in that order. Each row sums to 1, and every weight is in [0, 1].
+
+    Raises
+    ------
+    ValueError
+        If a query point lies outside the grid.
 
     Examples
     --------
@@ -446,6 +453,16 @@ def regular_grid_bilinear_weights(lat, lon, query_lat, query_lon):
     ...                        field[..., i0, j0 + 1], field[..., i0 + 1, j0 + 1]], axis=-1)
     >>> values = numpy.sum(corners * w, axis=-1)
     """
+    # Outside the grid the weights would extrapolate (negative weights), so
+    # refuse. The tolerance absorbs the rounding of points on the grid edges.
+    tol = 1e-9
+    outside = ((query_lat < lat[0] - tol) | (query_lat > lat[-1] + tol)
+               | (query_lon < lon[0] - tol) | (query_lon > lon[-1] + tol))
+    if numpy.any(outside):
+        raise ValueError(
+            f"{int(numpy.sum(outside))} query points lie outside the grid "
+            f"(latitude {lat[0]} to {lat[-1]}, longitude {lon[0]} to {lon[-1]})")
+
     dlat = lat[1] - lat[0]
     dlon = lon[1] - lon[0]
     # Fractional grid index of each query point
