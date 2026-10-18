@@ -557,7 +557,6 @@
       "name": "test",
       "filename": "4bd4674da226e858110eaa827f923cdbbecf82f39e0089ed4a35c5d362c9dc72.h5",
       "type": "EARTH_MODEL",
-      "utility": "PREM",
       "source": "Test dataset for unit testing purposes.",
       "doi": null,
       "year": null,

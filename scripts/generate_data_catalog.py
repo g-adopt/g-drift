@@ -34,6 +34,9 @@ from collections import defaultdict
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from gdrift.metadata import validate_doi
+from gdrift.earthmodel3d import EARTH_MODEL_3D_PREFIX
+from gdrift.profile import PreliminaryRefEarthModel
+from gdrift.seismic import SEISMIC_MODEL_PREFIX
 
 
 def usage_line(dataset: Dict[str, Any]) -> str:
@@ -45,7 +48,10 @@ def usage_line(dataset: Dict[str, Any]) -> str:
     form of the name, so the call is built per loader:
 
     - RADIAL_EARTH_MODEL: `RadialEarthModelFromFile` takes the full name.
-    - PREM: `PreliminaryRefEarthModel` takes no argument.
+    - PREM: `PreliminaryRefEarthModel` takes no argument and always loads
+      "1d_prem", so it is the call only for that entry. Any other entry with
+      this loader gets `RadialEarthModelFromFile("<name>")`, the class that
+      PreliminaryRefEarthModel extends.
     - THERMODYNAMIC: `ThermodynamicModel` takes the database version and the
       composition, which are the parts of the name before and after the
       second underscore ("SLB_21_pyroliteCFMAS" gives "SLB_21" and
@@ -67,17 +73,24 @@ def usage_line(dataset: Dict[str, Any]) -> str:
     """
     name = dataset["name"]
     utility = dataset.get("utility")
+    # 1-D radial profiles (solidus, adiabats): the full registry name
     if utility == "RADIAL_EARTH_MODEL":
         return f'gdrift.RadialEarthModelFromFile("{name}")'
+    # PREM: the class has the dataset name built in
     if utility == "PREM":
-        return "gdrift.PreliminaryRefEarthModel()"
+        if name == PreliminaryRefEarthModel.PREM_FILENAME:
+            return "gdrift.PreliminaryRefEarthModel()"
+        return f'gdrift.RadialEarthModelFromFile("{name}")'
+    # Thermodynamic tables: "SLB_21_pyroliteCFMAS" -> ("SLB_21", "pyroliteCFMAS")
     if utility == "THERMODYNAMIC":
         family, version, composition = name.split("_", 2)
         return f'gdrift.ThermodynamicModel("{family}_{version}", "{composition}")'
+    # Seismic tomography: the name without its registry prefix
     if utility == "SEISMIC_MODEL":
-        return f'gdrift.SeismicModel("{name.replace("3d_seismic_", "", 1)}")'
+        return f'gdrift.SeismicModel("{name.removeprefix(SEISMIC_MODEL_PREFIX)}")'
+    # 3-D models that are not seismic: a class method, name without its prefix
     if utility == "EARTH_MODEL_3D":
-        return f'gdrift.EarthModel3D.from_dataset("{name.replace("3d_earthmodel_", "", 1)}")'
+        return f'gdrift.EarthModel3D.from_dataset("{name.removeprefix(EARTH_MODEL_3D_PREFIX)}")'
     return ""
 
 

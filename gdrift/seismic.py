@@ -31,23 +31,20 @@ AVAILABLE_SEISMIC_MODELS : List of available model names (derived from registry)
 Examples
 --------
 >>> import gdrift
->>> # List available models
+>>> # List available models (names are case-sensitive)
 >>> print(gdrift.AVAILABLE_SEISMIC_MODELS[:5])
-['s40rts', 'glad_m25', 'semucb_wm1', 'saw642an', ...]
+['GAP', 'GyPSuM', 'HMSL-P06', 'HMSL-S06', 'LLNL-G3Dv3']
 >>>
 >>> # Load S40RTS model
->>> s40rts = gdrift.SeismicModel("s40rts", nearest_neighbours=8)
->>> # Query dVs at specific location (lat, lon, depth)
->>> dvs = s40rts.at(lat=45.0, lon=10.0, depth=1000e3, quantity="dvs")
->>>
->>> # Use different interpolation kernel
->>> dvs_gauss = s40rts.at(lat=45.0, lon=10.0, depth=1000e3,
-...                       quantity="dvs", kernel="gaussian")
+>>> s40rts = gdrift.SeismicModel("S40RTS", nearest_neighbours=8)
+>>> # Query Vs (m/s) at a location given as lat, lon (degrees) and depth (m)
+>>> xyz = gdrift.geodetic_to_cartesian(45.0, 10.0, 1000e3)
+>>> vs = s40rts.at("vs", xyz)
 
 Notes
 -----
 - Model names should be provided WITHOUT the "3d_seismic_" prefix
-  (e.g., use "s40rts", not "3d_seismic_s40rts")
+  (e.g., use "S40RTS", not "3d_seismic_S40RTS")
 - Coordinates: lat/lon in degrees, depth in meters from surface
 - Interpolation is limited to `maximum_distance` (200 km) from data points
 - Below `minimum_distance` (1 m), returns exact values without interpolation
@@ -61,8 +58,12 @@ gdrift.load_dataset : Download and cache HDF5 datasets
 from .earthmodel3d import EarthModel3D
 from .datasetnames import DATASET_REGISTRY, DatasetType
 
+# Prefix of the registry names of seismic tomography datasets. Users give the
+# name without it.
+SEISMIC_MODEL_PREFIX = "3d_seismic_"
+
 AVAILABLE_SEISMIC_MODELS = [
-    ds.name.replace("3d_seismic_", "")
+    ds.name.removeprefix(SEISMIC_MODEL_PREFIX)
     for ds in DATASET_REGISTRY.filter_by_type(DatasetType.TOMOGRAPHY_MODEL)
 ]
 
@@ -149,4 +150,4 @@ class SeismicModel(EarthModel3D):
         """
         # The file layout is the same as for every gridded 3D dataset, so the
         # reading is done by EarthModel3D; only the registry prefix differs.
-        self._load_dataset_fields(f"3d_seismic_{self.model_name}", labels=labels)
+        self._load_dataset_fields(f"{SEISMIC_MODEL_PREFIX}{self.model_name}", labels=labels)
