@@ -3,7 +3,8 @@
 
 Reads the original LLNL_G3D_JPS.nc (NetCDF4/HDF5) directly from LLNL, which
 contains Vp, Vs, dlnVp, dlnVs on a 1-degree grid with 60 depth levels
-(including discontinuity straddle levels).
+(including discontinuity straddle levels). The level at 0 km holds no
+seismic speeds and is left out, so the output has 59 levels.
 
 Uses h5py (not netCDF4 library) since the file is HDF5 under the hood.
 Resamples onto a 65,341-point Fibonacci sphere per depth level using IDW
@@ -201,6 +202,15 @@ def main():
     print("Fixing the order of the boundary pairs ...")
     src["depth"], src["r"] = fix_boundary_order(src["depth"], src["r"], src["Vp"], src["lat"])
 
+    # Leave out the level at 0 km. It holds Vs = -2.876 km/s and Vp = -1.924 km/s
+    # at every point, which are not seismic speeds; with it, queries between
+    # 0 and 3.2 km would interpolate to negative speeds.
+    keep = src["depth"] > 0.001
+    for key in ("depth", "r", "Vp", "Vs", "dlnVp_percent", "dlnVs_percent"):
+        src[key] = src[key][keep]
+    num_layers = len(src["depth"])
+    print(f"  Left out {int((~keep).sum())} level(s) at 0 km; {num_layers} levels remain")
+
     # Generate Fibonacci sphere
     print(f"Generating Fibonacci sphere ({NUM_SAMPLES} points) ...")
     fib_coords = fibonacci_sphere(NUM_SAMPLES)
@@ -233,8 +243,8 @@ def main():
     field_map = [
         ("Vp",              "vp",  1e3),    # km/s -> m/s
         ("Vs",              "vs",  1e3),    # km/s -> m/s
-        ("dlnVp_percent",   "dvp", 1e-2),   # percent -> fractional
-        ("dlnVs_percent",   "dvs", 1e-2),   # percent -> fractional
+        ("dlnVp_percent",   "dvp", 1.0),    # percent, as all perturbations in gdrift
+        ("dlnVs_percent",   "dvs", 1.0),    # percent, as all perturbations in gdrift
     ]
 
     data_to_write = {"coordinates": coordinates}
@@ -246,6 +256,11 @@ def main():
             src[src_name], tree, dists, indices, weights, weight_sum,
             close_points, far_points, num_layers, NUM_SAMPLES)
         interpolated *= scale
+        if tgt_name in ("vp", "vs"):
+            # The sea-water level has Vs = 0 with round-off down to -2.2e-16
+            # km/s in the source. A velocity cannot be negative, so set these
+            # round-off values to exactly 0.
+            interpolated[(interpolated < 0.0) & (interpolated > -1e-6)] = 0.0
         data_to_write[tgt_name] = interpolated
         fields_written.append(tgt_name)
 
@@ -263,7 +278,7 @@ def main():
         for key, value in data_to_write.items():
             f.create_dataset(key, data=value)
         f.attrs["velocity_units"] = "m/s"
-        f.attrs["perturbation_units"] = "fractional"
+        f.attrs["perturbation_units"] = "percent"
         f.attrs["source"] = (
             "Simmons, N. A., Myers, S. C., Johannesson, G., Matzel, E., & Grand, S. P. (2015). "
             "Evidence for long-lived subduction of an ancient tectonic plate beneath the southern "
@@ -278,7 +293,9 @@ def main():
             "The depths of the two levels of each boundary pair at 12.5, 18.7, 26.4, "
             "415.7 and 657.5 km are swapped relative to the source, which put the lower "
             "unit's level above the upper unit's level. The levels above 12.4 km are a "
-            "crust of variable thickness at fixed mean depths and are not located physically."
+            "crust of variable thickness at fixed mean depths and are not located physically. "
+            "The level at 0 km of the source (Vs = -2875.7 m/s, Vp = -1924.1 m/s at every point) "
+            "is not included. Perturbations are in percent, as in the source."
         )
 
     # Compute SHA256
