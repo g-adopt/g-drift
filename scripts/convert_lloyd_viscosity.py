@@ -94,12 +94,16 @@ import numpy as np
 from scipy.io import netcdf_file
 
 # Reuse the package functions, so that the coordinates and the sha256 are
-# computed exactly as in the other datasets and in the loader.
-REPO = Path(__file__).resolve().parent.parent
+# computed exactly as in the other datasets and in the loader, and the
+# bilinear weights shared by the conversion scripts (scripts/regular_grid.py).
+SCRIPTS = Path(__file__).resolve().parent
+REPO = SCRIPTS.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(SCRIPTS))
 from gdrift.constants import R_earth  # noqa: E402
 from gdrift.io import file_hash  # noqa: E402
-from gdrift.utility import cartesian_to_geodetic, fibonacci_sphere, regular_grid_bilinear_weights  # noqa: E402
+from gdrift.utility import cartesian_to_geodetic, fibonacci_sphere  # noqa: E402
+from regular_grid import regular_grid_bilinear_weights  # noqa: E402
 
 MANIFEST_PATH = REPO / "gdrift" / "datasets.json"
 DATA_SIA_DIR = REPO / "gdrift" / "data-sia"

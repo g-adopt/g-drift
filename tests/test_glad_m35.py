@@ -8,7 +8,9 @@ Covers:
   the 1.1 GB file).
 
 ``scripts/`` is not a package and pytest runs with ``--import-mode=importlib``,
-so the conversion script is loaded from its path.
+so the conversion script is loaded from its path. The bilinear weights of
+scripts/regular_grid.py are reached through it, as
+``convert.regular_grid_bilinear_weights``.
 """
 
 import importlib.util
@@ -22,7 +24,7 @@ import gdrift
 import gdrift.io as gio
 from gdrift.constants import R_earth
 from gdrift.datasetnames import DATASET_REGISTRY, DatasetType, UtilityClass
-from gdrift.utility import fibonacci_sphere, geodetic_to_cartesian, regular_grid_bilinear_weights
+from gdrift.utility import fibonacci_sphere, geodetic_to_cartesian
 
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "convert_glad_m35.py"
 NAME = "GLAD-M35"
@@ -186,9 +188,9 @@ def test_bilinear_weights_refuse_points_outside_the_grid():
     lat = np.arange(-90.0, 90.1, 1.0)
     lon = np.arange(0.0, 360.1, 1.0)
     with pytest.raises(ValueError, match="outside the grid"):
-        regular_grid_bilinear_weights(lat, lon, np.array([0.0]), np.array([-10.0]))
+        convert.regular_grid_bilinear_weights(lat, lon, np.array([0.0]), np.array([-10.0]))
     # Points on the edges are inside
-    _, _, w = regular_grid_bilinear_weights(lat, lon, np.array([-90.0, 90.0]), np.array([0.0, 360.0]))
+    _, _, w = convert.regular_grid_bilinear_weights(lat, lon, np.array([-90.0, 90.0]), np.array([0.0, 360.0]))
     np.testing.assert_allclose(w.sum(axis=1), 1.0)
     assert np.all((w >= 0) & (w <= 1))
 

@@ -90,8 +90,8 @@ content, not by sha256. Any HDF5 version reads the file.
 Resampling
 ----------
 The source grid is regular, so the script uses bilinear interpolation in
-(latitude, longitude) on each depth layer (gdrift.utility.
-regular_grid_bilinear_weights). No interpolation is done in depth: the output
+(latitude, longitude) on each depth layer
+(scripts/regular_grid.py, `regular_grid_bilinear_weights`). No interpolation is done in depth: the output
 keeps the 289 source depths. The output lattice has about 88 km between
 points. The 1 degree source has 111 km between nodes in latitude everywhere
 and in longitude at the equator, so near the equator the lattice is finer
@@ -136,14 +136,18 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-# Reuse the package functions, so that the coordinates, the interpolation
-# weights and the sha256 are computed exactly as for the other datasets.
-REPO = Path(__file__).resolve().parent.parent
+# Reuse the package functions, so that the coordinates and the sha256 are
+# computed exactly as for the other datasets, and the bilinear weights shared
+# by the conversion scripts (scripts/regular_grid.py), so that the
+# interpolation is the same as for the Lloyd et al. (2024) viscosity.
+SCRIPTS = Path(__file__).resolve().parent
+REPO = SCRIPTS.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(SCRIPTS))
 from gdrift.constants import R_earth  # noqa: E402
 from gdrift.io import file_hash  # noqa: E402
-from gdrift.utility import (  # noqa: E402
-    cartesian_to_geodetic, fibonacci_sphere, regular_grid_bilinear_weights)
+from gdrift.utility import cartesian_to_geodetic, fibonacci_sphere  # noqa: E402
+from regular_grid import regular_grid_bilinear_weights  # noqa: E402
 
 MANIFEST_PATH = REPO / "gdrift" / "datasets.json"
 DATA_SIA_DIR = REPO / "gdrift" / "data-sia"
