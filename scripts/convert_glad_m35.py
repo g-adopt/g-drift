@@ -90,8 +90,8 @@ content, not by sha256. Any HDF5 version reads the file.
 Resampling
 ----------
 The source grid is regular, so the script uses bilinear interpolation in
-(latitude, longitude) on each depth layer (gdrift.utility.
-regular_grid_bilinear_weights). No interpolation is done in depth: the output
+(latitude, longitude) on each depth layer
+(scripts/regular_grid.py, `regular_grid_bilinear_weights`). No interpolation is done in depth: the output
 keeps the 289 source depths. The output lattice has about 88 km between
 points. The 1 degree source has 111 km between nodes in latitude everywhere
 and in longitude at the equator, so near the equator the lattice is finer
@@ -104,6 +104,14 @@ identical: they differ by more than 0.1 m/s in about a quarter of the
 bilinear interpolation uses the -180 column for longitudes just east of -180
 and the +180 column for longitudes just west of +180, so the file is
 converted as published and a small step remains at the date line.
+
+Use by scripts/convert_glad_m25.py
+----------------------------------
+The GLAD-M25 script imports this module and uses `resample`,
+`check_against_source`, `write_file` and `update_manifest`, and through them
+NUM_POINTS_PER_LAYER and SPEED_FIELDS. A change to any of these changes the
+GLAD-M25 dataset too. SPEED_FIELDS must contain vsv, vsh, vpv and vph, and
+must not contain eta; the GLAD-M25 script checks this when it is imported.
 
 Usage
 -----
@@ -128,14 +136,18 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-# Reuse the package functions, so that the coordinates, the interpolation
-# weights and the sha256 are computed exactly as for the other datasets.
-REPO = Path(__file__).resolve().parent.parent
+# Reuse the package functions, so that the coordinates and the sha256 are
+# computed exactly as for the other datasets, and the bilinear weights shared
+# by the conversion scripts (scripts/regular_grid.py), so that the
+# interpolation is the same as for the Lloyd et al. (2024) viscosity.
+SCRIPTS = Path(__file__).resolve().parent
+REPO = SCRIPTS.parent
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(SCRIPTS))
 from gdrift.constants import R_earth  # noqa: E402
 from gdrift.io import file_hash  # noqa: E402
-from gdrift.utility import (  # noqa: E402
-    cartesian_to_geodetic, fibonacci_sphere, regular_grid_bilinear_weights)
+from gdrift.utility import cartesian_to_geodetic, fibonacci_sphere  # noqa: E402
+from regular_grid import regular_grid_bilinear_weights  # noqa: E402
 
 MANIFEST_PATH = REPO / "gdrift" / "datasets.json"
 DATA_SIA_DIR = REPO / "gdrift" / "data-sia"
@@ -280,20 +292,29 @@ def voigt_vp(vpv, vph):
     return np.sqrt((vpv**2 + 4.0 * vph**2) / 5.0)
 
 
-def resample(depth_km, lat, lon, fields):
+def resample(depth_km, lat, lon, fields, output_fields=None):
     """Resample the source grid onto the Fibonacci lattice of each depth.
+
+    scripts/convert_glad_m25.py also uses this function, with its own source
+    fields and output fields.
 
     Parameters
     ----------
     depth_km, lat, lon, fields
-        As returned by `read_source`.
+        As returned by `read_source`. Every field whose name is in
+        SPEED_FIELDS is converted from km/s to m/s; the others keep their unit.
+        The fields must include vsv, vsh, vpv and vph.
+    output_fields : sequence of str, optional
+        Names and order of the returned fields: any of the source fields and
+        the isotropic speeds vs and vp. The default None means OUTPUT_FIELDS,
+        read when the function is called.
 
     Returns
     -------
     coordinates : numpy.ndarray, shape (n_depth * NUM_POINTS_PER_LAYER, 3)
         Cartesian positions in metres, shallowest layer first.
     out : dict of numpy.ndarray, shape (n_depth * NUM_POINTS_PER_LAYER,)
-        The fields of OUTPUT_FIELDS, speeds in m/s.
+        The fields of `output_fields`, speeds in m/s.
     """
     # Unit-sphere Fibonacci lattice, identical to the other seismic models
     unit = fibonacci_sphere(NUM_POINTS_PER_LAYER)
@@ -318,14 +339,16 @@ def resample(depth_km, lat, lon, fields):
     # Radius of each layer in metres; R_earth is the gdrift reference radius
     radii = R_earth - depth_km * 1e3
     coordinates = np.vstack([unit * r for r in radii])
-    return coordinates, {name: out[name] for name in OUTPUT_FIELDS}
+    if output_fields is None:
+        output_fields = OUTPUT_FIELDS
+    return coordinates, {name: out[name] for name in output_fields}
 
 
 def check_against_source(coordinates, out, depth_km, lat, fields):
     """Compare the resampled fields with the source and print a summary.
 
     Checks that the layer radii equal the source depths, that every resampled
-    component stays inside the range of its source layer (bilinear
+    source field stays inside the range of its source layer (bilinear
     interpolation cannot overshoot), that vs and vp lie between their
     components, and prints the largest difference between the mean of each
     layer and the area-weighted (cos latitude) mean of the source layer.
@@ -335,7 +358,8 @@ def check_against_source(coordinates, out, depth_km, lat, fields):
     coordinates, out
         As returned by `resample`.
     depth_km, lat, fields
-        As returned by `read_source`.
+        As returned by `read_source`. Every field in `fields` is checked, so
+        scripts/convert_glad_m25.py can use this function for its own fields.
 
     Raises
     ------
@@ -350,7 +374,7 @@ def check_against_source(coordinates, out, depth_km, lat, fields):
     # Cos-latitude weights for the area-weighted mean of a source layer
     wlat = np.cos(np.radians(lat))[:, None]
     worst = {}
-    for name in SOURCE_FIELDS:
+    for name in fields:
         scale = 1e3 if name in SPEED_FIELDS else 1.0
         layers = out[name].reshape(n_depth, n) / scale
         src = fields[name]
@@ -383,7 +407,7 @@ def check_against_source(coordinates, out, depth_km, lat, fields):
 
 
 def build_file(path, coordinates, out, n_depth):
-    """Write the HDF5 file in the layout of the other seismic models."""
+    """Write the HDF5 file of GLAD-M35 with its attributes (see `write_file`)."""
     attrs = {
         "comment": (
             f"Converted from {SOURCE_FILE} (EarthScope EMC, data revision r0.1). Resampled to "
@@ -409,6 +433,26 @@ def build_file(path, coordinates, out, n_depth):
             "54 m/s (vp). eta has no unit."
         ),
     }
+    write_file(path, coordinates, out, attrs)
+
+
+def write_file(path, coordinates, out, attrs):
+    """Write an HDF5 file in the layout of the other seismic models.
+
+    scripts/convert_glad_m25.py also uses this function, so both GLAD files
+    have the same storage (see "Storage" in the module docstring).
+
+    Parameters
+    ----------
+    path : Path
+        The output file. An existing file is overwritten.
+    coordinates : numpy.ndarray, shape (N, 3)
+        Cartesian positions in metres, stored as float64.
+    out : dict of numpy.ndarray, shape (N,)
+        The fields, stored as float32 in the order of the dict.
+    attrs : dict
+        Attributes of the file, written in the order of the dict.
+    """
     # Lossless compression (see "Storage" in the module docstring). gzip and
     # shuffle are built into every HDF5 library, so any h5py can read the
     # file. Chunks of one depth layer keep the chunking deterministic, so the

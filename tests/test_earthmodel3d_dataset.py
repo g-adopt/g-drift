@@ -5,12 +5,15 @@ Covers:
 - EarthModel3D.from_dataset and the loader that it shares with SeismicModel,
   on synthetic data (no network),
 - the resampling in scripts/convert_lloyd_viscosity.py, on a synthetic NetCDF
-  file (no network),
+  file (no network), and the bilinear weights of scripts/regular_grid.py that
+  it uses,
 - the released Lloyd et al. (2024) file, only if it is already on disk
   (the test never downloads the 420 MB file).
 
 ``scripts/`` is not a package and pytest runs with ``--import-mode=importlib``,
-so the conversion script is loaded from its path.
+so the conversion script is loaded from its path. The script imports
+scripts/regular_grid.py, so the tests reach the bilinear weights as
+``convert.regular_grid_bilinear_weights``.
 """
 
 import importlib.util
@@ -26,7 +29,7 @@ import gdrift.io as gio
 import gdrift.seismic as seismic
 from gdrift.constants import R_earth
 from gdrift.datasetnames import DATASET_REGISTRY, DatasetType, UtilityClass
-from gdrift.utility import fibonacci_sphere, geodetic_to_cartesian, regular_grid_bilinear_weights
+from gdrift.utility import fibonacci_sphere, geodetic_to_cartesian
 
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "convert_lloyd_viscosity.py"
 LLOYD = "Lloyd_et_al_2024_GJI"
@@ -181,7 +184,7 @@ def test_bilinear_weights_reproduce_a_bilinear_field():
     rng = np.random.default_rng(3)
     q_lat = np.concatenate([rng.uniform(-90, 90, 1000), [-90.0, 90.0, 0.0]])
     q_lon = np.concatenate([rng.uniform(-180, 180, 1000), [-180.0, 180.0, 0.5]])
-    i0, j0, w = regular_grid_bilinear_weights(lat, lon, q_lat, q_lon)
+    i0, j0, w = convert.regular_grid_bilinear_weights(lat, lon, q_lat, q_lon)
     np.testing.assert_allclose(w.sum(axis=1), 1.0)
     assert np.all(w >= -1e-12)
 
@@ -241,7 +244,7 @@ def test_each_side_of_the_seam_uses_its_own_column():
     grid[:, 0] = 1.0   # the -180 column
     grid[:, -1] = 5.0  # the +180 column, different on purpose
 
-    i0, j0, w = regular_grid_bilinear_weights(lat, lon, np.array([10.2, 10.2]), np.array([179.8, -179.8]))
+    i0, j0, w = convert.regular_grid_bilinear_weights(lat, lon, np.array([10.2, 10.2]), np.array([179.8, -179.8]))
     corners = np.column_stack([grid[i0, j0], grid[i0 + 1, j0], grid[i0, j0 + 1], grid[i0 + 1, j0 + 1]])
     value = np.sum(corners * w, axis=1)
     # 179.8 is 0.6 of the way from 179.5 to 180 (value 0 to 5); -179.8 is

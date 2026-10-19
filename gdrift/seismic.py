@@ -15,6 +15,8 @@ Available Models
 The module dynamically constructs `AVAILABLE_SEISMIC_MODELS` from the dataset
 registry. The models include:
 - S40RTS (Ritsema et al., 2011) - widely used Vs model
+- GLAD-M25 (Lei et al., 2020) - Vs/Vp adjoint model, the source of the
+  Lloyd et al. (2024) viscosity
 - GLAD-M35 (Cui et al., 2024) - joint Vs/Vp adjoint model with uncertainties
 - SEMUCB-WM1 (French & Romanowicz, 2014) - full mantle Vs
 - SAW642AN (Panning & Romanowicz, 2006) - radially anisotropic

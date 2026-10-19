@@ -2008,6 +2008,30 @@
       "metadata_source": "web_search",
       "metadata_complete": true,
       "etag": "40d8b7df07b5786c954a713d663fe84a-47"
+    },
+    {
+      "name": "3d_seismic_GLAD-M25",
+      "filename": "b9b37f2628c42c4ed5d09f94ed1bd44a5f4d701a8d18ce1efa53e24a0c5a3f95.h5",
+      "type": "TOMOGRAPHY_MODEL",
+      "utility": "SEISMIC_MODEL",
+      "source": "Lei, W., et al. 'Global adjoint tomography - model GLAD-M25.' Geophysical Journal International 223.1 (2020): 1-21.",
+      "doi": "10.1093/gji/ggaa253",
+      "year": 2020,
+      "fields": [
+        "vs",
+        "vsh",
+        "vsv",
+        "vp",
+        "vph",
+        "vpv",
+        "eta"
+      ],
+      "description": "GLAD-M25 global adjoint tomography model (predecessor of GLAD-M35, and the model from which the 3-D viscosity of Lloyd et al. (2024) was inferred): radially anisotropic in the upper mantle, without uncertainties. From the EarthScope EMC grid r0.0 (doi:10.17611/dp/emc.2020.gladm2500.1; 0.5 degree, 331 depths from 6 to 2891 km; the layers above 6 km, which have zeros outside the solid Earth, are left out; a query above 6 km returns the 6 km values). The layers at 650 and 650.01 km keep the jump there; near 410 km the jump lies between 405 and 410 km. vs and vp are sqrt((2 vsv^2 + vsh^2)/3) and sqrt((vpv^2 + 4 vph^2)/5), the Voigt forms without eta.",
+      "author": "Lei, W., Ruan, Y., Bozda\u011f, E., Peter, D., Lefebvre, M., Komatitsch, D., Tromp, J., Hill, J., Podhorszki, N., & Pugmire, D.",
+      "sha256": "b9b37f2628c42c4ed5d09f94ed1bd44a5f4d701a8d18ce1efa53e24a0c5a3f95",
+      "metadata_source": "web_search",
+      "metadata_complete": true,
+      "etag": "e168c33a221fb12143a0724e5612ca3a-47"
     }
   ]
 }
