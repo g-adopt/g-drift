@@ -105,13 +105,14 @@ bilinear interpolation uses the -180 column for longitudes just east of -180
 and the +180 column for longitudes just west of +180, so the file is
 converted as published and a small step remains at the date line.
 
-Use by scripts/convert_glad_m25.py
-----------------------------------
-The GLAD-M25 script imports this module and uses `resample`,
+Use by scripts/convert_glad_m25.py and scripts/convert_reveal_lo.py
+-------------------------------------------------------------------
+The GLAD-M25 and RevealLO scripts import this module and use `resample`,
 `check_against_source`, `write_file` and `update_manifest`, and through them
 NUM_POINTS_PER_LAYER and SPEED_FIELDS. A change to any of these changes the
-GLAD-M25 dataset too. SPEED_FIELDS must contain vsv, vsh, vpv and vph, and
-must not contain eta; the GLAD-M25 script checks this when it is imported.
+GLAD-M25 and RevealLO datasets too. SPEED_FIELDS must contain vsv, vsh, vpv
+and vph, and must not contain eta or rho; both scripts check this when they
+are imported.
 
 Usage
 -----
@@ -303,11 +304,13 @@ def resample(depth_km, lat, lon, fields, output_fields=None):
     depth_km, lat, lon, fields
         As returned by `read_source`. Every field whose name is in
         SPEED_FIELDS is converted from km/s to m/s; the others keep their unit.
-        The fields must include vsv, vsh, vpv and vph.
+        If vs is in `output_fields`, the fields must include vsv and vsh; if
+        vp is in `output_fields`, they must include vpv and vph.
     output_fields : sequence of str, optional
         Names and order of the returned fields: any of the source fields and
         the isotropic speeds vs and vp. The default None means OUTPUT_FIELDS,
-        read when the function is called.
+        read when the function is called. vs and vp are computed only if they
+        are requested, so a source without vph (RevealLO) can be resampled.
 
     Returns
     -------
@@ -332,15 +335,18 @@ def resample(depth_km, lat, lon, fields, output_fields=None):
         # km/s to m/s for speeds and their standard deviations
         out[name] = resampled * 1e3 if name in SPEED_FIELDS else resampled
 
-    # Isotropic speeds from the resampled components (see the module docstring)
-    out["vs"] = voigt_vs(out["vsv"], out["vsh"])
-    out["vp"] = voigt_vp(out["vpv"], out["vph"])
+    if output_fields is None:
+        output_fields = OUTPUT_FIELDS
+    # Isotropic speeds from the resampled components (see the module
+    # docstring), only if they are requested
+    if "vs" in output_fields:
+        out["vs"] = voigt_vs(out["vsv"], out["vsh"])
+    if "vp" in output_fields:
+        out["vp"] = voigt_vp(out["vpv"], out["vph"])
 
     # Radius of each layer in metres; R_earth is the gdrift reference radius
     radii = R_earth - depth_km * 1e3
     coordinates = np.vstack([unit * r for r in radii])
-    if output_fields is None:
-        output_fields = OUTPUT_FIELDS
     return coordinates, {name: out[name] for name in output_fields}
 
 
@@ -392,18 +398,23 @@ def check_against_source(coordinates, out, depth_km, lat, fields):
         src_mean = np.sum(inner * wlat, axis=(1, 2)) / np.sum(wlat * np.ones(inner.shape[2]))
         worst[name] = np.abs(layers[valid].mean(axis=1) - src_mean).max()
 
-    # Voigt averages lie between the two components they average
+    # Voigt averages lie between the two components they average. A dataset
+    # without vs or vp (RevealLO) skips the check for the missing one.
     for iso, (a, b) in (("vs", ("vsv", "vsh")), ("vp", ("vpv", "vph"))):
+        if iso not in out:
+            continue
         low = np.minimum(out[a], out[b]) - 1e-6
         high = np.maximum(out[a], out[b]) + 1e-6
         assert np.all((out[iso] >= low) & (out[iso] <= high)), iso
 
     print("Largest difference of layer means (source units): "
           + ", ".join(f"{k} {v:.2e}" for k, v in worst.items()))
+    # Summary of the S-wave speed: vs if the dataset has it, else vsv
+    s_name = "vs" if "vs" in out else "vsv"
     for d in (10, 100, 410, 660, 1000, 2000, 2890):
         k = int(np.argmin(np.abs(depth_km - d)))
-        vs = out["vs"].reshape(n_depth, n)[k]
-        print(f"  {depth_km[k]:6.0f} km  vs {vs.min():7.1f} {vs.mean():7.1f} {vs.max():7.1f} m/s")
+        vs = out[s_name].reshape(n_depth, n)[k]
+        print(f"  {depth_km[k]:6.0f} km  {s_name} {vs.min():7.1f} {vs.mean():7.1f} {vs.max():7.1f} m/s")
 
 
 def build_file(path, coordinates, out, n_depth):
