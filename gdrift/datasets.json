@@ -2032,6 +2032,27 @@
       "metadata_source": "web_search",
       "metadata_complete": true,
       "etag": "e168c33a221fb12143a0724e5612ca3a-47"
+    },
+    {
+      "name": "3d_seismic_RevealLO",
+      "filename": "f343da24928ebbfd4e2f49ea76ef00ebb3e3b44e8f4d21338532683d4872e301.h5",
+      "type": "TOMOGRAPHY_MODEL",
+      "utility": "SEISMIC_MODEL",
+      "source": "Schiller, C. J., et al. 'RevealLO: A Model Update to the REVEAL Global Full-Waveform Inversion Model with Long-Period Minor- and Major-Arc Surface-Wave and Multi-Orbit Body Wave Data.' Zenodo (2026).",
+      "doi": "10.5281/zenodo.23646069",
+      "year": 2026,
+      "fields": [
+        "rho",
+        "vpv",
+        "vsh",
+        "vsv"
+      ],
+      "description": "RevealLO global full-waveform inversion model, an update of REVEAL with long-period minor- and major-arc surface waves and multi-orbit body waves (33 s), with the fields of REVEAL: vsv, vsh, vpv and density. From the 0.5 degree grid of the Zenodo record (doi:10.5281/zenodo.23646069), 289 depths every 10 km from 0 to 2880 km. The depths are 6371 km minus the radius in the ellipsoidal mesh of the model, so a structure is deeper below the surface at the poles than at the equator (at 2890 km the source is in the core within 28 degrees of the equator and in the mantle elsewhere). The source has no vph and no eta, so there is no vs or vp.",
+      "author": "Schiller, C. J., Keating, S., Afanasiev, M., Marty, P., & Fichtner, A.",
+      "sha256": "f343da24928ebbfd4e2f49ea76ef00ebb3e3b44e8f4d21338532683d4872e301",
+      "metadata_source": "web_search",
+      "metadata_complete": true,
+      "etag": "01a4a79d324af8486038803b5239dd0e-35"
     }
   ]
 }

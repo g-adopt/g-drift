@@ -18,6 +18,8 @@ registry. The models include:
 - GLAD-M25 (Lei et al., 2020) - Vs/Vp adjoint model, the source of the
   Lloyd et al. (2024) viscosity
 - GLAD-M35 (Cui et al., 2024) - joint Vs/Vp adjoint model with uncertainties
+- REVEAL (Thrastarson et al., 2024) and RevealLO (Schiller et al., 2026) -
+  full-waveform inversion models with vsv, vsh, vpv and density
 - SEMUCB-WM1 (French & Romanowicz, 2014) - full mantle Vs
 - SAW642AN (Panning & Romanowicz, 2006) - radially anisotropic
 - Multiple regional and global P-wave models
