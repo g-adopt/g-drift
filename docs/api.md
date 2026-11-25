@@ -128,9 +128,19 @@ name of the field says so. The list of these models is exposed as
 
 ### Coordinate Transformations
 
+Use `geodetic_to_cartesian` and `cartesian_to_geodetic` for the spherical
+Earth model, where depths are positive down. Use `wgs84_to_ecef` for locations
+given by geodetic latitude and height above the WGS84 ellipsoid.
+
 ::: gdrift.geodetic_to_cartesian
 
 ::: gdrift.cartesian_to_geodetic
+
+::: gdrift.wgs84_to_ecef
+
+::: gdrift.ecef_to_enu_matrix
+
+::: gdrift.ecef_to_ned_matrix
 
 ::: gdrift.nondimensionalise_coords
 

@@ -9,9 +9,18 @@ throughout gdrift, including:
 - Array manipulation helpers
 
 The coordinate transforms handle conversions between:
-- **Geodetic**: (latitude, longitude, depth) in degrees and meters
+- **Spherical**: (latitude, longitude, depth) in degrees and meters
+- **WGS84**: (geodetic latitude, longitude, ellipsoidal height) in degrees and meters
 - **Cartesian**: (x, y, z) in meters with origin at Earth's center
 - **Normalized**: (x, y, z) scaled to R_earth for numerical stability
+
+Spherical latitude is the angle between the equatorial plane and the line
+from the centre of a sphere to a point. A reference ellipsoid is a smooth
+mathematical model of Earth's shape, with an equatorial radius larger than
+its polar radius. Geodetic latitude is the angle between the equatorial
+plane and the local normal to the reference ellipsoid, rather than the
+radial direction from Earth's centre. WGS84 defines a specific reference
+ellipsoid, and ellipsoidal height is measured along its normal.
 
 Key Functions
 -------------
@@ -83,6 +92,10 @@ gdrift.earthmodel3d : 3D interpolation using these utilities
 import numpy
 import scipy
 from .constants import R_earth, R_cmb
+
+
+WGS84_SEMI_MAJOR_AXIS_M = 6378137.0  # Equatorial radius a, in meters.
+WGS84_FLATTENING = 1 / 298.257223563  # (a - b) / a, where b is the polar radius.
 
 
 def is_ascending(lst):
@@ -182,16 +195,16 @@ def compute_pressure(radius, density, gravity):
 
 def geodetic_to_cartesian(lat, lon, depth, earth_radius=R_earth):
     """
-    Convert geographic coordinates to Cartesian coordinates.
+    Convert spherical latitude, longitude and depth to Cartesian coordinates.
 
     Parameters:
     lat (float or numpy.ndarray): Latitude in degrees.
     lon (float or numpy.ndarray): Longitude in degrees.
-    depth (float or numpy.ndarray): Depth below Earth's surface in km.
-    earth_radius (float): Radius of the Earth in km. Default is 6371 km.
+    depth (float or numpy.ndarray): Depth below the surface, in the same units as earth_radius.
+    earth_radius (float): Radius of the sphere, default 6,371,000 m.
 
     Returns:
-    tuple: Cartesian coordinates (x, y, z).
+    numpy.ndarray: Cartesian coordinates in the same units as earth_radius.
     """
     # Convert latitude and longitude from degrees to radians
     lat_rad = numpy.radians(lat)
@@ -208,13 +221,13 @@ def geodetic_to_cartesian(lat, lon, depth, earth_radius=R_earth):
 
 def cartesian_to_geodetic(x, y, z, earth_radius=R_earth):
     """
-    Convert Cartesian coordinates to geographic coordinates.
+    Convert Cartesian coordinates to spherical latitude, longitude and depth.
 
     Parameters:
-    x (float or numpy.ndarray): x coordinate in km.
-    y (float or numpy.ndarray): y coordinate in km.
-    z (float or numpy.ndarray): z coordinate in km.
-    earth_radius (float): Radius of the Earth in km. Default is 6371e3 m.
+    x (float or numpy.ndarray): x coordinate in the same units as earth_radius.
+    y (float or numpy.ndarray): y coordinate in the same units as earth_radius.
+    z (float or numpy.ndarray): z coordinate in the same units as earth_radius.
+    earth_radius (float): Radius of the sphere, default 6,371,000 m.
 
     Returns:
     tuple: Geographic coordinates (lat, lon, depth).
@@ -236,6 +249,80 @@ def cartesian_to_geodetic(x, y, z, earth_radius=R_earth):
     lon = numpy.degrees(lon_rad)
 
     return lat, lon, depth
+
+
+def wgs84_to_ecef(latitude_deg, longitude_deg, height_m=0.0):
+    """Convert WGS84 geodetic positions to Earth-centred Cartesian positions.
+
+    Parameters
+    ----------
+    latitude_deg, longitude_deg : array_like
+        Geodetic latitude and longitude in degrees. Longitude is positive east.
+    height_m : array_like, optional
+        Height above the WGS84 ellipsoid in metres, positive outwards.
+
+    Returns
+    -------
+    numpy.ndarray
+        ECEF positions in metres with shape `(..., 3)`. The leading shape
+        is the broadcast shape of the inputs.
+    """
+    latitude, longitude, height = numpy.broadcast_arrays(
+        numpy.deg2rad(latitude_deg), numpy.deg2rad(longitude_deg), numpy.asarray(height_m, dtype=float),
+    )
+    eccentricity_squared = WGS84_FLATTENING * (2 - WGS84_FLATTENING)
+    sin_latitude = numpy.sin(latitude)
+    prime_vertical_radius = WGS84_SEMI_MAJOR_AXIS_M / numpy.sqrt(1 - eccentricity_squared * sin_latitude**2)
+    horizontal_radius = (prime_vertical_radius + height) * numpy.cos(latitude)
+    return numpy.stack((
+        horizontal_radius * numpy.cos(longitude),
+        horizontal_radius * numpy.sin(longitude),
+        (prime_vertical_radius * (1 - eccentricity_squared) + height) * sin_latitude,
+    ), axis=-1)
+
+
+def ecef_to_enu_matrix(latitude_deg, longitude_deg):
+    """Construct the rotation from ECEF to local east, north and up.
+
+    Parameters
+    ----------
+    latitude_deg, longitude_deg : array_like
+        Latitude and east-positive longitude in degrees. Supply geodetic
+        latitude for the local tangent frame of an ellipsoid.
+
+    Returns
+    -------
+    numpy.ndarray
+        Rotation matrices with shape `(..., 3, 3)`. The rows are the local
+        unit vectors expressed in ECEF coordinates. The transpose over the
+        final two axes maps local vectors back to ECEF.
+    """
+    latitude, longitude = numpy.broadcast_arrays(numpy.deg2rad(latitude_deg), numpy.deg2rad(longitude_deg))
+    sin_lat, cos_lat = numpy.sin(latitude), numpy.cos(latitude)
+    sin_lon, cos_lon = numpy.sin(longitude), numpy.cos(longitude)
+    east = numpy.stack((-sin_lon, cos_lon, numpy.zeros_like(longitude)), axis=-1)
+    north = numpy.stack((-sin_lat * cos_lon, -sin_lat * sin_lon, cos_lat), axis=-1)
+    up = numpy.stack((cos_lat * cos_lon, cos_lat * sin_lon, sin_lat), axis=-1)
+    return numpy.stack((east, north, up), axis=-2)
+
+
+def ecef_to_ned_matrix(latitude_deg, longitude_deg):
+    """Construct the rotation from ECEF to local north, east and down.
+
+    Parameters
+    ----------
+    latitude_deg, longitude_deg : array_like
+        Latitude and east-positive longitude in degrees, with the same
+        conventions as :func:`ecef_to_enu_matrix`.
+
+    Returns
+    -------
+    numpy.ndarray
+        Rotation matrices with shape `(..., 3, 3)`. The rows are the local
+        unit vectors expressed in ECEF coordinates.
+    """
+    enu = ecef_to_enu_matrix(latitude_deg, longitude_deg)
+    return numpy.stack((enu[..., 1, :], enu[..., 0, :], -enu[..., 2, :]), axis=-2)
 
 
 def cartesian_to_spherical(x, y, z):
