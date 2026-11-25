@@ -14,6 +14,14 @@ The coordinate transforms handle conversions between:
 - **Cartesian**: (x, y, z) in meters with origin at Earth's center
 - **Normalized**: (x, y, z) scaled to R_earth for numerical stability
 
+Spherical latitude is the angle between the equatorial plane and the line
+from the centre of a sphere to a point. A reference ellipsoid is a smooth
+mathematical model of Earth's shape, with an equatorial radius larger than
+its polar radius. Geodetic latitude is the angle between the equatorial
+plane and the local normal to the reference ellipsoid, rather than the
+radial direction from Earth's centre. WGS84 defines a specific reference
+ellipsoid, and ellipsoidal height is measured along its normal.
+
 Key Functions
 -------------
 Coordinate Transforms:
@@ -86,8 +94,8 @@ import scipy
 from .constants import R_earth, R_cmb
 
 
-WGS84_SEMI_MAJOR_AXIS_M = 6378137.0
-WGS84_FLATTENING = 1 / 298.257223563
+WGS84_SEMI_MAJOR_AXIS_M = 6378137.0  # Equatorial radius a, in meters.
+WGS84_FLATTENING = 1 / 298.257223563  # (a - b) / a, where b is the polar radius.
 
 
 def is_ascending(lst):
